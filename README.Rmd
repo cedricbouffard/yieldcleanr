@@ -1,0 +1,64 @@
+# yieldcleanr
+
+[![R-CI](https://github.com/cedricbouffard/yieldcleanr/actions/workflows/R-CI.yml/badge.svg)](https://github.com/cedricbouffard/yieldcleanr/actions)
+[![Codecov](https://codecov.io/gh/cedricbouffard/yieldcleanr/branch/main/graph/badge.svg)](https://codecov.io/gh/cedricbouffard/yieldcleanr)
+
+Tools for cleaning, filtering, and validating yield data collected by combine harvesters. Implements filtering methods documented in the USDA Yield Editor.
+
+## Installation
+
+```r
+# Installation depuis GitHub
+devtools::install_github("cedricbouffard/yieldcleanr")
+```
+
+## Utilisation
+
+```r
+library(yieldcleanr)
+
+# Nettoyage complet avec paramètres personnalisés
+cleaned <- clean_yield_data(
+  file_path = "data/original.txt",
+  output_file = "data/nettoye.csv",
+  log_file = "data/log.txt",
+  params = list(
+    flow_delay = 2,
+    moisture_delay = 15,
+    header_status = 33,
+    min_gps_status = 4,
+    max_dop = 10,
+    min_velocity = 0.5,
+    max_velocity = 10,
+    yield_range = c(74, 235),
+    moisture_range = c(10, 40),
+    overlap_cellsize = 0.3,
+    overlap_limit = 50,
+    std_swath = 5,
+    std_limit = 3
+  )
+)
+```
+
+## Caractéristiques
+
+- **Filtrage par Header Status** : Élimine les points quand la tête de coupe est levée
+- **Filtrage GPS** : Filtre par qualité du signal (GPS Status, DOP)
+- **Conversion UTM** : Conversion Lat/Lon vers coordonnées UTM
+- **Filtrage par vélocité** : Élimine les points immobiles ou trop rapides
+- **Correction du délai de flux** : Compensation du délai GPS-capteur
+- **Suppression des chevauchements** : Filtre les zones de chevauchement
+- **Filtre STD local** : Élimine les points anormaux dans un voisinage
+- **Génération de log** : Fichier détaillé des opérations de nettoyage
+
+## Documentation
+
+Voir les [vignettes](articles/index.html) pour des exemples détaillés.
+
+## Contributing
+
+Les contributions sont les bienvenues! Voir [CONTRIBUTING.md](.github/CONTRIBUTING.md) pour les détails.
+
+## License
+
+MIT License - voir [LICENSE](LICENSE) pour les détails.

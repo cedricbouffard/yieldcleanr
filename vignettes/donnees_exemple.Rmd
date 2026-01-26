@@ -1,0 +1,148 @@
+#' ---
+#' title: "Utilisation des Données d'Exemple"
+#' output: rmarkdown::html_vignette
+#' vignette: >
+#'   %\VignetteIndexEntry{Utilisation des Données d'Exemple}
+#'   %\VignetteEngine{knitr::rmarkdown}
+#'   %\VignetteEncoding{UTF-8}
+#' ---
+#' 
+#' ## Introduction
+#' 
+#' Le package `yieldcleanr` inclut des fichiers de données d'exemple pour 
+#' tester et démontrer les fonctionnalités de nettoyage des données de rendement.
+#' 
+#' ## Fichiers Disponibles
+#' 
+#' Le package inclut les fichiers suivants dans `inst/extdata/`:
+#' 
+#' | Fichier | Culture | Lignes | Description |
+#' |---------|---------|--------|-------------|
+#' | `sample1.txt` | Soja | 21,917 | Données de soja avec HeaderStatus variable |
+#' | `sample3.txt` | Maïs | 31,815 | Données de maïs avec Flow = 0 au début |
+#' | `sample4.txt` | Maïs blanc | 19,495 | Données de maïs blanc |
+#' 
+#' ## Chargement des Données
+#' 
+#' ### Méthode 1: Via le chemin du fichier
+#' 
+#' ```r
+#' # Charger les données d'exemple
+#' file_path <- system.file("extdata", "sample1.txt", package = "yieldcleanr")
+#' data <- read_yield_data(file_path)
+#' 
+#' # Afficher les premières lignes
+#' head(data)
+#' ```
+#' 
+#' ### Méthode 2: Via le chemin absolu
+#' 
+#' ```r
+#' # Utiliser le chemin absolu
+#' data <- read_yield_data("C:/path/to/sample1.txt")
+#' ```
+#' 
+#' ## Exemple Complet: Nettoyage de sample1.txt
+#' 
+#' Voici un exemple complet de nettoyage des données de soja:
+#' 
+#' ```r
+#' # Charger le package
+#' library(yieldcleanr)
+#' 
+#' # Lire les données
+#' file_path <- system.file("extdata", "sample1.txt", package = "yieldcleanr")
+#' data <- read_yield_data(file_path)
+#' 
+#' cat("Données brutes:\n")
+#' cat("  Lignes:", nrow(data), "\n")
+#' cat("  Flow moyen:", mean(data$Flow), "lbs/sec\n")
+#' cat("  HeaderStatus unique:", unique(data$HeaderStatus), "\n")
+#' ```
+#' 
+#' ## Structure des Données
+#' 
+#' Les fichiers ont la structure suivante:
+#' 
+#' | Colonne | Description |
+#' |---------|-------------|
+#' | Longitude | Coordonnée X (degrés décimaux) |
+#' | Latitude | Coordonnée Y (degrés décimaux) |
+#' | Flow | Débit de grain (lbs/sec) |
+#' | GPS_Time | Timestamp GPS |
+#' | Interval | Intervalle de temps (sec) |
+#' | Distance | Distance parcourue (pouces) |
+#' | Swath | Largeur de coupe (pouces) |
+#' | Moisture | Humidité (%) |
+#' | HeaderStatus | État de la header (33 = actif) |
+#' | Pass | Numéro de passage |
+#' | Serial | Numéro de série de la moissonneuse |
+#' | FieldID | Identifiant du champ |
+#' | LoadID | Identifiant de la charge |
+#' | GrainType | Type de grain |
+#' | GPSStatus | Statut GPS |
+#' | DOP | Dilution of Precision |
+#' | Altitude | Altitude (pieds) |
+#' 
+#' ## Comparaison des Fichiers
+#' 
+#' Comparons les statistiques des différents fichiers:
+#' 
+#' ```r
+#' # Fonction pour obtenir les stats
+#' get_stats <- function(file) {
+#'   path <- system.file("extdata", file, package = "yieldcleanr")
+#'   d <- read_yield_data(path)
+#'   c(
+#'     fichier = file,
+#'     lignes = nrow(d),
+#'     flow_moyen = round(mean(d$Flow), 2),
+#'     flow_min = round(min(d$Flow), 2),
+#'     flow_max = round(max(d$Flow), 2),
+#'     culture = unique(d$GrainType)
+#'   )
+#' }
+#' 
+#' # Appliquer à tous les fichiers
+#' files <- c("sample1.txt", "sample3.txt", "sample4.txt", "original.txt")
+#' stats <- do.call(rbind, lapply(files, get_stats))
+#' print(stats)
+#' ```
+#' 
+#' ## Utilisation avec AYCE
+#' 
+#' ### Pipeline AYCE Simple
+#' 
+#' ```r
+#' # Nettoyer avec AYCE
+#' cleaned <- ayce_clean(
+#'   file_path = system.file("extdata", "sample1.txt", package = "yieldcleanr"),
+#'   output_file = "sample1_cleaned.csv",
+#'   log_file = "sample1_log.txt"
+#' )
+#' ```
+#' 
+#' ### Pipeline AYCE avec SF
+#' 
+#' ```r
+#' # Créer un objet SF avec polygones
+#' sf_data <- ayce_sf(
+#'   file_path = system.file("extdata", "sample3.txt", package = "yieldcleanr"),
+#'   geometry_type = "polygon"
+#' )
+#' 
+#' # Statistiques
+#' summary(sf_data$Yield_kg_ha)
+#' 
+#' # Visualiser
+#' plot(sf_data["Yield_kg_ha"], main = "Rendement (kg/ha)")
+#' ```
+#' 
+#' ## Notes
+#' 
+#' - **sample1.txt**: Contient des données de soja avec des changements de HeaderStatus
+#' - **sample3.txt**: Commence avec des valeurs Flow = 0 (ramp-up)
+#' - **sample4.txt**: Données de maïs blanc avec des conditions variables
+#' 
+#' Pour des exemples plus détaillés, voir la vignette principale 
+#' `nettoyage_donnees_rendement.html`.
