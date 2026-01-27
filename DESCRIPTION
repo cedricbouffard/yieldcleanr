@@ -26,7 +26,10 @@ Imports:
     shiny,
     leaflet,
     DT,
-    testthat (>= 3.0.0)
+    testthat (>= 3.0.0),
+    terra,
+    concaveman,
+    scales
 Suggests: 
     covr,
     pkgdown,

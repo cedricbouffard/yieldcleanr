@@ -2,5 +2,7 @@
 
 export(clean_yield)
 export(clean_yield_with_tracking)
+export(export_raster)
 export(launch_shiny_app)
 export(read_yield_data)
+export(save_raster)

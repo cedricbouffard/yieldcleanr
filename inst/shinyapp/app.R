@@ -48,6 +48,8 @@ ui <- fluidPage(
         border-radius: 16px;
         border: 1px solid var(--line);
         box-shadow: var(--shadow);
+        max-height: 90vh;
+        overflow-y: auto;
       }
 
       .section-title {
@@ -102,7 +104,7 @@ ui <- fluidPage(
 
       .diag-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
         gap: 16px;
       }
 
@@ -112,6 +114,12 @@ ui <- fluidPage(
         border: 1px solid var(--line);
         padding: 14px;
         box-shadow: var(--shadow);
+        transition: transform 0.2s ease;
+      }
+
+      .diag-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 20px 40px rgba(31, 42, 50, 0.12);
       }
 
       .diag-card h4 {
@@ -119,6 +127,46 @@ ui <- fluidPage(
         font-size: 16px;
         margin-top: 0;
         margin-bottom: 10px;
+        color: var(--ink);
+      }
+
+      .plot-controls {
+        background: var(--soft);
+        padding: 10px 14px;
+        border-radius: 10px;
+        margin-bottom: 12px;
+        border: 1px solid var(--line);
+      }
+
+      .plot-controls label {
+        font-size: 12px;
+        color: var(--muted);
+        margin-right: 10px;
+      }
+
+      .info-box {
+        background: linear-gradient(135deg, rgba(47, 111, 109, 0.08), rgba(183, 131, 47, 0.08));
+        padding: 12px 16px;
+        border-radius: 12px;
+        margin-bottom: 16px;
+        border: 1px solid var(--line);
+      }
+
+      .info-box h5 {
+        margin: 0 0 8px 0;
+        color: var(--accent);
+        font-weight: 600;
+      }
+
+      .stat-row {
+        display: flex;
+        justify-content: space-between;
+        margin: 4px 0;
+        font-size: 13px;
+      }
+
+      .stat-value {
+        font-weight: 600;
         color: var(--ink);
       }
     "))
@@ -209,7 +257,8 @@ ui <- fluidPage(
         
         radioButtons("download_format", "Format :",
                     c("GeoJSON" = "geojson",
-                      "CSV" = "csv")),
+                      "CSV" = "csv",
+                      "Raster (1m)" = "raster")),
         downloadButton("download_data", "Telecharger les donnees", class = "btn-success btn-block"),
         downloadButton("download_log", "Telecharger le journal", class = "btn-info btn-block"),
         
@@ -240,6 +289,22 @@ ui <- fluidPage(
         tabPanel("Distribution",
                  plotOutput("yield_distribution", height = "500px")),
         tabPanel("Diagnostics",
+                 div(class = "plot-controls",
+                     fluidRow(
+                       column(4, 
+                              sliderInput("diag_plot_height", "Hauteur des graphiques :", 
+                                         200, 600, 350, 50)),
+                       column(4,
+                              sliderInput("diag_base_size", "Taille de police :",
+                                         8, 16, 11, 1)),
+                       column(4,
+                              selectInput("diag_layout", "Disposition :",
+                                         choices = c("Auto" = "auto",
+                                                   "1 colonne" = "1",
+                                                   "2 colonnes" = "2",
+                                                   "3 colonnes" = "3")))
+                     )
+                 ),
                  uiOutput("diagnostics_ui"))
       )
     )
@@ -573,13 +638,20 @@ server <- function(input, output, session) {
       paste0("diag_", gsub("[^A-Za-z0-9]+", "_", tolower(step_name)))
     }, character(1))
 
+    # Determine grid columns based on layout selection
+    grid_cols <- switch(input$diag_layout,
+                       "1" = "1fr",
+                       "2" = "repeat(2, 1fr)",
+                       "3" = "repeat(3, 1fr)",
+                       "repeat(auto-fit, minmax(320px, 1fr))")
+
     tags$div(
-      class = "diag-grid",
+      style = paste0("display: grid; grid-template-columns: ", grid_cols, "; gap: 16px;"),
       lapply(seq_along(diagnostics), function(i) {
         tags$div(
           class = "diag-card",
           tags$h4(names(diagnostics)[i]),
-          plotOutput(plot_ids[i], height = "240px")
+          plotOutput(plot_ids[i], height = paste0(input$diag_plot_height, "px"))
         )
       })
     )
@@ -608,31 +680,11 @@ server <- function(input, output, session) {
         diag_data <- diagnostics[[step_local]]
 
         output[[plot_id_local]] <- renderPlot({
-          plot_data <- diag_data |>
-            dplyr::filter(is.finite(valeur)) |>
-            dplyr::mutate(
-              statut = factor(statut, levels = c("Conserve", "Supprime"))
-            )
-
-          removed_count <- sum(plot_data$statut == "Supprime", na.rm = TRUE)
-          kept_count <- sum(plot_data$statut == "Conserve", na.rm = TRUE)
-          unit_label <- unique(plot_data$unite)
-
-          ggplot(plot_data, aes(x = valeur, fill = statut)) +
-            geom_histogram(alpha = 0.7, bins = 35, position = "identity") +
-            scale_fill_manual(values = c("Conserve" = "#5b6470", "Supprime" = "#b04a3b")) +
-            labs(
-              title = "",
-              subtitle = paste0("Supprimes : ", removed_count, " | Conserves : ", kept_count),
-              x = paste0("Flux (", unit_label, ")"),
-              y = "Points"
-            ) +
-            theme_minimal(base_size = 11) +
-            theme(
-              legend.position = "top",
-              legend.title = element_blank(),
-              plot.subtitle = element_text(color = "#5b6470")
-            )
+          yieldcleanr:::create_diagnostic_plot(
+            diag_data = diag_data,
+            step_name = step_local,
+            base_size = input$diag_base_size
+          )
         })
       })
     }
@@ -640,15 +692,29 @@ server <- function(input, output, session) {
   
   output$download_data <- downloadHandler(
     filename = function() {
-      if (input$download_format == "geojson") {
+      format <- input$download_format
+      if (format == "raster") {
+        paste0("rendement_nettoye_", Sys.Date(), ".tif")
+      } else if (format == "geojson") {
         paste0("rendement_nettoye_", Sys.Date(), ".geojson")
       } else {
         paste0("rendement_nettoye_", Sys.Date(), ".csv")
       }
     },
     content = function(file) {
+      format <- input$download_format
       data <- rv$result$data_clean
-      if (input$download_format == "geojson" && inherits(data, "sf")) {
+      
+      if (format == "raster") {
+        # Export as raster with 1m cell size and concave hull
+        yield_col <- if (as.logical(input$units)) "Yield_kg_ha" else "Yield_buacre"
+        raster_data <- yieldcleanr::export_raster(
+          data = data,
+          cell_size = 1,
+          column_colonne = yield_col
+        )
+        yieldcleanr::save_raster(raster_data, file, format = "tif")
+      } else if (format == "geojson" && inherits(data, "sf")) {
         sf::st_write(data, file, driver = "GeoJSON", quiet = TRUE)
       } else {
         if (inherits(data, "sf")) {
