@@ -41,68 +41,10 @@ home:
     </p>
 
 reference:
-  - title: "Pipeline Principal"
+  - title: "Fonctions Principales"
     desc: "Fonctions principales pour nettoyer les données de rendement"
     contents:
-      - clean_yield_data
-      - quick_clean_yield
-      - ayce_clean
-      - ayce_sf
-      - quick_ayce
-
-  - title: "Lecture de Données"
-    contents:
+      - clean_yield
+      - clean_yield_with_tracking
       - read_yield_data
-      - parse_column_names
-
-  - title: "Filtres de Base"
-    contents:
-      - filter_header_status
-      - filter_gps_status
-      - filter_dop
-      - filter_velocity
-      - filter_yield_range
-      - filter_moisture_range
-      - filter_bounds
-      - filter_sliding_window
-
-  - title: "Filtres Avancés"
-    contents:
-      - apply_flow_delay
-      - apply_moisture_delay
-      - apply_overlap_filter
-      - apply_local_sd_filter
-      - remove_overlap
-      - filter_local_std
-      - apply_position_filter
-
-  - title: "Conversion de Coordonnées"
-    contents:
-      - latlon_to_utm
-      - utm_to_latlon
-      - calculate_distances
-
-  - title: "Conversion Yield"
-    contents:
-      - convert_flow_to_yield
-      - convert_flow_simple
-      - convert_to_yield
-      - convert_flow_units
-
-  - title: "Sortie et Export"
-    contents:
-      - generate_cleaning_log
-      - export_cleaned_data
-      - data_to_sf
-      - data_to_sf_points
-      - plot_yield
-      - yield_summary
-      - add_flags
-
-  - title: "Utilitaires AYCE"
-    contents:
-      - apply_pcdi
-      - calculate_auto_thresholds
-      - calculate_auto_ranges
-      - ayce_validate
-      - ayce_with_yield_conversion
+      - launch_shiny_app
