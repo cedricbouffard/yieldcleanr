@@ -24,13 +24,13 @@ ui <- fluidPage(
       }
 
       body {
-        font-family: "Source Sans 3", "Trebuchet MS", sans-serif;
+      font-family: \"Source Sans 3\", \"Trebuchet MS\", sans-serif;
         color: var(--ink);
         background: radial-gradient(circle at top left, #fdf8f1 0%, #f4f1ec 45%, #efe8dd 100%);
       }
 
       .app-title {
-        font-family: "Fraunces", "Times New Roman", serif;
+      font-family: \"Fraunces\", \"Times New Roman\", serif;
         font-size: 28px;
         font-weight: 700;
         color: var(--ink);
@@ -115,7 +115,7 @@ ui <- fluidPage(
       }
 
       .diag-card h4 {
-        font-family: "Fraunces", "Times New Roman", serif;
+      font-family: \"Fraunces\", \"Times New Roman\", serif;
         font-size: 16px;
         margin-top: 0;
         margin-bottom: 10px;
