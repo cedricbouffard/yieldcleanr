@@ -2,7 +2,7 @@
 % Please edit documentation in R/clean_yield.R
 \name{clean_yield}
 \alias{clean_yield}
-\title{Unified Yield Data Cleaning Function}
+\title{Fonction unifiee de nettoyage des donnees de rendement}
 \usage{
 clean_yield(
   file_path,
@@ -14,39 +14,39 @@ clean_yield(
 )
 }
 \arguments{
-\item{file_path}{Path to input file (txt/csv format)}
+\item{file_path}{Chemin du fichier d'entree (txt/csv)}
 
-\item{metrique}{TRUE for metric units (kg/ha), FALSE for imperial (bu/acre)}
+\item{metrique}{TRUE pour les unites metriques (kg/ha), FALSE pour l'imperial (bu/acre)}
 
-\item{polygon}{TRUE for SF polygon output, FALSE for tibble output}
+\item{polygon}{TRUE pour une sortie SF en polygones, FALSE pour une sortie tibble}
 
-\item{params}{List of AYCE parameters (see details)}
+\item{params}{Liste des parametres AYCE (voir details)}
 
-\item{output_file}{Optional path to save output (CSV or GeoJSON)}
+\item{output_file}{Chemin optionnel pour sauvegarder la sortie (CSV ou GeoJSON)}
 
-\item{log_file}{Optional path to save log file}
+\item{log_file}{Chemin optionnel pour sauvegarder le journal}
 }
 \value{
-Cleaned data as tibble or SF object depending on parameters
+Donnees nettoyees (tibble ou objet SF selon les parametres)
 }
 \description{
-Cette fonction exécute le pipeline complet de nettoyage des données de rendement
-avec support pour les sorties en unités métriques ou impériales, et avec ou sans
-géométries SF (polygones ou points).
+Cette fonction execute le pipeline complet de nettoyage des donnees de rendement
+avec support pour les sorties en unites metriques ou imperiales, et avec ou sans
+geometries SF (polygones ou points).
 }
 \examples{
 \dontrun{
-# Metric output with polygons (SF object)
+# Sortie metrique avec polygones (objet SF)
 sf_result <- clean_yield("data.txt", metrique = TRUE, polygon = TRUE)
 plot(sf_result["Yield_kg_ha"])
 
-# Imperial output as tibble
+# Sortie imperiale en tibble
 data_result <- clean_yield("data.txt", metrique = FALSE, polygon = FALSE)
 
-# Metric output as tibble (no geometry)
+# Sortie metrique en tibble (sans geometrie)
 data_metric <- clean_yield("data.txt", metrique = TRUE, polygon = FALSE)
 
-# With custom parameters
+# Avec parametres personnalises
 result <- clean_yield("data.txt",
   metrique = TRUE,
   polygon = TRUE,

@@ -2,7 +2,7 @@
 % Please edit documentation in R/clean_yield_tracking.R
 \name{clean_yield_with_tracking}
 \alias{clean_yield_with_tracking}
-\title{Clean Yield Data with Deletion Tracking}
+\title{Nettoyage des donnees de rendement avec suivi des suppressions}
 \usage{
 clean_yield_with_tracking(
   file_path,
@@ -12,25 +12,25 @@ clean_yield_with_tracking(
 )
 }
 \arguments{
-\item{file_path}{Path to input file (txt/csv format)}
+\item{file_path}{Chemin du fichier d'entree (txt/csv)}
 
-\item{metrique}{TRUE for metric units (kg/ha), FALSE for imperial (bu/acre)}
+\item{metrique}{TRUE pour les unites metriques (kg/ha), FALSE pour l'imperial (bu/acre)}
 
-\item{polygon}{TRUE for SF polygon output, FALSE for tibble output}
+\item{polygon}{TRUE pour une sortie SF en polygones, FALSE pour une sortie tibble}
 
-\item{params}{List of AYCE parameters (see details)}
+\item{params}{Liste des parametres AYCE (voir details)}
 }
 \value{
 A list containing:
 \itemize{
-\item data_clean: Cleaned data as tibble or SF object
-\item deletions: Data frame of deleted points with reasons
-\item stats: Summary statistics
+\item data_clean: Donnees nettoyees (tibble ou objet SF)
+\item deletions: Tableau des suppressions avec raisons
+\item stats: Statistiques de synthese
 }
 }
 \description{
-Similar to clean_yield() but tracks which points are removed at each filtering step
-and the reason for deletion. Useful for visualization and debugging.
+Variante de clean_yield() qui enregistre les points supprimes a chaque etape
+ainsi que la raison. Utile pour la visualisation et le diagnostic.
 }
 \examples{
 \dontrun{

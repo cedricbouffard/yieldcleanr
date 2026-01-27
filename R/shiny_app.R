@@ -1,10 +1,10 @@
-#' Launch Yield Cleaning Shiny App
+#' Lancer l'application Shiny de nettoyage des rendements
 #'
-#' Launches an interactive Shiny application for visualizing yield data cleaning.
-#' Users can upload files, see which points are removed and why, view yield maps,
-#' and download cleaned data.
+#' Lance une application Shiny interactive pour visualiser le nettoyage des
+#' donnees de rendement. L'utilisateur peut importer un fichier, voir les
+#' suppressions par etape, visualiser les cartes et telecharger les resultats.
 #'
-#' @return Launches Shiny app in browser (invisible)
+#' @return Lance l'application Shiny dans le navigateur (invisible)
 #' @export
 #' @examples
 #' \dontrun{

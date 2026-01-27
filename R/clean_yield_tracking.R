@@ -1,13 +1,13 @@
-#' Clean Yield Data with Deletion Tracking
+#' Nettoyage des donnees de rendement avec suivi des suppressions
 #'
-#' Similar to clean_yield() but tracks which points are removed at each filtering step
-#' and the reason for deletion. Useful for visualization and debugging.
+#' Variante de clean_yield() qui enregistre les points supprimes a chaque etape
+#' ainsi que la raison. Utile pour la visualisation et le diagnostic.
 #'
 #' @inheritParams clean_yield
 #' @return A list containing:
-#'   - data_clean: Cleaned data as tibble or SF object
-#'   - deletions: Data frame of deleted points with reasons
-#'   - stats: Summary statistics
+#'   - data_clean: Donnees nettoyees (tibble ou objet SF)
+#'   - deletions: Tableau des suppressions avec raisons
+#'   - stats: Statistiques de synthese
 #' @export
 #' @examples
 #' \dontrun{
@@ -20,11 +20,11 @@ clean_yield_with_tracking <- function(file_path, metrique = TRUE, polygon = TRUE
   
   data_raw <- read_yield_data(file_path)
   rlang::inform("================================================")
-  rlang::inform("   Yield Data Cleaning with Tracking       ")
+  rlang::inform("   Nettoyage des rendements avec suivi       ")
   rlang::inform("================================================")
-  rlang::inform(paste("  -", nrow(data_raw), "raw observations loaded"))
+  rlang::inform(paste("  -", nrow(data_raw), "observations chargees"))
   
-  # Initialize deletion tracking
+  # Initialiser le suivi des suppressions
   deletions <- data.frame(
     orig_row_id = integer(0),
     step = character(0),
@@ -34,25 +34,25 @@ clean_yield_with_tracking <- function(file_path, metrique = TRUE, polygon = TRUE
   
   data <- data_raw |> dplyr::mutate(orig_row_id = dplyr::row_number())
   
-  # Step 2: UTM conversion
-  rlang::inform("Step 2: Converting to UTM coordinates...")
+  # Etape 2 : conversion UTM
+  rlang::inform("Etape 2 : conversion en coordonnees UTM...")
   data <- latlon_to_utm(data)
   
-  # Step 3: PCDI
-  rlang::inform("Step 3: PCDI - Flow Delay Optimization...")
+  # Etape 3 : PCDI
+  rlang::inform("Etape 3 : PCDI - optimisation du delai de flux...")
   pcdi_result <- apply_pcdi(data,
     delay_range = params$delay_range %||% -25:10,
     n_iterations = params$n_iterations %||% 5,
     noise_level = params$noise_level %||% 0.05
   )
   flow_delay <- pcdi_result$optimal_delay
-  rlang::inform(paste("  Optimal delay:", flow_delay, "seconds"))
+  rlang::inform(paste("  Delai optimal :", flow_delay, "secondes"))
   
-  # Step 3b: Calculate initial yield
+  # Etape 3b : calcul du rendement initial
   data <- convert_flow_to_yield(data)
   
-  # Step 4: Auto thresholds
-  rlang::inform("Step 4: Calculating auto thresholds...")
+  # Etape 4 : seuils automatiques
+  rlang::inform("Etape 4 : calcul des seuils automatiques...")
   thresholds <- calculate_auto_thresholds(data,
     yllim = params$yllim %||% 0.10,
     yulim = params$yulim %||% 0.90,
@@ -65,24 +65,26 @@ clean_yield_with_tracking <- function(file_path, metrique = TRUE, polygon = TRUE
     gbuffer = params$gbuffer %||% 100
   )
   
-  # Step 5: Header filter
-  rlang::inform("Step 5: Header filter...")
+  # Etape 5 : filtre header
+  rlang::inform("Etape 5 : filtre header...")
   to_keep <- dplyr::filter(data, HeaderStatus %in% c(1, 33) | is.na(HeaderStatus))
-  new_deletions <- dplyr::setdiff(data, to_keep) |> dplyr::mutate(step = "Header Filter", reason = "Invalid HeaderStatus")
+  new_deletions <- dplyr::setdiff(data, to_keep) |>
+    dplyr::mutate(step = "Filtre header", reason = "HeaderStatus inactif")
   deletions <- dplyr::bind_rows(deletions, new_deletions |> dplyr::select(orig_row_id, step, reason))
   data <- to_keep
-  rlang::inform(paste("  Removed:", nrow(new_deletions), "points"))
+  rlang::inform(paste("  Supprimes :", nrow(new_deletions), "points"))
   
-  # Step 6: GPS filter
-  rlang::inform("Step 6: GPS filter...")
+  # Etape 6 : filtre GPS
+  rlang::inform("Etape 6 : filtre GPS...")
   to_keep <- dplyr::filter(data, is.na(GPSStatus) | GPSStatus >= 4)
-  new_deletions <- dplyr::setdiff(data, to_keep) |> dplyr::mutate(step = "GPS Filter", reason = "GPSStatus < 4")
+  new_deletions <- dplyr::setdiff(data, to_keep) |>
+    dplyr::mutate(step = "Filtre GPS", reason = "GPSStatus < 4")
   deletions <- dplyr::bind_rows(deletions, new_deletions |> dplyr::select(orig_row_id, step, reason))
   data <- to_keep
-  rlang::inform(paste("  Removed:", nrow(new_deletions), "points"))
+  rlang::inform(paste("  Supprimes :", nrow(new_deletions), "points"))
   
-  # Step 7: Calculate velocity
-  rlang::inform("Step 7: Calculating velocity...")
+  # Etape 7 : calcul de la vitesse
+  rlang::inform("Etape 7 : calcul de la vitesse...")
   data <- data |>
     dplyr::mutate(
       velocity = sqrt((X - dplyr::lag(X))^2 + (Y - dplyr::lag(Y))^2) /
@@ -90,26 +92,26 @@ clean_yield_with_tracking <- function(file_path, metrique = TRUE, polygon = TRUE
     )
   data$velocity[is.na(data$velocity) | !is.finite(data$velocity)] <- 0
   
-  # Step 8: Velocity filter
-  rlang::inform("Step 8: Velocity filter...")
+  # Etape 8 : filtre vitesse
+  rlang::inform("Etape 8 : filtre vitesse...")
   to_keep <- dplyr::filter(data, velocity >= thresholds$min_velocity & velocity <= thresholds$max_velocity)
   new_deletions <- dplyr::setdiff(data, to_keep) |> 
     dplyr::mutate(
-      step = "Velocity Filter", 
-      reason = paste0("Velocity outside range [", round(thresholds$min_velocity, 2), ", ", round(thresholds$max_velocity, 2), "] m/s")
+      step = "Filtre vitesse", 
+      reason = paste0("Vitesse hors plage [", round(thresholds$min_velocity, 2), ", ", round(thresholds$max_velocity, 2), "] m/s")
     )
   deletions <- dplyr::bind_rows(deletions, new_deletions |> dplyr::select(orig_row_id, step, reason))
   data <- to_keep
-  rlang::inform(paste("  Removed:", nrow(new_deletions), "points"))
+  rlang::inform(paste("  Supprimes :", nrow(new_deletions), "points"))
   
-  # Step 9: Flow delay correction
-  rlang::inform(paste("Step 9: Flow delay correction (", flow_delay, "s)..."))
+  # Etape 9 : correction du delai de flux
+  rlang::inform(paste("Etape 9 : correction du delai de flux (", flow_delay, "s)..."))
   data <- apply_flow_delay(data, delay = -flow_delay)
   
-  # Step 9b: Calculate yield from delayed flow
+  # Etape 9b : calcul du rendement apres delai
   data <- convert_flow_to_yield(data)
   
-  # Step 9c: Recalculate thresholds
+  # Etape 9c : recalcul des seuils
   thresholds <- calculate_auto_thresholds(data,
     yllim = params$yllim %||% 0.10,
     yulim = params$yulim %||% 0.90,
@@ -122,8 +124,8 @@ clean_yield_with_tracking <- function(file_path, metrique = TRUE, polygon = TRUE
     gbuffer = params$gbuffer %||% 100
   )
   
-  # Step 9e: Remove boundary points
-  rlang::inform("Step 9e: Removing boundary points...")
+  # Etape 9e : suppression des points de bordure
+  rlang::inform("Etape 9e : suppression des points de bordure...")
   if ("Pass" %in% names(data) && "Interval" %in% names(data) && !all(is.na(data$Pass))) {
     n_before <- nrow(data)
     abs_delay <- abs(flow_delay)
@@ -144,37 +146,38 @@ clean_yield_with_tracking <- function(file_path, metrique = TRUE, polygon = TRUE
       to_keep <- dplyr::filter(data, interval_cumsum > abs_delay | is.na(interval_cumsum))
     }
     
-    new_deletions <- dplyr::setdiff(data, to_keep) |> 
-      dplyr::mutate(step = "Boundary Removal", reason = paste0("Flow delay boundary (", flow_delay, "s)"))
+    new_deletions <- dplyr::setdiff(data, to_keep) |>
+      dplyr::mutate(step = "Suppression bordure", reason = paste0("Bordure delai flux (", flow_delay, "s)"))
     deletions <- dplyr::bind_rows(deletions, new_deletions |> dplyr::select(orig_row_id, step, reason))
     data <- to_keep
-    rlang::inform(paste("  Removed:", nrow(new_deletions), "points"))
+    rlang::inform(paste("  Supprimes :", nrow(new_deletions), "points"))
   }
   
-  # Step 10: Remove zero yield
-  rlang::inform("Step 10: Removing zero yield points...")
+  # Etape 10 : suppression des rendements nuls
+  rlang::inform("Etape 10 : suppression des rendements nuls...")
   to_keep <- dplyr::filter(data, Yield_buacre > 0)
-  new_deletions <- dplyr::setdiff(data, to_keep) |> dplyr::mutate(step = "Zero Yield", reason = "Yield = 0")
+  new_deletions <- dplyr::setdiff(data, to_keep) |>
+    dplyr::mutate(step = "Rendement nul", reason = "Rendement = 0")
   deletions <- dplyr::bind_rows(deletions, new_deletions |> dplyr::select(orig_row_id, step, reason))
   data <- to_keep
-  rlang::inform(paste("  Removed:", nrow(new_deletions), "points"))
+  rlang::inform(paste("  Supprimes :", nrow(new_deletions), "points"))
   
-  # Step 11: Yield range filter
-  rlang::inform("Step 11: Yield range filter...")
+  # Etape 11 : filtre plage de rendement
+  rlang::inform("Etape 11 : filtre plage de rendement...")
   to_keep <- dplyr::filter(data, 
     Yield_buacre >= thresholds$min_yield & 
     Yield_buacre <= thresholds$max_yield)
   new_deletions <- dplyr::setdiff(data, to_keep) |> 
     dplyr::mutate(
-      step = "Yield Range Filter", 
-      reason = paste0("Yield outside range [", round(thresholds$min_yield, 2), ", ", round(thresholds$max_yield, 2), "] bu/acre")
+      step = "Filtre plage rendement", 
+      reason = paste0("Rendement hors plage [", round(thresholds$min_yield, 2), ", ", round(thresholds$max_yield, 2), "] bu/acre")
     )
   deletions <- dplyr::bind_rows(deletions, new_deletions |> dplyr::select(orig_row_id, step, reason))
   data <- to_keep
-  rlang::inform(paste("  Removed:", nrow(new_deletions), "points"))
+  rlang::inform(paste("  Supprimes :", nrow(new_deletions), "points"))
   
-  # Step 12: Moisture filter
-  rlang::inform("Step 12: Moisture filter (auto-detection)...")
+  # Etape 12 : filtre humidite
+  rlang::inform("Etape 12 : filtre humidite (auto-detection)...")
   moisture_mean <- mean(data$Moisture, na.rm = TRUE)
   moisture_sd <- stats::sd(data$Moisture, na.rm = TRUE)
   n_std <- params$n_std %||% 3
@@ -185,15 +188,15 @@ clean_yield_with_tracking <- function(file_path, metrique = TRUE, polygon = TRUE
     is.na(Moisture) | (Moisture >= moisture_min & Moisture <= moisture_max))
   new_deletions <- dplyr::setdiff(data, to_keep) |> 
     dplyr::mutate(
-      step = "Moisture Filter", 
-      reason = paste0("Moisture outside range [", round(moisture_min, 2), ", ", round(moisture_max, 2), "]")
+      step = "Filtre humidite", 
+      reason = paste0("Humidite hors plage [", round(moisture_min, 2), ", ", round(moisture_max, 2), "]")
     )
    deletions <- dplyr::bind_rows(deletions, new_deletions |> dplyr::select(orig_row_id, step, reason))
    data <- to_keep
-   rlang::inform(paste("  Removed:", nrow(new_deletions), "points"))
+   rlang::inform(paste("  Supprimes :", nrow(new_deletions), "points"))
    
-   # Step 12b: Heading smoothing for better polygon geometry
-   rlang::inform("Step 12b: Smoothing heading for polygon geometry...")
+   # Etape 12b : lissage du cap pour les polygones
+   rlang::inform("Etape 12b : lissage du cap pour les polygones...")
    data <- data |> dplyr::arrange(GPS_Time)
    n <- nrow(data)
    
@@ -268,10 +271,10 @@ clean_yield_with_tracking <- function(file_path, metrique = TRUE, polygon = TRUE
    data$heading_var <- NULL
    data$heading_smooth <- NULL
    
-   rlang::inform(paste("  Heading smoothed for", nrow(data), "points"))
+   rlang::inform(paste("  Cap lisse pour", nrow(data), "points"))
    
-   # Step 13: Overlap filter
-  rlang::inform("Step 13: Bitmap Overlap Filter...")
+   # Etape 13 : filtre de chevauchement
+  rlang::inform("Etape 13 : filtre de chevauchement bitmap...")
   n_before <- nrow(data)
   current_orig_ids <- data$orig_row_id
   data <- apply_overlap_filter(data,
@@ -285,17 +288,17 @@ clean_yield_with_tracking <- function(file_path, metrique = TRUE, polygon = TRUE
     if (length(removed_ids) > 0) {
       new_deletions <- tibble::tibble(
         orig_row_id = head(removed_ids, min(length(removed_ids), 1000)),
-        step = "Overlap Filter",
-        reason = "Excessive overlap"
+        step = "Filtre chevauchement",
+        reason = "Chevauchement excessif"
       )
       deletions <- dplyr::bind_rows(deletions, new_deletions)
     }
   }
-  rlang::inform(paste("  Removed:", n_removed, "points"))
+  rlang::inform(paste("  Supprimes :", n_removed, "points"))
 
-  # Step 13b: Remove overlapping polygons early (after bitmap)
+   # Etape 13b : suppression precoce des polygones chevauchants
   if (polygon && nrow(data) > 100 && "Pass" %in% names(data)) {
-    rlang::inform("Step 13b: Removing overlapping polygons (early)...")
+    rlang::inform("Etape 13b : suppression des polygones chevauchants (precoce)...")
     n_before_poly <- nrow(data)
 
     tryCatch({
@@ -377,21 +380,21 @@ clean_yield_with_tracking <- function(file_path, metrique = TRUE, polygon = TRUE
 
       n_removed_poly <- n_before_poly - nrow(data)
       if (n_removed_poly > 0) {
-        rlang::inform(paste("  Removed", n_removed_poly, "overlapping polygons"))
+        rlang::inform(paste("  Supprimes :", n_removed_poly, "polygones chevauchants"))
       } else {
-        rlang::inform("  No significant overlaps found")
+        rlang::inform("  Aucun chevauchement significatif")
       }
 
       sf_use_s2(FALSE)
 
     }, error = function(e) {
-      rlang::warn(paste("Could not remove overlaps:", e$message))
+      rlang::warn(paste("Impossible de supprimer les chevauchements :", e$message))
       sf_use_s2(FALSE)
     })
   }
 
-  # Step 14: Local SD filter
-  rlang::inform("Step 14: Localized SD Filter...")
+  # Etape 14 : filtre ecart-type localise
+  rlang::inform("Etape 14 : filtre ecart-type localise...")
   n_before <- nrow(data)
   current_orig_ids <- data$orig_row_id
   data <- apply_local_sd_filter(data,
@@ -406,16 +409,16 @@ clean_yield_with_tracking <- function(file_path, metrique = TRUE, polygon = TRUE
     if (length(removed_ids) > 0) {
       new_deletions <- tibble::tibble(
         orig_row_id = head(removed_ids, min(length(removed_ids), 1000)),
-        step = "Local SD Filter",
-        reason = "High local variation"
+        step = "Filtre ET local",
+        reason = "Variation locale elevee"
       )
       deletions <- dplyr::bind_rows(deletions, new_deletions)
     }
   }
-  rlang::inform(paste("  Removed:", n_removed, "points"))
+  rlang::inform(paste("  Supprimes :", n_removed, "points"))
   
-  # Step 15: Pass-to-pass filter
-  rlang::inform("Step 15: Pass-to-Pass Filter...")
+  # Etape 15 : filtre par passage
+  rlang::inform("Etape 15 : filtre par passage...")
   if ("Pass" %in% names(data) && !all(is.na(data$Pass))) {
     pass_stats <- data |>
       sf::st_drop_geometry() |>
@@ -442,24 +445,24 @@ clean_yield_with_tracking <- function(file_path, metrique = TRUE, polygon = TRUE
       
       if (n_removed_pass > 0) {
         removed_ids <- setdiff(current_orig_ids, data$orig_row_id)
-        new_deletions <- tibble::tibble(
-          orig_row_id = head(removed_ids, min(length(removed_ids), n_removed_pass)),
-          step = "Pass Filter",
-          reason = paste0("Abnormal pass yield (median: ", 
-                         round(pass_stats$median_yield[pass_stats$Pass %in% abnormal_passes][1], 1), 
-                         " vs overall: ", round(overall_median, 1), ")")
-        )
+      new_deletions <- tibble::tibble(
+        orig_row_id = head(removed_ids, min(length(removed_ids), n_removed_pass)),
+        step = "Filtre passage",
+        reason = paste0("Passage anormal (mediane : ", 
+                        round(pass_stats$median_yield[pass_stats$Pass %in% abnormal_passes][1], 1), 
+                         " vs globale : ", round(overall_median, 1), ")")
+      )
         deletions <- dplyr::bind_rows(deletions, new_deletions)
       }
-      rlang::inform(paste("  Removed:", n_removed_pass, "points from", length(abnormal_passes), "abnormal passes"))
+      rlang::inform(paste("  Supprimes :", n_removed_pass, "points sur", length(abnormal_passes), "passages anormaux"))
     } else {
-      rlang::inform("  No abnormal passes detected")
+      rlang::inform("  Aucun passage anormal detecte")
     }
   } else {
-    rlang::inform("  Skipping - no Pass column")
+    rlang::inform("  Ignore - pas de colonne Pass")
   }
   
-  # Prepare final output
+  # Preparer la sortie finale
   data$orig_row_id <- NULL
   
   if (metrique) {
@@ -491,7 +494,7 @@ clean_yield_with_tracking <- function(file_path, metrique = TRUE, polygon = TRUE
      data_clean <- data
    }
   
-  # Stats
+  # Statistiques
   stats <- list(
     n_raw = nrow(data_raw),
     n_clean = nrow(data_clean),
@@ -507,8 +510,8 @@ clean_yield_with_tracking <- function(file_path, metrique = TRUE, polygon = TRUE
   
   rlang::inform("")
   rlang::inform("================================================")
-  rlang::inform(paste("Complete:", nrow(data_clean), "observations cleaned"))
-  rlang::inform(paste("Retention rate:", round(stats$retention_rate * 100, 1), "%"))
+  rlang::inform(paste("Termine :", nrow(data_clean), "observations nettoyees"))
+  rlang::inform(paste("Taux de retention :", round(stats$retention_rate * 100, 1), "%"))
   rlang::inform("================================================")
   
   list(

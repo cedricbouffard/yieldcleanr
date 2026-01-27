@@ -1,15 +1,15 @@
-#' Bitmap-based Overlap Filter
+#' Filtre de chevauchement base sur un bitmap
 #'
-#' Implémente la méthode rasterisée de Han et al. (1997) pour détecter
-#' et éliminer les zones de chevauchement.
+#' Implemente la methode rasterisee de Han et al. (1997) pour detecter
+#' et eliminer les zones de chevauchement.
 #'
-#' @param data Tibble with X, Y coordinates and swath width
-#' @param cellsize Grid cell size in meters (default 0.3)
-#' @param overlap_threshold Maximum acceptable overlap ratio (0-1, default 0.5)
-#' @return Filtered tibble without overlaps
+#' @param data Tibble avec coordonnees X, Y et largeur de coupe
+#' @param cellsize Taille de cellule de grille en metres (defaut 0.3)
+#' @param overlap_threshold Ratio maximal de chevauchement (0-1, defaut 0.5)
+#' @return Tibble filtre sans chevauchement
 #' @noRd
 #' @examples
-#' # Create sample data with potential overlap points
+#' # Creer des donnees d'exemple avec chevauchements possibles
 #' data <- tibble::tibble(
 #'   X = c(435000, 435001, 435002, 435003, 435100),
 #'   Y = c(5262000, 5262001, 5262002, 5262003, 5262100),
@@ -17,7 +17,7 @@
 #'   Swath = c(240, 240, 240, 240, 240)
 #' )
 #'
-#' # Apply overlap filter (cellsize = 0.3m, max 50% overlap)
+#' # Appliquer le filtre de chevauchement (cellule 0.3m, max 50%)
 #' data_clean <- apply_overlap_filter(data, cellsize = 0.3, overlap_threshold = 0.5)
 #' print(data_clean)
 apply_overlap_filter <- function(data, cellsize = 0.3, overlap_threshold = 0.5) {
@@ -31,10 +31,10 @@ apply_overlap_filter <- function(data, cellsize = 0.3, overlap_threshold = 0.5) 
 
   n_before <- nrow(data)
 
-  # Convert swath from inches to meters
+  # Convertir la largeur de coupe en metres
   swath_m <- data$Swath * 0.0254
 
-  # Create bitmap grid with reasonable bounds
+  # Creer la grille bitmap avec des bornes raisonnables
   x_min <- floor(min(data$X) / cellsize) * cellsize
   x_max <- ceiling(max(data$X) / cellsize) * cellsize
   y_min <- floor(min(data$Y) / cellsize) * cellsize
@@ -43,11 +43,11 @@ apply_overlap_filter <- function(data, cellsize = 0.3, overlap_threshold = 0.5) 
   n_x <- max(1, ceiling((x_max - x_min) / cellsize))
   n_y <- max(1, ceiling((y_max - y_min) / cellsize))
 
-  # Limit grid size to avoid memory issues
+  # Limiter la taille de grille pour eviter les problemes de memoire
   max_cells <- 10000
   use_sparse <- (n_x * n_y > max_cells)
   if (use_sparse) {
-    rlang::inform("Données étendues - utilisation du bitmap sparse")
+    rlang::inform("Donnees etendues - utilisation du bitmap sparse")
     bitmap_env <- new.env(hash = TRUE, parent = emptyenv())
     is_harvested <- function(yc, xc) {
       key <- paste0(yc, "_", xc)
@@ -68,7 +68,7 @@ apply_overlap_filter <- function(data, cellsize = 0.3, overlap_threshold = 0.5) 
     }
   }
 
-  # Process each point
+  # Traiter chaque point
   overlap_ratio <- numeric(nrow(data))
 
   for (i in seq_len(nrow(data))) {
@@ -76,7 +76,7 @@ apply_overlap_filter <- function(data, cellsize = 0.3, overlap_threshold = 0.5) 
     yi <- data$Y[i]
     sw <- swath_m[i]
 
-    # Calculate cell indices
+    # Calculer les indices de cellule
     cx <- floor((xi - x_min) / cellsize) + 1
     cy <- floor((yi - y_min) / cellsize) + 1
 
@@ -85,7 +85,7 @@ apply_overlap_filter <- function(data, cellsize = 0.3, overlap_threshold = 0.5) 
       next
     }
 
-    # Cells covered by swath (rectangle)
+    # Cellules couvertes par la coupe (rectangle)
     half_width_cells <- max(1, ceiling((sw / 2) / cellsize))
     half_length_cells <- 1
 
@@ -94,7 +94,7 @@ apply_overlap_filter <- function(data, cellsize = 0.3, overlap_threshold = 0.5) 
     x_cells <- x_cells[x_cells >= 1 & x_cells <= n_x]
     y_cells <- y_cells[y_cells >= 1 & y_cells <= n_y]
 
-    # Count overlap
+    # Calculer le chevauchement
     n_harvested <- 0
     n_total <- 0
 
@@ -111,7 +111,7 @@ apply_overlap_filter <- function(data, cellsize = 0.3, overlap_threshold = 0.5) 
 
     overlap_ratio[i] <- if (n_total > 0) n_harvested / n_total else 0
 
-    # Mark cells as harvested
+    # Marquer les cellules comme recoltees
     for (xc in x_cells) {
       for (yc in y_cells) {
         cell_x <- x_min + (xc - 0.5) * cellsize
@@ -128,7 +128,7 @@ apply_overlap_filter <- function(data, cellsize = 0.3, overlap_threshold = 0.5) 
   rlang::inform(paste("Overlap ratio: min", round(overlap_min, 3),
                       "max", round(overlap_max, 3)))
 
-  # Filter
+  # Filtrer
   data <- data |>
     dplyr::mutate(overlap_ratio = overlap_ratio) |>
     dplyr::filter(overlap_ratio <= overlap_threshold)
@@ -141,30 +141,30 @@ apply_overlap_filter <- function(data, cellsize = 0.3, overlap_threshold = 0.5) 
 }
 
 
-#' Localized Standard Deviation Filter
+#' Filtre d'ecart-type localise
 #'
-#' Crée une grille spatiale et élimine les points aberrants locaux
-#' basés sur l'écart-type local.
+#' Cree une grille spatiale et elimine les points aberrants locaux
+#' bases sur l'ecart-type local.
 #'
-#' @param data Tibble with X, Y, Flow columns
-#' @param n_swaths Number of swath widths for grid cell (default 5)
-#' @param lsd_limit Local SD limit multiplier (default 3)
-#' @param min_cells Minimum observations per cell (default 3)
-#' @return Filtered tibble
+#' @param data Tibble avec colonnes X, Y, Flow
+#' @param n_swaths Nombre de largeurs de coupe par cellule (defaut 5)
+#' @param lsd_limit Multiplicateur de l'ET local (defaut 3)
+#' @param min_cells Observations minimales par cellule (defaut 3)
+#' @return Tibble filtre
 #' @noRd
 #' @examples
-#' # Create sample data with local outliers
+#' # Creer des donnees d'exemple avec outliers locaux
 #' data <- tibble::tibble(
 #'   X = c(435000, 435001, 435002, 435003, 435004, 435005,
 #'         435100, 435101, 435102, 435103, 435104, 435105),
 #'   Y = c(5262000, 5262001, 5262002, 5262003, 5262004, 5262005,
 #'         5262100, 5262101, 5262102, 5262103, 5262104, 5262105),
-#'   Flow = c(50, 55, 52, 58, 300, 54,  # 300 is a local outlier
+#'   Flow = c(50, 55, 52, 58, 300, 54,  # 300 = outlier local
 #'            45, 48, 47, 50, 49, 46),
 #'   Swath = c(240, 240, 240, 240, 240, 240, 240, 240, 240, 240, 240, 240)
 #' )
 #'
-#' # Apply local SD filter
+#' # Appliquer le filtre ET local
 #' data_clean <- apply_local_sd_filter(data, n_swaths = 5, lsd_limit = 3)
 #' print(data_clean)
 apply_local_sd_filter <- function(data, n_swaths = 5, lsd_limit = 3,
@@ -177,13 +177,13 @@ apply_local_sd_filter <- function(data, n_swaths = 5, lsd_limit = 3,
     return(data)
   }
 
-  # Convert swath to meters and calculate cell size
+  # Convertir la largeur de coupe et calculer la taille de cellule
   swath_m <- mean(data$Swath, na.rm = TRUE) * 0.0254
   cellsize <- n_swaths * swath_m
 
   n_before <- nrow(data)
 
-  # Create grid cell IDs
+  # Creer les identifiants de cellule
   data <- data |>
     dplyr::mutate(
       cell_x = floor(X / cellsize),
@@ -191,7 +191,7 @@ apply_local_sd_filter <- function(data, n_swaths = 5, lsd_limit = 3,
       cell_id = paste(cell_x, cell_y, sep = "_")
     )
 
-  # Calculate local statistics per cell
+  # Calculer les statistiques locales par cellule
   cell_stats <- data |>
     dplyr::group_by(cell_id) |>
     dplyr::summarise(
@@ -202,11 +202,11 @@ apply_local_sd_filter <- function(data, n_swaths = 5, lsd_limit = 3,
     ) |>
     dplyr::filter(n >= min_cells)
 
-  # Calculate global statistics for cells with too few observations
+  # Calculer les statistiques globales pour cellules peu peuplees
   global_mean <- mean(data$Flow, na.rm = TRUE)
   global_sd <- stats::sd(data$Flow, na.rm = TRUE)
 
-  # Join and filter
+  # Joindre et filtrer
   data <- data |>
     dplyr::left_join(cell_stats, by = "cell_id") |>
     dplyr::mutate(
@@ -228,15 +228,15 @@ apply_local_sd_filter <- function(data, n_swaths = 5, lsd_limit = 3,
 }
 
 
-#' AYCE Validation and Quality Control
+#' Validation AYCE et controle qualite
 #'
-#' Évalue la stabilité des résultats et signale les cas douteux.
+#' Evalue la stabilite des resultats et signale les cas douteux.
 #'
-#' @param data_clean Cleaned data tibble
-#' @param data_raw Raw data tibble
-#' @param pcdi_result Result from PCDI analysis
-#' @param thresholds Thresholds used
-#' @return List with validation metrics and warnings
+#' @param data_clean Tibble des donnees nettoyees
+#' @param data_raw Tibble des donnees brutes
+#' @param pcdi_result Resultat de l'analyse PCDI
+#' @param thresholds Seuils utilises
+#' @return Liste avec metriques de validation et avertissements
 #' @noRd
 ayce_validate <- function(data_clean, data_raw, pcdi_result = NULL,
                           thresholds = NULL) {
@@ -245,13 +245,13 @@ ayce_validate <- function(data_clean, data_raw, pcdi_result = NULL,
 
   validation <- list()
 
-  # Point retention rate
+  # Taux de retention des points
   retention_rate <- nrow(data_clean) / nrow(data_raw)
   validation$retention_rate <- retention_rate
 
   rlang::inform(paste("Retention rate:", round(retention_rate * 100, 1), "%"))
 
-  # Flag unusual retention rates
+  # Signaler les taux de retention inhabituels
   validation$warning <- NULL
   if (retention_rate < 0.5) {
     validation$warning <- "Very low retention rate - check parameters"
@@ -261,7 +261,7 @@ ayce_validate <- function(data_clean, data_raw, pcdi_result = NULL,
     rlang::warn(validation$warning)
   }
 
-  # PCDI stability check
+  # Verification de la stabilite PCDI
   if (!is.null(pcdi_result) && !is.null(pcdi_result$warning)) {
     validation$pcdi_stable <- is.null(pcdi_result$warning) || pcdi_result$warning == "None"
     if (!validation$pcdi_stable) {
@@ -271,7 +271,7 @@ ayce_validate <- function(data_clean, data_raw, pcdi_result = NULL,
     validation$pcdi_stable <- TRUE
   }
 
-  # Yield statistics comparison
+  # Comparaison des statistiques de rendement
   if ("Flow" %in% names(data_raw) && "Flow" %in% names(data_clean)) {
     validation$raw_stats <- list(
       mean = mean(data_raw$Flow, na.rm = TRUE),
@@ -284,7 +284,7 @@ ayce_validate <- function(data_clean, data_raw, pcdi_result = NULL,
       cv = stats::sd(data_clean$Flow, na.rm = TRUE) / mean(data_clean$Flow, na.rm = TRUE)
     )
 
-    # Check for reasonable CV improvement
+    # Verifier l'amelioration du CV
     cv_improvement <- validation$raw_stats$cv - validation$clean_stats$cv
     validation$cv_improvement <- cv_improvement
 

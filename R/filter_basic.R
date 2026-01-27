@@ -1,22 +1,22 @@
-#' Filter by header status
+#' Filtrer selon le statut du header
 #'
 #' Cette fonction filtre les données pour ne garder que les points où la
 #' moissonneuse est en position de travail (header abaissé ou actif).
 #' Header Status: 1 = harvesting (actif), 33 = header down (abaissé).
 #' Les deux valeurs indiquent une récolte active.
 #'
-#' @param data A tibble with yield data
-#' @param header_values Values indicating active harvesting (default c(1, 33))
-#' @return Filtered tibble with header active data
+#' @param data Tibble avec donnees de rendement
+#' @param header_values Valeurs indiquant une recolte active (defaut c(1, 33))
+#' @return Tibble filtre avec header actif
 #' @noRd
 #' @examples
-#' # Create sample data with mixed header status
+#' # Creer des donnees d'exemple avec header mixte
 #' data <- tibble::tibble(
 #'   Flow = c(1.53, 3.7, 7.56, 10.36, 15.48),
-#'   HeaderStatus = c(1, 33, 33, 0, 33)  # 1=harvesting, 33=header down, 0=header up
+#'   HeaderStatus = c(1, 33, 33, 0, 33)  # 1=actif, 33=header bas, 0=header haut
 #' )
 #'
-#' # Filter to keep only active harvesting
+#' # Filtrer pour ne garder que la recolte active
 #' data_filtered <- filter_header_status(data)
 #' print(data_filtered)
 filter_header_status <- function(data, header_values = c(1, 33)) {
@@ -44,13 +44,13 @@ filter_header_status <- function(data, header_values = c(1, 33)) {
 }
 
 
-#' Filter by GPS status
+#' Filtrer selon le statut GPS
 #'
 #' Cette fonction filtre les données selon la qualité du signal GPS.
 #'
-#' @param data A tibble with yield data
-#' @param min_gps_status Minimum GPS status value (default 4 = good)
-#' @return Filtered tibble with valid GPS data
+#' @param data Tibble avec donnees de rendement
+#' @param min_gps_status Statut GPS minimal (defaut 4 = bon)
+#' @return Tibble filtre avec GPS valide
 #' @noRd
 filter_gps_status <- function(data, min_gps_status = 4) {
   if (!"GPSStatus" %in% names(data)) {
@@ -77,14 +77,14 @@ filter_gps_status <- function(data, min_gps_status = 4) {
 }
 
 
-#' Filter by DOP (Dilution of Precision)
+#' Filtrer selon le DOP (Dilution of Precision)
 #'
 #' Cette fonction élimine les points avec un DOP trop élevé
 #' (mauvaise précision GPS).
 #'
-#' @param data A tibble with yield data
-#' @param max_dop Maximum acceptable DOP value (default 10)
-#' @return Filtered tibble with valid DOP
+#' @param data Tibble avec donnees de rendement
+#' @param max_dop Valeur maximale acceptable du DOP (defaut 10)
+#' @return Tibble filtre avec DOP valide
 #' @noRd
 filter_dop <- function(data, max_dop = 10) {
   if (!"DOP" %in% names(data)) {
@@ -111,16 +111,16 @@ filter_dop <- function(data, max_dop = 10) {
 }
 
 
-#' Filter by velocity range
+#' Filtrer selon la plage de vitesse
 #'
 #' Cette fonction filtre les points selon la vitesse de déplacement.
 #' La vélocité est calculée comme la distance euclidienne entre points
 #' consécutifs divisée par l'intervalle de temps.
 #'
-#' @param data A tibble with yield data
-#' @param min_velocity Minimum velocity in m/s (default 0.5)
-#' @param max_velocity Maximum velocity in m/s (default 10)
-#' @return Filtered tibble with valid velocities
+#' @param data Tibble avec donnees de rendement
+#' @param min_velocity Vitesse minimale en m/s (defaut 0.5)
+#' @param max_velocity Vitesse maximale en m/s (defaut 10)
+#' @return Tibble filtre avec vitesses valides
 #' @noRd
 filter_velocity <- function(data, min_velocity = 0.5, max_velocity = 10) {
   if (!"X" %in% names(data) || !"Y" %in% names(data)) {
@@ -157,15 +157,15 @@ filter_velocity <- function(data, min_velocity = 0.5, max_velocity = 10) {
 }
 
 
-#' Filter by coordinate bounds
+#' Filtrer selon les limites geographiques
 #'
 #' Cette fonction filtre les points selon les limites géographiques
 #' du champ (Easting/Northing ou Lat/Lon).
 #'
-#' @param data A tibble with yield data
-#' @param bounds A list with min/max for x and y coordinates
-#' @param coord_type Type of coordinates: "utm" or "latlon"
-#' @return Filtered tibble within bounds
+#' @param data Tibble avec donnees de rendement
+#' @param bounds Liste avec min/max des coordonnees x et y
+#' @param coord_type Type de coordonnees : "utm" ou "latlon"
+#' @return Tibble filtre dans les limites
 #' @noRd
 filter_bounds <- function(data, bounds = NULL, coord_type = "latlon") {
   if (is.null(bounds)) {
@@ -198,20 +198,20 @@ filter_bounds <- function(data, bounds = NULL, coord_type = "latlon") {
 }
 
 
-#' Filter by yield range
+#' Filtrer selon la plage de rendement
 #'
 #' Cette fonction filtre les points selon la plage de rendement valide.
 #' Peut utiliser des valeurs explicites ou l'auto-détection basée sur l'écart-type.
 #'
-#' @param data A tibble with yield data
-#' @param min_yield Minimum acceptable yield. If NULL, auto-calculated as mean - n_std * sd
-#' @param max_yield Maximum acceptable yield. If NULL, auto-calculated as mean + n_std * sd
-#' @param yield_column Name of the yield column (default "Yield_buacre")
-#' @param n_std Number of standard deviations for auto-detection (default 3)
-#' @return Filtered tibble within yield range
+#' @param data Tibble avec donnees de rendement
+#' @param min_yield Rendement minimal acceptable. Si NULL, calcule automatiquement.
+#' @param max_yield Rendement maximal acceptable. Si NULL, calcule automatiquement.
+#' @param yield_column Nom de la colonne de rendement (defaut "Yield_buacre")
+#' @param n_std Nombre d'ecarts-types pour auto-detection (defaut 3)
+#' @return Tibble filtre dans la plage de rendement
 #' @noRd
 #' @examples
-#' # Create sample data with yield values
+#' # Creer des donnees d'exemple avec rendements
 #' data <- tibble::tibble(
 #'   Yield_buacre = c(50, 100, 150, 300, 180),
 #'   Flow = c(1.53, 3.7, 7.56, 10.36, 15.48)
@@ -220,10 +220,10 @@ filter_bounds <- function(data, bounds = NULL, coord_type = "latlon") {
 #' # Valeurs explicites
 #' data_filtered <- filter_yield_range(data, min_yield = 50, max_yield = 200)
 #'
-#' # Auto-détection basée sur l'écart-type (mean ± 3*sd)
+#' # Auto-detection basee sur l'ecart-type (moyenne ± 3*ET)
 #' data_filtered <- filter_yield_range(data)
 #'
-#' # Auto-détection avec plage plus large (mean ± 4*sd)
+#' # Auto-detection avec plage plus large (moyenne ± 4*ET)
 #' data_filtered <- filter_yield_range(data, n_std = 4)
 filter_yield_range <- function(data, min_yield = NULL, max_yield = NULL,
                                 yield_column = "Yield_buacre", n_std = 3) {
@@ -254,7 +254,7 @@ filter_yield_range <- function(data, min_yield = NULL, max_yield = NULL,
 
   n_before <- nrow(data)
 
-  # Filter out non-finite values first
+  # Filtrer d'abord les valeurs non finies
   data <- data |>
     dplyr::filter(is.finite(.data[[yield_column]])) |>
     dplyr::filter(.data[[yield_column]] >= min_yield, .data[[yield_column]] <= max_yield)
@@ -272,16 +272,16 @@ filter_yield_range <- function(data, min_yield = NULL, max_yield = NULL,
 }
 
 
-#' Filter by moisture range
+#' Filtrer selon la plage d'humidite
 #'
 #' Cette fonction filtre les points selon la plage d'humidité valide.
 #' Peut utiliser des valeurs explicites ou l'auto-détection basée sur l'écart-type.
 #'
-#' @param data A tibble with yield data
-#' @param min_moisture Minimum acceptable moisture. If NULL, auto-calculated as mean - n_std * sd
-#' @param max_moisture Maximum acceptable moisture. If NULL, auto-calculated as mean + n_std * sd
-#' @param n_std Number of standard deviations for auto-detection (default 3)
-#' @return Filtered tibble within moisture range
+#' @param data Tibble avec donnees de rendement
+#' @param min_moisture Humidite minimale acceptable. Si NULL, calcule automatiquement.
+#' @param max_moisture Humidite maximale acceptable. Si NULL, calcule automatiquement.
+#' @param n_std Nombre d'ecarts-types pour auto-detection (defaut 3)
+#' @return Tibble filtre dans la plage d'humidite
 #' @noRd
 #' @examples
 #' # Valeurs explicites

@@ -1,15 +1,15 @@
-#' Read raw yield data from text file
+#' Lire des donnees de rendement brutes depuis un fichier texte
 #'
-#' Cette fonction lit les données brutes de rendement depuis un fichier
-#' texte formaté selon le standard des fichiers de moissonneuse.
-#' Supporte différents formats de fichiers (15-17 colonnes).
+#' Cette fonction lit les donnees brutes de rendement depuis un fichier
+#' texte formate selon le standard des fichiers de moissonneuse.
+#' Supporte differents formats de fichiers (15-17 colonnes).
 #'
-#' @param file_path Path to the input text file
-#' @param col_names Logical, if TRUE uses standard column names
-#' @return A tibble with the raw data
+#' @param file_path Chemin du fichier texte d'entree
+#' @param col_names Logique, si TRUE utilise les noms de colonnes standard
+#' @return Un tibble avec les donnees brutes
 #' @export
 #' @examples
-#' # Example with sample data (create temp file for demo)
+#' # Exemple avec donnees d'exemple (creation d'un fichier temporaire)
 #' temp_file <- tempfile(pattern = "yield_data", fileext = ".txt")
 #' writeLines(c(
 #'   "-69.856661,47.506122,1.53,1762958157,2,77,240,30.8,33,1,2410019049,F0:1,L0:<1>,Maïs,7,0,61.3",
@@ -19,17 +19,17 @@
 #' data <- read_yield_data(temp_file)
 #' print(data)
 read_yield_data <- function(file_path, col_names = TRUE) {
-  # Vérification du fichier
+  # Verification du fichier
   if (!file.exists(file_path)) {
     rlang::abort(paste("Le fichier n'existe pas:", file_path))
   }
 
-  # Déterminer si le fichier a un en-tête avec ID (format "ID|...")
+  # Determiner si le fichier a un en-tete avec ID (format "ID|...")
   first_line <- readLines(file_path, n = 1)
   has_id_prefix <- grepl("^[0-9]+\\|", first_line)
 
   if (has_id_prefix) {
-    # Format avec préfixe ID et séparateur |
+    # Format avec prefixe ID et separateur |
     data <- readr::read_delim(
       file_path,
       delim = "|",
@@ -38,9 +38,9 @@ read_yield_data <- function(file_path, col_names = TRUE) {
       show_col_types = FALSE
     )
 
-    # Première colonne contient l'ID, la seconde contient le reste
+    # Premiere colonne = ID, seconde = contenu
     if (ncol(data) >= 2 && all(grepl(",", data[[2]]))) {
-      # La deuxième colonne contient les données séparées par des virgules
+      # La deuxieme colonne contient les donnees separees par des virgules
       temp_data <- data |>
         dplyr::mutate(temp = .data[[2]]) |>
         dplyr::select(temp) |>
@@ -51,19 +51,19 @@ read_yield_data <- function(file_path, col_names = TRUE) {
           "LoadID", "GrainType"
         ), sep = ",", fill = "right", extra = "merge")
 
-      # Compter les colonnes créées et détecter le format
+      # Compter les colonnes creees et detecter le format
       n_parsed <- ncol(temp_data)
 
-      # Vérifier si les dernières colonnes sont numériques (Altitude)
-      # et si la colonne avant dernière est un ID (string)
+      # Verifier si les dernieres colonnes sont numeriques (Altitude)
+      # et si l'avant-derniere est un ID (chaine)
       if (n_parsed >= 15) {
-        # Essayer de parser la colonne 15 et 16 comme valeurs potentielles
+        # Essayer de parser les colonnes 15 et 16 comme valeurs potentielles
         col15 <- suppressWarnings(as.numeric(temp_data[[15]]))
         col16 <- suppressWarnings(as.numeric(temp_data[[16]]))
 
         if (!is.na(col16[1])) {
-          # Colonne 16 est numérique = Altitude
-          # Colonne 15 est probablement un ID ou extra ID
+          # Colonne 16 numerique = Altitude
+          # Colonne 15 = ID ou extra ID
           temp_data <- temp_data |>
             dplyr::mutate(
               Extra_ID = .data[[15]],
@@ -71,7 +71,7 @@ read_yield_data <- function(file_path, col_names = TRUE) {
             ) |>
             dplyr::select(-dplyr::any_of(c("15", "16")))
         } else if (!is.na(col15[1])) {
-          # Colonne 15 est numérique = Altitude, pas de colonne 16
+          # Colonne 15 numerique = Altitude, pas de colonne 16
           temp_data <- temp_data |>
             dplyr::mutate(
               Altitude = as.numeric(.data[[15]])
@@ -87,7 +87,7 @@ read_yield_data <- function(file_path, col_names = TRUE) {
       data <- temp_data
     }
   } else {
-    # Format simple avec virgules comme séparateur
+    # Format simple avec virgules comme separateur
     data <- readr::read_delim(
       file_path,
       delim = ",",
@@ -109,12 +109,12 @@ read_yield_data <- function(file_path, col_names = TRUE) {
       )
     } else if (n_cols == 16) {
       # Format avec 16 colonnes - peut avoir Altitude ou pas
-      # Vérifier si la dernière colonne est numérique (Altitude)
+      # Verifier si la derniere colonne est numerique (Altitude)
       col16 <- suppressWarnings(as.numeric(data[[16]]))
 
       if (!is.na(col16[1])) {
-        # Colonne 16 est numérique = Altitude
-        # Colonnes 1-14: standard, colonne 15: Variety, colonne 16: Altitude
+        # Colonne 16 numerique = Altitude
+        # Colonnes 1-14 : standard, 15 : Variety, 16 : Altitude
         colnames(data) <- c(
           "Longitude", "Latitude", "Flow", "GPS_Time",
           "Interval", "Distance", "Swath", "Moisture",
@@ -122,7 +122,7 @@ read_yield_data <- function(file_path, col_names = TRUE) {
           "LoadID", "GrainType", "Variety", "Altitude"
         )
       } else {
-        # Colonne 16 n'est pas numérique, colonne 15 doit être Altitude
+        # Colonne 16 non numerique, colonne 15 doit etre Altitude
         colnames(data) <- c(
           "Longitude", "Latitude", "Flow", "GPS_Time",
           "Interval", "Distance", "Swath", "Moisture",
@@ -133,16 +133,16 @@ read_yield_data <- function(file_path, col_names = TRUE) {
       # Ajouter les colonnes manquantes
       data$DOP <- NA_real_
       data$GPSStatus <- NA_integer_
-      # Convertir Serial en caractère
+      # Convertir Serial en caractere
       data$Serial <- as.character(data$Serial)
     } else if (n_cols == 15) {
-      # Format court (ex: sample3.txt, sample4.txt)
-      # Vérifier si la dernière colonne est numérique et ressemble à une altitude (>1000)
+      # Format court (ex : sample3.txt, sample4.txt)
+      # Verifier si la derniere colonne est numerique et ressemble a une altitude (>100)
       col15 <- suppressWarnings(as.numeric(data[[15]]))
       is_altitude <- !is.na(col15[1]) && abs(col15[1]) > 100
 
       if (is_altitude) {
-        # Colonne 15 est numérique et ressemble à une altitude
+        # Colonne 15 numerique et ressemble a une altitude
         colnames(data) <- c(
           "Longitude", "Latitude", "Flow", "GPS_Time",
           "Interval", "Distance", "Swath", "Moisture",
@@ -150,7 +150,7 @@ read_yield_data <- function(file_path, col_names = TRUE) {
           "LoadID", "GrainType", "Altitude"
         )
       } else {
-        # Colonne 15 n'est pas altitude, c'est probablement un ID
+        # Colonne 15 n'est pas une altitude, probablement un ID
         colnames(data) <- c(
           "Longitude", "Latitude", "Flow", "GPS_Time",
           "Interval", "Distance", "Swath", "Moisture",
@@ -163,7 +163,7 @@ read_yield_data <- function(file_path, col_names = TRUE) {
       data$DOP <- NA_real_
       data$GPSStatus <- NA_integer_
     } else {
-      # Essayer de mapper génériquement
+      # Essayer de mapper generiquement
       std_names <- c(
         "Longitude", "Latitude", "Flow", "GPS_Time",
         "Interval", "Distance", "Swath", "Moisture",
@@ -182,7 +182,7 @@ read_yield_data <- function(file_path, col_names = TRUE) {
     }
   }
 
-  # Conversion des types - simple approach for compatibility
+  # Conversion des types - approche simple pour compatibilite
   num_cols <- c("Longitude", "Latitude", "Flow", "Moisture", "DOP", "Altitude")
   int_cols <- c("GPS_Time", "Interval", "Distance", "Swath", "HeaderStatus", "Pass", "Serial", "GPSStatus")
   char_cols <- c("FieldID", "LoadID", "GrainType")
@@ -208,12 +208,12 @@ read_yield_data <- function(file_path, col_names = TRUE) {
 }
 
 
-#' Parse yield data column names
+#' Parser les noms de colonnes des donnees de rendement
 #'
 #' Traduit les noms de colonnes du format standard vers des noms descriptifs.
 #'
-#' @param data A tibble with yield data
-#' @return Data with standardized column names
+#' @param data Tibble avec donnees de rendement
+#' @return Donnees avec noms de colonnes standardises
 #' @noRd
 parse_column_names <- function(data) {
   # Mapping des colonnes standards

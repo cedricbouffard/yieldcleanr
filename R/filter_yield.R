@@ -1,23 +1,23 @@
-#' Apply flow delay correction
+#' Appliquer la correction de delai de flux
 #'
 #' Cette fonction compense le délai entre le moment où le grain passe
 #' sous le capteur de flux et le moment où la position GPS est enregistrée.
 #' Le flux de grain est décalé dans le temps pour correspondre à la position.
 #'
-#' @param data A tibble with yield data
-#' @param delay Number of observations to shift (positive = forward in time)
-#' @param direction Direction of shift: "forward" or "backward"
-#' @return Tibble with corrected flow values
+#' @param data Tibble avec donnees de rendement
+#' @param delay Nombre d'observations a decaler (positif = vers l'avant)
+#' @param direction Direction du decalage : "forward" ou "backward"
+#' @return Tibble avec valeurs de flux corrigees
 #' @noRd
 #' @examples
-#' # Create sample data
+#' # Creer des donnees d'exemple
 #' data <- tibble::tibble(
 #'   Flow = c(1.5, 2.5, 3.5, 4.5, 5.5, 6.5, 7.5),
 #'   Longitude = 1:7,
 #'   Latitude = 1:7
 #' )
 #'
-#' # Apply flow delay correction
+#' # Appliquer la correction de delai de flux
 #' data_corrected <- apply_flow_delay(data, delay = 1)
 #' print(data_corrected)
 apply_flow_delay <- function(data, delay = 2, direction = "forward") {
@@ -34,31 +34,31 @@ apply_flow_delay <- function(data, delay = 2, direction = "forward") {
 
   if (delay >= 0) {
     if (direction == "forward") {
-      # Positive delay: Flow was measured AFTER the position
-      # Need to move Flow values BACKWARD to match earlier GPS position
-      # Use lead() to shift values backward in the dataset
+      # Delai positif : flux mesure APRES la position
+      # Deplacer le flux vers l'arriere pour aligner la position
+      # Utiliser lead() pour decaler dans le jeu de donnees
       data <- data |>
         dplyr::mutate(
           Flow = dplyr::lead(Flow, n = delay, default = NA_real_)
         )
     } else {
-      # Décaler le flux vers l'arrière (positive delay in backward direction)
+      # Decaler le flux vers l'arriere (delai positif en backward)
       data <- data |>
         dplyr::mutate(
           Flow = dplyr::lag(Flow, n = delay, default = NA_real_)
         )
     }
   } else {
-    # Negative delay means Flow was measured BEFORE position
+    # Delai negatif : flux mesure AVANT la position
     abs_delay <- abs(delay)
     if (direction == "forward") {
-      # Negative delay: shift Flow forward
+      # Delai negatif : decaler le flux vers l'avant
       data <- data |>
         dplyr::mutate(
           Flow = dplyr::lag(Flow, n = abs_delay, default = NA_real_)
         )
     } else {
-      # Negative delay in backward direction = shift forward
+      # Delai negatif en backward = decaler vers l'avant
       data <- data |>
         dplyr::mutate(
           Flow = dplyr::lag(Flow, n = abs_delay, default = NA_real_)
@@ -66,7 +66,7 @@ apply_flow_delay <- function(data, delay = 2, direction = "forward") {
     }
   }
 
-  # Compter les NA créés
+  # Compter les NA crees
   n_na <- sum(is.na(data$Flow))
   data <- data |> dplyr::filter(!is.na(Flow))
 
@@ -79,14 +79,14 @@ apply_flow_delay <- function(data, delay = 2, direction = "forward") {
 }
 
 
-#' Apply moisture delay correction
+#' Appliquer la correction de delai d'humidite
 #'
 #' Cette fonction compense le délai entre la mesure d'humidité et la position GPS.
 #'
-#' @param data A tibble with yield data
-#' @param delay Number of observations to shift
-#' @param direction Direction of shift
-#' @return Tibble with corrected moisture values
+#' @param data Tibble avec donnees de rendement
+#' @param delay Nombre d'observations a decaler
+#' @param direction Direction du decalage
+#' @return Tibble avec valeurs d'humidite corrigees
 #' @noRd
 apply_moisture_delay <- function(data, delay = 15, direction = "forward") {
   n_before <- nrow(data)
@@ -124,19 +124,19 @@ apply_moisture_delay <- function(data, delay = 15, direction = "forward") {
 }
 
 
-#' Calculate auto ranges for filtering
+#' Calculer les plages automatiques pour le filtrage
 #'
 #' Cette fonction calcule automatiquement les plages de valeurs valides
 #' basées sur les distributions de Yield, Coordinates et Velocity.
 #'
-#' @param data A tibble with yield data
-#' @param yield_quantiles Quantiles for yield range (c(low, high))
-#' @param coord_quantiles Quantiles for coordinate range
-#' @param velocity_quantiles Quantiles for velocity range
-#' @return List with calculated ranges
+#' @param data Tibble avec donnees de rendement
+#' @param yield_quantiles Quantiles pour la plage de rendement (c(bas, haut))
+#' @param coord_quantiles Quantiles pour la plage de coordonnees
+#' @param velocity_quantiles Quantiles pour la plage de vitesse
+#' @return Liste avec plages calculees
 #' @noRd
 #' @examples
-#' # Create sample data
+#' # Creer des donnees d'exemple
 #' data <- tibble::tibble(
 #'   Flow = c(10, 50, 100, 150, 200, 250, 300, 350, 400, 450),
 #'   X = c(435000, 435010, 435020, 435030, 435040,
@@ -147,7 +147,7 @@ apply_moisture_delay <- function(data, delay = 15, direction = "forward") {
 #'   Interval = c(2L, 2L, 2L, 2L, 2L, 2L, 2L, 2L, 2L, 2L)
 #' )
 #'
-#' # Calculate auto ranges
+#' # Calculer les plages automatiques
 #' ranges <- calculate_auto_ranges(data)
 #' print(ranges)
 calculate_auto_ranges <- function(data,
@@ -157,7 +157,7 @@ calculate_auto_ranges <- function(data,
 
   ranges <- list()
 
-  # Yield range
+  # Plage de rendement
   if ("Flow" %in% names(data)) {
     ranges$yield <- c(
       min = quantile(data$Flow, yield_quantiles[1], na.rm = TRUE),
@@ -169,7 +169,7 @@ calculate_auto_ranges <- function(data,
     ))
   }
 
-  # Coordinate ranges (if UTM coordinates exist)
+  # Plages de coordonnees (si UTM disponible)
   if ("X" %in% names(data) && "Y" %in% names(data)) {
     ranges$easting <- c(
       min = quantile(data$X, coord_quantiles[1], na.rm = TRUE),
@@ -187,7 +187,7 @@ calculate_auto_ranges <- function(data,
     ))
   }
 
-  # Velocity range
+  # Plage de vitesse
   if ("Distance" %in% names(data) && "Interval" %in% names(data)) {
     data_temp <- data |>
       dplyr::mutate(velocity = Distance / Interval)

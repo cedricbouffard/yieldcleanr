@@ -20,9 +20,13 @@ Le package **yieldcleanr** propose plusieurs filtres pour nettoyer les données 
 
 # Filtres de Base
 
-## Filter Header Status (`filter_header_status`)
+## Filtre Header Status (`filter_header_status`)
 
 Ce filtre garde uniquement les points où la moissonneuse est en position de travail active.
+
+Il permet d'exclure les manoeuvres, les demi-tours et les phases où la coupe est relevee.
+Dans la pratique, c'est souvent le premier filtre a appliquer pour eviter d'introduire
+des rendements nuls ou aberrants dans les calculs.
 
 **HeaderStatus :**
 - **1** = Harvesting actif
@@ -52,13 +56,16 @@ cat("Après filtrage:", nrow(data_filtered), "lignes\n")
 
 ---
 
-## Filter GPS Status (`filter_gps_status`)
+## Filtre GPS Status (`filter_gps_status`)
 
 Élimine les points avec un signal GPS de mauvaise qualité.
 
-**GPSStatus typical values :**
-- 4-7 = Good signal
-- 1-3 = Poor signal
+Un signal GPS degrade provoque des sauts de position qui faussent la vitesse et
+les polygones. Ce filtre stabilise la trajectoire en excluant les relevés les moins fiables.
+
+**Valeurs GPSStatus courantes :**
+- 4-7 = Bon signal
+- 1-3 = Signal faible
 
 ```{r, eval=TRUE}
 # Créer des données de test avec GPSStatus variable (8 premiers points)
@@ -78,9 +85,12 @@ cat("GPSStatus après:", paste(data_gps$GPSStatus, collapse = ", "), "\n")
 
 ---
 
-## Filter DOP (`filter_dop`)
+## Filtre DOP (`filter_dop`)
 
 Élimine les points avec une mauvaise précision GPS (Dilution of Precision).
+
+Le DOP mesure la geometrie des satellites : plus il est eleve, plus la position est incertaine.
+En limitant le DOP, on reduit les points isoles qui degradent les cartes de rendement.
 
 Un DOP élevé (> 10) indique une mauvaise géométrie satellite et donc une position imprécise.
 
@@ -100,11 +110,15 @@ cat("Après filtrage (DOP <= 10):", nrow(data_dop), "lignes\n")
 
 ---
 
-## Filter Velocity (`filter_velocity`)
+## Filtre Vitesse (`filter_velocity`)
 
 Filtre les points selon la vitesse de déplacement de la moissonneuse.
 
-**Typical velocity range :** 0.5 - 10 m/s
+Les vitesses tres faibles correspondent souvent a des arrets ou des debuts de passage.
+Les vitesses tres elevees signalent des erreurs GPS ou des points mal synchronises.
+Adapter la plage de vitesse au type de culture et a la vitesse de travail reelle.
+
+**Plage de vitesse typique :** 0.5 - 10 m/s
 
 Les vitesses trop faibles (< 0.5 m/s) indiquent souvent un arrêt.
 Les vitesses excessives (> 10 m/s) peuvent indiquer des erreurs GPS.
@@ -125,9 +139,12 @@ cat("Points conservés après filtre vélocité:", nrow(data_vel), "\n")
 
 ---
 
-## Filter Bounds (`filter_bounds`)
+## Filtre des Limites (`filter_bounds`)
 
 Élimine les points qui sont à l'extérieur des limites géographiques du champ.
+
+Ce filtre s'appuie sur des bornes definies a partir du contour du champ ou des quantiles
+de position. Il est efficace pour retirer les points collectes hors parcelle.
 
 Utile pour éliminer les "flyers" GPS ou les données collectées avant/après la récolte.
 
@@ -148,11 +165,14 @@ cat("Points dans les limites du champ:", nrow(data_bounds), "\n")
 
 ---
 
-## Filter Yield Range (`filter_yield_range`)
+## Filtre de Plage de Rendement (`filter_yield_range`)
 
 Élimine les points avec des rendements hors plage.
 
-**Typical yield ranges :**
+Le filtrage de plage supprime les valeurs physiquement impossibles ou incoherentes.
+Il peut etre regle manuellement par culture ou automatiquement via l'ecart-type.
+
+**Plages de rendement typiques :**
 - Maïs : 50 - 350 bu/acre
 - Soja : 15 - 80 bu/acre
 
@@ -174,11 +194,14 @@ cat("Rendement moyen:", round(mean(data_yield_filtered$Yield_buacre, na.rm = TRU
 
 ---
 
-## Filter Moisture Range (`filter_moisture_range`)
+## Filtre de Plage d'Humidite (`filter_moisture_range`)
 
 Filtre les points selon le taux d'humidité du grain.
 
-**Typical moisture ranges :**
+L'humidite peut deriver en fin de journee ou lors des changements de variete.
+Ce filtre supprime les extremes qui perturbent les conversions et les seuils de rendement.
+
+**Plages d'humidite typiques :**
 - Maïs : 10 - 40%
 - Soja : 8 - 20%
 
@@ -201,9 +224,13 @@ cat("Après filtrage (10-40%):", nrow(data_moisture), "lignes\n")
 
 # Filtres Avancés
 
-## Remove Overlap (`remove_overlap`)
+## Suppression du Chevauchement (`remove_overlap`)
 
 Élimine les points de chevauchement en utilisant une grille spatiale.
+
+Lorsque plusieurs passages se recouvrent, certaines zones sont sur-echantillonnees.
+Le filtre de chevauchement retire les cellules trop denses pour mieux representer
+la couverture reelle de la recolte.
 
 Les zones de chevauchement (passes successives sur la même zone) sont identifiées et les points en excès sont éliminés.
 
@@ -222,9 +249,12 @@ cat("Points après suppression overlap:", nrow(data_overlap), "\n")
 
 ---
 
-## Filter Local STD (`filter_local_std`)
+## Filtre ET Local (`filter_local_std`)
 
 Élimine les points aberrants en utilisant un voisinage de passages adjacents.
+
+Ce filtre compare chaque point a la moyenne locale de son passage.
+Il est utile pour enlever les pics ponctuels tout en preservant les variations reelles.
 
 Les points dont le rendement s'écarte de plus de `std_limit` écarts-types de la moyenne locale sont éliminés.
 
@@ -249,9 +279,12 @@ print(data_std |> select(.row_id, Flow))
 
 ---
 
-## Filter Sliding Window (`filter_sliding_window`)
+## Filtre Fenetre Glissante (`filter_sliding_window`)
 
 Applique un filtre à fenêtre glissante pour éliminer les valeurs aberrantes basées sur les voisins temporels.
+
+Il agit comme un lissage temporel : les valeurs trop eloignees de la tendance locale
+sont retirees. Utile lorsque les anomalies sont courtes mais frequentes.
 
 ```{r, eval=FALSE, warning=FALSE}
 # Créer des données de test
@@ -269,9 +302,12 @@ data_sliding <- filter_sliding_window(data_test, window_size = 5, n_std = 2)
 
 # Filtres de Correction de Position
 
-## Apply Position Filter (`apply_position_filter`)
+## Filtre de Position (`apply_position_filter`)
 
 Élimine les "flyers" GPS en utilisant une enveloppe inter-quantile.
+
+Ce filtre construit une enveloppe spatiale et elimine les points tres eloignes.
+Il est souvent applique apres la conversion UTM pour stabiliser la geometrie.
 
 ```{r, eval=TRUE}
 # Calculer les seuils automatiques
@@ -291,9 +327,12 @@ cat("\nPoints après filtre position:", nrow(data_pos), "\n")
 
 # Filtres de Correction de Délai
 
-## Apply Flow Delay (`apply_flow_delay`)
+## Correction du Delai de Flux (`apply_flow_delay`)
 
 Compense le délai entre le capteur de flux et la position GPS.
+
+Un delai incorrect decale la position des rendements et produit des bandes obliques.
+Ce correctif aligne le flux et la position afin d'ameliorer la coherence spatiale.
 
 Le flux de grain est décalé temporellement pour correspondre à la position.
 
@@ -313,9 +352,12 @@ cat("Après correction délai (2s):", nrow(data_delay), "lignes\n")
 
 ---
 
-## Apply Moisture Delay (`apply_moisture_delay`)
+## Correction du Delai d'Humidite (`apply_moisture_delay`)
 
 Compense le délai entre la mesure d'humidité et la position GPS.
+
+L'humidite est souvent mesuree avec un decalage plus long que le flux.
+Cette correction aligne les courbes d'humidite avec la position pour des analyses fiables.
 
 ```{r, eval=FALSE}
 # Appliquer une correction de délai de 15 observations
@@ -326,9 +368,12 @@ data_moist <- apply_moisture_delay(data_test, delay = 15)
 
 # Filtres AYCE Spécialisés
 
-## Bitmap Overlap Filter (`apply_overlap_filter`)
+## Filtre de Chevauchement Bitmap (`apply_overlap_filter`)
 
 Implémente la méthode rasterisée de Han et al. (1997) pour détecter et éliminer les zones de chevauchement.
+
+Ce filtre calcule un ratio de chevauchement pour chaque point et elimine les zones
+recoltees plusieurs fois. Il est plus fin que `remove_overlap` sur des donnees denses.
 
 Ce filtre est plus sophistiqué que `remove_overlap` car il calcule le ratio de chevauchement pour chaque point.
 
@@ -341,9 +386,12 @@ cat("Points après filtre overlap bitmap:", nrow(data_bitmap), "\n")
 
 ---
 
-## Localized SD Filter (`apply_local_sd_filter`)
+## Filtre ET Localise (`apply_local_sd_filter`)
 
 Crée une grille spatiale et élimine les points aberrants basés sur l'écart-type local.
+
+La methode s'appuie sur une grille fixe plutot que sur les passages, ce qui la rend
+plus robuste lorsque les passages sont mal identifies ou tres irreguliers.
 
 Plus sophistiqué que `filter_local_std` car il utilise une grille spatiale plutôt que des passages.
 

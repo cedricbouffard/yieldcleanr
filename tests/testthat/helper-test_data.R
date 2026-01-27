@@ -1,5 +1,5 @@
-# Test data for yieldcleanr package
-# This file is auto-generated and should not be edited manually
+# Donnees de test pour le package yieldcleanr
+# Ce fichier est auto-genere et ne doit pas etre modifie manuellement
 
 yield_test_data <- structure(list(
   ID = c("00001", "00002", "00003", "00004", "00005"),
@@ -23,7 +23,7 @@ yield_test_data <- structure(list(
   .row_id = 1:5
 ), class = c("tbl_df", "tbl", "data.frame"), row.names = c(NA, -5L))
 
-# Test data with mixed header status (1 = harvesting active, 33 = header down, 0 = header up)
+# Donnees de test avec header mixte (1 = actif, 33 = header bas, 0 = header haut)
 yield_test_data_header_mixed <- structure(list(
   ID = c("00001", "00002", "00003", "00004", "00005"),
   Longitude = c(-69.856661, -69.856681, -69.856701, -69.856726, -69.856749),
@@ -46,7 +46,7 @@ yield_test_data_header_mixed <- structure(list(
   .row_id = 1:5
 ), class = c("tbl_df", "tbl", "data.frame"), row.names = c(NA, -5L))
 
-# Test data with outliers
+# Donnees de test avec outliers
 yield_test_data_outliers <- structure(list(
   ID = c("00001", "00002", "00003", "00004", "00005"),
   Longitude = c(-69.856661, -69.856681, -69.856701, -69.856726, -69.856749),
@@ -69,7 +69,7 @@ yield_test_data_outliers <- structure(list(
   .row_id = 1:5
 ), class = c("tbl_df", "tbl", "data.frame"), row.names = c(NA, -5L))
 
-# Test data for overlap filter
+# Donnees de test pour le filtre de chevauchement
 yield_test_data_overlap <- structure(list(
   ID = c("00001", "00002", "00003", "00004", "00005"),
   Longitude = c(-69.856661, -69.856681, -69.856701, -69.856726, -69.856749),

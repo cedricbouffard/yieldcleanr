@@ -1,14 +1,14 @@
-#' AYCE: Auto Yield Cleaning Engine (Imperial Output)
+#' AYCE : Auto Yield Cleaning Engine (sortie imperiale)
 #'
-#' Système expert automatisé pour le nettoyage des données de rendement
-#' sans intervention humaine, basé sur les méthodes USDA Yield Editor.
-#' Cette fonction retourne un tibble avec les unités impériales (bu/acre).
+#' Systeme expert automatise pour le nettoyage des donnees de rendement
+#' sans intervention humaine, base sur les methodes USDA Yield Editor.
+#' Cette fonction retourne un tibble en unites imperiales (bu/acre).
 #'
-#' @param file_path Path to input file (txt format)
-#' @param output_file Path to output CSV file
-#' @param log_file Path to output log file
-#' @param params List of AYCE parameters
-#' @return Cleaned tibble with imperial units
+#' @param file_path Chemin du fichier d'entree (txt)
+#' @param output_file Chemin du fichier CSV de sortie
+#' @param log_file Chemin du journal de sortie
+#' @param params Liste des parametres AYCE
+#' @return Tibble nettoye en unites imperiales
 #' @noRd
 #' @examples
 #' \dontrun{
@@ -25,13 +25,13 @@ ayce_clean <- function(file_path, output_file = NULL, log_file = NULL,
 }
 
 
-#' Quick AYCE cleaning with defaults
+#' Nettoyage AYCE rapide avec valeurs par defaut
 #'
-#' Wrapper for ayce_clean with minimal parameters.
+#' Enveloppe de ayce_clean avec un minimum de parametres.
 #'
-#' @param file_path Path to input file
-#' @param output_file Path to output file
-#' @return Cleaned tibble
+#' @param file_path Chemin du fichier d'entree
+#' @param output_file Chemin du fichier de sortie
+#' @return Tibble nettoye
 #' @noRd
 quick_ayce <- function(file_path, output_file = NULL) {
   ayce_clean(file_path = file_path, output_file = output_file)

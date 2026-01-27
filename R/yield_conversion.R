@@ -1,38 +1,38 @@
-#' Convert grain flow to yield in bushels per acre
+#' Convertir le flux de grain en rendement (boisseaux/acre)
 #'
-#' Converts raw grain flow (LBS/SEC) to yield (Bushels/acre)
-#' using the formula:
-#' Yield (bu/acre) = (Flow × Interval × 43560) / (lbs_per_bushel × Swath_ft × Distance_ft)
+#' Convertit le flux brut (LBS/SEC) en rendement (boisseaux/acre)
+#' avec la formule :
+#' Rendement (bu/acre) = (Flow × Interval × 43560) / (lbs_per_bushel × Swath_ft × Distance_ft)
 #'
-#' Where:
-#'   - Flow = grain flow in lbs/sec
-#'   - Interval = time interval in seconds
-#'   - Swath_ft = swath width in feet (Swath_in / 12)
-#'   - Distance_ft = distance traveled during interval in feet (Distance_in / 12)
-#'   - 43560 = sq ft per acre
-#'   - lbs_per_bushel = lbs per bushel (varies by grain type)
+#' Ou :
+#'   - Flow = flux de grain en lbs/sec
+#'   - Interval = intervalle de temps en secondes
+#'   - Swath_ft = largeur de coupe en pieds (Swath_in / 12)
+#'   - Distance_ft = distance parcourue en pieds (Distance_in / 12)
+#'   - 43560 = pieds^2 par acre
+#'   - lbs_per_bushel = lbs par boisseau (selon la culture)
 #'
-#' Standard conversion factors:
-#'   - Corn (maïs): 56 lbs/bu @ 15.5% moisture
-#'   - Soybeans (soja): 60 lbs/bu @ 13% moisture
-#'   - Wheat/cereals: 60 lbs/bu
+#' Facteurs de conversion standard :
+#'   - Mais : 56 lbs/bu a 15.5% humidite
+#'   - Soja : 60 lbs/bu a 13% humidite
+#'   - Ble/cereales : 60 lbs/bu
 #'
-#' @param data Tibble with Flow, Interval, Swath, Distance columns
-#' @param lbs_per_bushel LBS per bushel. If NULL, auto-detect from GrainType column.
-#'   Default 56 for corn. Use 60 for soybeans and cereals.
-#' @param sqft_per_acre Square feet per acre (default 43560)
-#' @param inches_per_foot Inches per foot (default 12)
-#' @return Data with Yield_buacre column added
+#' @param data Tibble avec Flow, Interval, Swath, Distance
+#' @param lbs_per_bushel LBS par boisseau. Si NULL, auto-detection via GrainType.
+#'   Defaut 56 pour le mais. Utiliser 60 pour soja et cereales.
+#' @param sqft_per_acre Pieds carres par acre (defaut 43560)
+#' @param inches_per_foot Pouces par pied (defaut 12)
+#' @return Donnees avec colonne Yield_buacre
 #' @noRd
 #' @examples
 #' \dontrun{
-#' # Auto-detect from grain type
+#' # Auto-detection selon la culture
 #' data <- convert_flow_to_yield(data)
 #'
-#' # Explicit for corn
+#' # Explicite pour le mais
 #' data <- convert_flow_to_yield(data, lbs_per_bushel = 56)
 #'
-#' # For soybeans/cereals
+#' # Pour soja/cereales
 #' data <- convert_flow_to_yield(data, lbs_per_bushel = 60)
 #' }
 convert_flow_to_yield <- function(data, lbs_per_bushel = NULL,
@@ -44,17 +44,17 @@ convert_flow_to_yield <- function(data, lbs_per_bushel = NULL,
     return(data)
   }
 
-  # Auto-detect lbs_per_bushel from GrainType if not specified
+  # Auto-detecter lbs_per_bushel via GrainType si absent
   if (is.null(lbs_per_bushel)) {
     lbs_per_bushel <- get_lbs_per_bushel(data)
   }
 
-  # Calculate Width_ft and Distance_ft
-  # Swath_ft = Swath / 12 (convert inches to feet)
-  # Distance_ft = Distance / 12 (convert inches to feet)
-  # Distance is the distance traveled during the Interval
+  # Calculer Width_ft et Distance_ft
+  # Swath_ft = Swath / 12 (pouces -> pieds)
+  # Distance_ft = Distance / 12 (pouces -> pieds)
+  # Distance est la distance parcourue durant l'intervalle
 
-  # Filter out rows with zero values (would cause division by zero or Inf)
+  # Retirer les lignes avec zeros (division par zero ou Inf)
   data <- data |>
     dplyr::filter(.data$Distance > 0, .data$Swath > 0, .data$Flow > 0)
 
@@ -62,16 +62,16 @@ convert_flow_to_yield <- function(data, lbs_per_bushel = NULL,
     dplyr::mutate(
       Width_ft = .data$Swath / inches_per_foot,
       Distance_ft = .data$Distance / inches_per_foot,
-      # Yield = (Flow × Interval × 43560) / (lbs_per_bushel × Width_ft × Distance_ft)
+      # Rendement = (Flow × Interval × 43560) / (lbs_per_bushel × Width_ft × Distance_ft)
       Yield_buacre = (.data$Flow * .data$Interval * sqft_per_acre) /
                      (lbs_per_bushel * .data$Width_ft * .data$Distance_ft)
     )
 
-  # Remove temporary columns
+  # Supprimer les colonnes temporaires
   data <- data |>
     dplyr::select(-Width_ft, -Distance_ft)
 
-  # Calculate mean excluding Inf values
+  # Calculer la moyenne en excluant les Inf
   finite_yield <- data$Yield_buacre[is.finite(data$Yield_buacre)]
   mean_yield <- if (length(finite_yield) > 0) mean(finite_yield, na.rm = TRUE) else NA
 
@@ -82,15 +82,15 @@ convert_flow_to_yield <- function(data, lbs_per_bushel = NULL,
 }
 
 
-#' Get lbs per bushel from grain type
+#' Obtenir les lbs par boisseau selon la culture
 #'
-#' Returns the standard conversion factor based on grain type.
+#' Retourne le facteur standard selon la culture.
 #'
-#' @param data Tibble with GrainType or Grain_Type column
-#' @return LBS per bushel (56 for corn, 60 for soybeans/cereals)
+#' @param data Tibble avec GrainType ou Grain_Type
+#' @return LBS par boisseau (56 pour mais, 60 pour soja/cereales)
 #' @noRd
 get_lbs_per_bushel <- function(data) {
-  # Check for GrainType or Grain_Type column
+  # Verifier la colonne GrainType ou Grain_Type
   grain_col <- if ("GrainType" %in% names(data)) {
     "GrainType"
   } else if ("Grain_Type" %in% names(data)) {
@@ -102,34 +102,34 @@ get_lbs_per_bushel <- function(data) {
   if (!is.null(grain_col)) {
     grain <- tolower(unique(data[[grain_col]]))
 
-    # Check for soybeans/soja
+    # Detecter le soja
     if (any(grepl("soja|soy", grain))) {
       return(60)
     }
 
-    # Check for wheat/cereals
+    # Detecter ble/cereales
     if (any(grepl("blé|wheat|wheat|cereal|avoine|barley|orge", grain))) {
       return(60)
     }
 
-    # Default to corn (56 lbs/bu)
+    # Defaut : mais (56 lbs/bu)
     rlang::inform(paste("GrainType non reconnu, utilisation 56 lbs/boisseau (maïs par défaut)"))
     return(56)
   }
 
-  # Default if no GrainType column
+  # Defaut si pas de GrainType
   rlang::inform("Pas de colonne GrainType, utilisation 56 lbs/boisseau (maïs par défaut)")
   return(56)
 }
 
 
-#' Alternative: Convert with simplified formula
+#' Alternative : conversion avec formule simplifiee
 #'
-#' Yield = Flow × 9335 / (Swath × Velocity)
-#' This simplifies the formula when using velocity directly.
+#' Rendement = Flow × 9335 / (Swath × Vitesse)
+#' Formule simplifiee quand on utilise la vitesse directement.
 #'
-#' @param data Tibble with Flow, Swath, Velocity_ft_s columns
-#' @return Data with Yield_buacre column added
+#' @param data Tibble avec Flow, Swath, Velocity_ft_s
+#' @return Donnees avec colonne Yield_buacre
 #' @noRd
 convert_flow_simple <- function(data) {
   if (!all(c("Flow", "Swath", "Distance") %in% names(data))) {
@@ -137,7 +137,7 @@ convert_flow_simple <- function(data) {
     return(data)
   }
 
-  # Using Distance (inches) and Interval (seconds) to get velocity
+  # Utiliser Distance (pouces) et Interval (secondes) pour la vitesse
   data <- data |>
     dplyr::mutate(
       Velocity_ft_s = .data$Distance / .data$Interval / 12,  # ft/s
@@ -148,15 +148,15 @@ convert_flow_simple <- function(data) {
 }
 
 
-#' Run AYCE with proper yield conversion
+#' Executer AYCE avec conversion correcte du rendement
 #'
-#' Complete AYCE pipeline that outputs yield in bushels/acre.
+#' Pipeline AYCE complet qui retourne le rendement en boisseaux/acre.
 #'
-#' @param file_path Path to input file
-#' @param output_file Path to output CSV
-#' @param log_file Path to log file
-#' @param params AYCE parameters
-#' @return Cleaned data with yield in bushels/acre
+#' @param file_path Chemin du fichier d'entree
+#' @param output_file Chemin du CSV de sortie
+#' @param log_file Chemin du journal
+#' @param params Parametres AYCE
+#' @return Donnees nettoyees avec rendement en boisseaux/acre
 #' @noRd
 #' @examples
 #' \dontrun{
@@ -170,7 +170,7 @@ ayce_with_yield_conversion <- function(file_path, output_file = NULL,
   rlang::inform("   (LBS/SEC → Bushels/acre)                   ")
   rlang::inform("================================================")
 
-  # Default parameters
+  # Parametres par defaut
   default_params <- list(
     delay_range = 0:20,
     n_iterations = 10,
@@ -179,40 +179,40 @@ ayce_with_yield_conversion <- function(file_path, output_file = NULL,
     v_scale = 1.5,
     minv_abs = 0.5,
     miny_abs = 0,
-    cellsize_overlap = 0.3,       # 30cm cellsize (USDA standard)
-    overlap_threshold = 0.5,      # 50% max overlap
+    cellsize_overlap = 0.3,       # Cellule 30cm (standard USDA)
+    overlap_threshold = 0.5,      # 50% max chevauchement
     n_swaths = 5,
     lsd_limit = 3,
-    lbs_per_bushel = 56,          # Corn
-    n_std = 3                     # Number of std devs for auto-range detection
+    lbs_per_bushel = 56,          # Mais
+    n_std = 3                     # Nombre d'ET pour auto-detection
   )
 
   params <- modifyList(default_params, params %||% list())
 
-  # Step 1: Read data
+  # Etape 1 : lecture des donnees
   rlang::inform("Step 1: Loading data...")
   data <- read_yield_data(file_path)
   data_raw <- data
   rlang::inform(paste("  -", nrow(data), "rows loaded"))
   rlang::inform(paste("  Flow range:", min(data$Flow), "-", max(data$Flow), "LBS/sec"))
 
-  # Step 2: UTM conversion
+  # Etape 2 : conversion UTM
   rlang::inform("Step 2: Converting to UTM...")
   data <- latlon_to_utm(data)
 
-  # Step 3: Calculate velocity
+  # Etape 3 : calcul de la vitesse
   rlang::inform("Step 3: Calculating velocity...")
   data <- data |>
     dplyr::mutate(
       velocity = sqrt((X - dplyr::lag(X))^2 + (Y - dplyr::lag(Y))^2) / Interval
     )
 
-  # Step 4: PCDI
+  # Etape 4 : PCDI
   rlang::inform("Step 4: PCDI - Flow Delay Optimization...")
   pcdi_result <- apply_pcdi(data, params$delay_range, params$n_iterations, params$noise_level)
   rlang::inform(paste("  Optimal delay:", pcdi_result$optimal_delay, "seconds"))
 
-  # Step 5: Auto thresholds
+  # Etape 5 : seuils automatiques
   rlang::inform("Step 5: Calculating auto thresholds...")
   thresholds <- calculate_auto_thresholds(
     data,
@@ -223,46 +223,46 @@ ayce_with_yield_conversion <- function(file_path, output_file = NULL,
   )
   rlang::inform(paste("  Yield range:", round(thresholds$min_yield, 1), "-", round(thresholds$max_yield, 1)))
 
-  # Step 6: Velocity filter
+  # Etape 6 : filtre vitesse
   rlang::inform("Step 6: Velocity filter...")
   data <- filter_velocity(data, thresholds$min_velocity, thresholds$max_velocity)
   rlang::inform(paste("  Rows:", nrow(data)))
 
-  # Step 7: Flow delay correction
+  # Etape 7 : correction du delai de flux
   if (pcdi_result$optimal_delay > 0) {
     rlang::inform(paste("Step 7: Flow delay correction (", pcdi_result$optimal_delay, "s)..."))
     data <- apply_flow_delay(data, delay = pcdi_result$optimal_delay)
     rlang::inform(paste("  Rows:", nrow(data)))
   }
 
-  # Step 8: Yield range filter
+  # Etape 8 : filtre plage de rendement
   rlang::inform("Step 8: Yield range filter...")
   data <- filter_yield_range(data, thresholds$min_yield, thresholds$max_yield)
   rlang::inform(paste("  Rows:", nrow(data)))
 
-  # Step 9: Moisture filter (auto-detection based on std dev)
+  # Etape 9 : filtre humidite (auto-detection par ET)
   rlang::inform("Step 9: Moisture filter...")
   data <- filter_moisture_range(data, n_std = params$n_std)
   rlang::inform(paste("  Rows:", nrow(data)))
 
-  # Step 10: Overlap filter
+  # Etape 10 : filtre de chevauchement
   rlang::inform("Step 10: Overlap filter...")
   data <- apply_overlap_filter(data, params$cellsize_overlap, params$overlap_threshold)
   rlang::inform(paste("  Rows:", nrow(data)))
 
-  # Step 11: Local SD filter
+  # Etape 11 : filtre ecart-type local
   rlang::inform("Step 11: Local SD filter...")
   data <- apply_local_sd_filter(data, params$n_swaths, params$lsd_limit)
   rlang::inform(paste("  Rows:", nrow(data)))
 
-  # Step 12: Convert to yield (bushels/acre)
+  # Etape 12 : conversion en boisseaux/acre
   rlang::inform("Step 12: Converting to Bushels/acre...")
   data <- convert_flow_to_yield(data, lbs_per_bushel = params$lbs_per_bushel)
 
   rlang::inform(paste("  Flow range:", round(min(data$Flow), 1), "-", round(max(data$Flow), 1), "bu/acre"))
   rlang::inform(paste("  Flow mean:", round(mean(data$Flow), 1), "bu/acre"))
 
-  # Step 13: Format output
+  # Etape 13 : formatage de la sortie
   rlang::inform("Step 13: Formatting output...")
   output_cols <- c("X", "Y", "Latitude", "Longitude", "Flow", "Moisture",
                    "Swath", "Pass", "GPS_Time", "HeaderStatus", "Altitude", "velocity")
@@ -275,13 +275,13 @@ ayce_with_yield_conversion <- function(file_path, output_file = NULL,
     ) |>
     dplyr::arrange(GPS_Time)
 
-  # Step 14: Export
+  # Etape 14 : export
   if (!is.null(output_file)) {
     rlang::inform("Step 14: Exporting...")
     export_cleaned_data(data_output, output_file, format = "csv")
   }
 
-  # Step 15: Log
+  # Etape 15 : journal
   if (!is.null(log_file)) {
     rlang::inform("Step 15: Generating log...")
     generate_yield_log(data_output, data_raw, params, pcdi_result, thresholds, log_file)
@@ -297,7 +297,7 @@ ayce_with_yield_conversion <- function(file_path, output_file = NULL,
 }
 
 
-#' Generate log for yield conversion
+#' Generer le journal pour la conversion de rendement
 #' @noRd
 generate_yield_log <- function(data_clean, data_raw, params, pcdi_result,
                                thresholds, log_file) {
@@ -305,7 +305,7 @@ generate_yield_log <- function(data_clean, data_raw, params, pcdi_result,
   n_raw <- nrow(data_raw)
   n_clean <- nrow(data_clean)
 
-  # Convert raw flow for comparison
+  # Convertir le flux brut pour la comparaison
   data_raw_vel <- data_raw |>
     dplyr::mutate(
       velocity = sqrt((X - dplyr::lag(X))^2 + (Y - dplyr::lag(Y))^2) / Interval

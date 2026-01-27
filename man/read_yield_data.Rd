@@ -2,25 +2,25 @@
 % Please edit documentation in R/read_data.R
 \name{read_yield_data}
 \alias{read_yield_data}
-\title{Read raw yield data from text file}
+\title{Lire des donnees de rendement brutes depuis un fichier texte}
 \usage{
 read_yield_data(file_path, col_names = TRUE)
 }
 \arguments{
-\item{file_path}{Path to the input text file}
+\item{file_path}{Chemin du fichier texte d'entree}
 
-\item{col_names}{Logical, if TRUE uses standard column names}
+\item{col_names}{Logique, si TRUE utilise les noms de colonnes standard}
 }
 \value{
-A tibble with the raw data
+Un tibble avec les donnees brutes
 }
 \description{
-Cette fonction lit les données brutes de rendement depuis un fichier
-texte formaté selon le standard des fichiers de moissonneuse.
-Supporte différents formats de fichiers (15-17 colonnes).
+Cette fonction lit les donnees brutes de rendement depuis un fichier
+texte formate selon le standard des fichiers de moissonneuse.
+Supporte differents formats de fichiers (15-17 colonnes).
 }
 \examples{
-# Example with sample data (create temp file for demo)
+# Exemple avec donnees d'exemple (creation d'un fichier temporaire)
 temp_file <- tempfile(pattern = "yield_data", fileext = ".txt")
 writeLines(c(
   "-69.856661,47.506122,1.53,1762958157,2,77,240,30.8,33,1,2410019049,F0:1,L0:<1>,Maïs,7,0,61.3",

@@ -1,27 +1,27 @@
-#' Remove overlapping points
+#' Supprimer les points en chevauchement
 #'
 #' Cette fonction identifie et élimine les points de chevauchement
 #' en utilisant une grille cellsize x cellsize. Les points dans les cellules
 #' avec PLUS de max_pass sont considérés comme du chevauchement et éliminés.
 #'
-#' @param data A tibble with yield data (must have X, Y columns in UTM)
-#' @param cellsize Size of grid cells in meters (default 0.3m = 30cm)
-#' @param max_pass Maximum number of passes before considering overlap (default 50)
-#' @return Filtered tibble without overlaps
+#' @param data Tibble avec donnees (colonnes X, Y en UTM)
+#' @param cellsize Taille des cellules en metres (defaut 0.3m = 30cm)
+#' @param max_pass Nombre max de passages avant chevauchement (defaut 50)
+#' @return Tibble filtre sans chevauchement
 #' @noRd
 #' @examples
 #' \dontrun{
-#' # Create example data with UTM coordinates
+#' # Creer des donnees d'exemple en UTM
 #' data <- tibble::tibble(
 #'   X = c(435000, 435050, 435100, 435000, 435050),
 #'   Y = c(5262000, 5262050, 5262100, 5262150, 5262200),
 #'   Flow = c(2.5, 3.1, 2.8, 3.0, 2.9)
 #' )
 #'
-#' # Paramètres par défaut (méthode USDA)
+#' # Parametres par defaut (methode USDA)
 #' data_clean <- remove_overlap(data, cellsize = 0.3, max_pass = 50)
 #'
-#' # Pour des données avec beaucoup de chevauchement
+#' # Pour des donnees avec beaucoup de chevauchement
 #' data_clean <- remove_overlap(data, cellsize = 0.3, max_pass = 30)
 #' }
 remove_overlap <- function(data, cellsize = 0.3, max_pass = 50) {
@@ -61,18 +61,18 @@ remove_overlap <- function(data, cellsize = 0.3, max_pass = 50) {
 }
 
 
-#' Apply local STD filter
+#' Appliquer le filtre ET local
 #'
 #' Cette fonction identifie et élimine les points anormaux en utilisant
 #' un voisinage de n swathes autour de chaque point. Les points dont le
 #' rendement s'écarte de plus de STD_limit écarts-types de la moyenne
 #' locale sont éliminés.
 #'
-#' @param data A tibble with yield data (must have Pass column)
-#' @param swath_window Number of swaths to include in local neighborhood
-#' @param std_limit Maximum number of standard deviations from local mean
-#' @param yield_col Name of yield column (default "Flow")
-#' @return Filtered tibble with outliers removed
+#' @param data Tibble avec donnees (colonne Pass requise)
+#' @param swath_window Nombre de passages dans le voisinage local
+#' @param std_limit Nombre maximal d'ecarts-types depuis la moyenne locale
+#' @param yield_col Nom de la colonne de rendement (defaut "Flow")
+#' @return Tibble filtre avec outliers supprimes
 #' @noRd
 #' @examples
 #' \dontrun{
@@ -87,7 +87,7 @@ filter_local_std <- function(data, swath_window = 5, std_limit = 3,
 
   n_before <- nrow(data)
 
-  # Calculer la moyenne et STD locales pour chaque point
+  # Calculer la moyenne et l'ET locaux pour chaque point
   data <- data |>
     dplyr::arrange(Pass, .row_id) |>
     dplyr::group_by(Pass) |>
@@ -97,16 +97,16 @@ filter_local_std <- function(data, swath_window = 5, std_limit = 3,
     ) |>
     dplyr::ungroup()
 
-  # Calculer les limites locale (moyenne +/- std_limit * SD)
-  # Utiliser une fenêtre de passages adjacents
+  # Calculer les limites locales (moyenne +/- std_limit * ET)
+  # Utiliser une fenetre de passages adjacents
   data <- data |>
     dplyr::mutate(
       pass_min = pmax(1, Pass - swath_window),
       pass_max = Pass + swath_window
     )
 
-  # Pour chaque point, calculer les statistiques locales avec fenêtre
-  # Note: implémentation simplifiée - utilise la variation intra-pass
+  # Pour chaque point, calculer les statistiques locales avec fenetre
+  # Note : implementation simplifiee - variation intra-pass
   data <- data |>
     dplyr::mutate(
       # Limites de filtrage
@@ -117,7 +117,7 @@ filter_local_std <- function(data, swath_window = 5, std_limit = 3,
                    !!rlang::sym(yield_col) < lower_limit
     )
 
-  # Compter les outliers par pass pour le log
+  # Compter les outliers par passage pour le journal
   outliers_summary <- data |>
     dplyr::filter(is_outlier) |>
     dplyr::count(Pass, name = "n_outliers")
@@ -140,16 +140,16 @@ filter_local_std <- function(data, swath_window = 5, std_limit = 3,
 }
 
 
-#' Apply sliding window filter
+#' Appliquer le filtre a fenetre glissante
 #'
 #' Cette fonction applique un filtre à fenêtre glissante pour éliminer
 #' les valeurs aberrantes basées sur les voisins temporels.
 #'
-#' @param data A tibble with yield data
-#' @param window_size Size of sliding window
-#' @param n_std Number of standard deviations for threshold
-#' @param yield_col Name of yield column
-#' @return Filtered tibble
+#' @param data Tibble avec donnees de rendement
+#' @param window_size Taille de la fenetre glissante
+#' @param n_std Nombre d'ecarts-types pour le seuil
+#' @param yield_col Nom de la colonne de rendement
+#' @return Tibble filtre
 #' @noRd
 filter_sliding_window <- function(data, window_size = 11, n_std = 3,
                                    yield_col = "Flow") {
@@ -157,10 +157,10 @@ filter_sliding_window <- function(data, window_size = 11, n_std = 3,
   n <- nrow(data)
   half_win <- floor(window_size / 2)
 
-  # Extract the yield column as a vector for calculations
+  # Extraire la colonne de rendement en vecteur pour les calculs
   yield_vals <- data[[yield_col]]
 
-  # Calculate rolling mean and SD
+  # Calculer la moyenne glissante et l'ET
   rolling_mean <- zoo::rollmean(
     yield_vals,
     k = window_size,
@@ -168,14 +168,14 @@ filter_sliding_window <- function(data, window_size = 11, n_std = 3,
     align = "center"
   )
 
-  # Calculate rolling SD manually
+  # Calculer l'ET glissant manuellement
   rolling_sd <- vapply(1:n, function(i) {
     idx_start <- max(1, i - half_win)
     idx_end <- min(n, i + half_win)
     sd(yield_vals[idx_start:idx_end], na.rm = TRUE)
   }, numeric(1))
 
-  # Add columns to data
+  # Ajouter les colonnes aux donnees
   data <- data |>
     dplyr::arrange(.row_id) |>
     dplyr::mutate(

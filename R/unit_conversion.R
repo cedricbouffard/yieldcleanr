@@ -1,12 +1,12 @@
-#' Convert yield flow units
+#' Convertir les unites de flux de rendement
 #'
-#' Converts raw grain flow from LBS/Sec to Bushels/Sec assuming
-#' a standard density of 56 lbs/bushel for corn.
+#' Convertit le flux brut (LBS/sec) en boisseaux/sec en supposant
+#' une densite standard de 56 lbs/boisseau pour le mais.
 #'
-#' @param data Tibble with Flow column
-#' @param density LBS per bushel (default 56 for corn)
-#' @param scale_factor Optional scaling factor (e.g., 1000 for display)
-#' @return Data with Flow converted
+#' @param data Tibble avec colonne Flow
+#' @param density LBS par boisseau (defaut 56 pour le mais)
+#' @param scale_factor Facteur d'echelle optionnel (ex. 1000 pour affichage)
+#' @return Donnees avec Flow converti
 #' @noRd
 #' @examples
 #' \dontrun{
@@ -29,14 +29,14 @@ convert_flow_units <- function(data, density = 56, scale_factor = 1) {
 }
 
 
-#' Apply yield conversion for display
+#' Appliquer la conversion de rendement pour l'affichage
 #'
-#' Converts raw flow to yield in bushels per acre equivalent
-#' accounting for velocity and swath width.
+#' Convertit le flux brut en rendement (boisseaux/acre)
+#' en tenant compte de la vitesse et de la largeur de coupe.
 #'
-#' @param data Tibble with Flow, velocity (optional), Swath columns
-#' @param density LBS per bushel
-#' @return Data with Flow converted to bushels/acre
+#' @param data Tibble avec Flow, velocity (optionnel), Swath
+#' @param density LBS par boisseau
+#' @return Donnees avec Flow converti en boisseaux/acre
 #' @noRd
 convert_to_yield <- function(data, density = 56) {
   if (!"Flow" %in% names(data)) {
@@ -44,17 +44,17 @@ convert_to_yield <- function(data, density = 56) {
     return(data)
   }
 
-  # Conversion factors
-  lbs_per_bu <- density  # 56 for corn
+  # Facteurs de conversion
+  lbs_per_bu <- density  # 56 pour le mais
   sqft_per_acre <- 43560
   sqm_per_sqft <- 0.0929
   inch_per_m <- 39.37
 
-  # Convert swath from inches to meters
+  # Convertir la largeur de coupe en metres
   if ("Swath" %in% names(data)) {
     swath_m <- data$Swath / inch_per_m
 
-    # Calculate velocity if not present
+    # Calculer la vitesse si absente
     if (!"velocity" %in% names(data) && all(c("X", "Y", "Interval") %in% names(data))) {
       data <- data |>
         dplyr::mutate(
@@ -62,11 +62,11 @@ convert_to_yield <- function(data, density = 56) {
         )
     }
 
-    # Convert to bushels/acre
-    # Flow (lbs/sec) / lbs_per_bu = bushels/sec
-    # bushels/sec / (velocity * swath_m) = bushels/sec/m²
-    # bushels/sec/m² * sqm_per_sqft * sqft_per_acre = bushels/acre/sec
-    # Final: Flow * sqm_per_sqft * sqft_per_acre / (lbs_per_bu * velocity * swath_m)
+    # Convertir en boisseaux/acre
+    # Flow (lbs/sec) / lbs_per_bu = boisseaux/sec
+    # boisseaux/sec / (velocity * swath_m) = boisseaux/sec/m2
+    # boisseaux/sec/m2 * sqm_per_sqft * sqft_per_acre = boisseaux/acre/sec
+    # Final : Flow * sqm_per_sqft * sqft_per_acre / (lbs_per_bu * velocity * swath_m)
 
     if ("velocity" %in% names(data)) {
       data <- data |>
@@ -76,14 +76,14 @@ convert_to_yield <- function(data, density = 56) {
         ) |>
         dplyr::select(-velocity)
     } else {
-      # Simplified conversion
+      # Conversion simplifiee
       data <- data |>
         dplyr::mutate(
           Flow_yield = Flow / lbs_per_bu * 100  # Simplified scaling
         )
     }
   } else {
-    # Simple conversion
+    # Conversion simple
     data <- data |>
       dplyr::mutate(
         Flow_yield = Flow / lbs_per_bu

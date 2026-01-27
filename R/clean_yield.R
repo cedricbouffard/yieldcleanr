@@ -1,30 +1,30 @@
-#' Unified Yield Data Cleaning Function
+#' Fonction unifiee de nettoyage des donnees de rendement
 #'
-#' Cette fonction exécute le pipeline complet de nettoyage des données de rendement
-#' avec support pour les sorties en unités métriques ou impériales, et avec ou sans
-#' géométries SF (polygones ou points).
+#' Cette fonction execute le pipeline complet de nettoyage des donnees de rendement
+#' avec support pour les sorties en unites metriques ou imperiales, et avec ou sans
+#' geometries SF (polygones ou points).
 #'
-#' @param file_path Path to input file (txt/csv format)
-#' @param metrique TRUE for metric units (kg/ha), FALSE for imperial (bu/acre)
-#' @param polygon TRUE for SF polygon output, FALSE for tibble output
-#' @param params List of AYCE parameters (see details)
-#' @param output_file Optional path to save output (CSV or GeoJSON)
-#' @param log_file Optional path to save log file
-#' @return Cleaned data as tibble or SF object depending on parameters
+#' @param file_path Chemin du fichier d'entree (txt/csv)
+#' @param metrique TRUE pour les unites metriques (kg/ha), FALSE pour l'imperial (bu/acre)
+#' @param polygon TRUE pour une sortie SF en polygones, FALSE pour une sortie tibble
+#' @param params Liste des parametres AYCE (voir details)
+#' @param output_file Chemin optionnel pour sauvegarder la sortie (CSV ou GeoJSON)
+#' @param log_file Chemin optionnel pour sauvegarder le journal
+#' @return Donnees nettoyees (tibble ou objet SF selon les parametres)
 #' @export
 #' @examples
 #' \dontrun{
-#' # Metric output with polygons (SF object)
+#' # Sortie metrique avec polygones (objet SF)
 #' sf_result <- clean_yield("data.txt", metrique = TRUE, polygon = TRUE)
 #' plot(sf_result["Yield_kg_ha"])
 #'
-#' # Imperial output as tibble
+#' # Sortie imperiale en tibble
 #' data_result <- clean_yield("data.txt", metrique = FALSE, polygon = FALSE)
 #'
-#' # Metric output as tibble (no geometry)
+#' # Sortie metrique en tibble (sans geometrie)
 #' data_metric <- clean_yield("data.txt", metrique = TRUE, polygon = FALSE)
 #'
-#' # With custom parameters
+#' # Avec parametres personnalises
 #' result <- clean_yield("data.txt",
 #'   metrique = TRUE,
 #'   polygon = TRUE,
@@ -38,41 +38,41 @@
 clean_yield <- function(file_path, metrique = TRUE, polygon = TRUE,
                         params = NULL, output_file = NULL, log_file = NULL) {
 
-  # ----- Default AYCE parameters -----
+  # ----- Parametres AYCE par defaut -----
   default_params <- list(
-    # PCDI parameters
+    # Parametres PCDI
     delay_range = -25:10,
     n_iterations = 5,
     noise_level = 0.05,
 
-    # Threshold parameters (balanced for good cleaning)
-    yllim = 0.10,      # Yield lower quantile limit
-    yulim = 0.90,      # Yield upper quantile limit
-    yscale = 1.1,      # Yield IQR multiplier
-    v_lim = 0.05,      # Velocity lower quantile limit
-    v_ulim = 0.95,     # Velocity upper quantile limit
-    v_scale = 1.1,     # Velocity IQR multiplier
-    minv_abs = 0.5,    # Absolute minimum velocity (m/s)
-    miny_abs = 0,      # Absolute minimum yield
-    gbuffer = 100,     # Position buffer (meters)
+    # Parametres de seuil (equilibres)
+    yllim = 0.10,      # Limite quantile bas rendement
+    yulim = 0.90,      # Limite quantile haut rendement
+    yscale = 1.1,      # Multiplicateur IQR rendement
+    v_lim = 0.05,      # Limite quantile bas vitesse
+    v_ulim = 0.95,     # Limite quantile haut vitesse
+    v_scale = 1.1,     # Multiplicateur IQR vitesse
+    minv_abs = 0.5,    # Vitesse minimale absolue (m/s)
+    miny_abs = 0,      # Rendement minimal absolu
+    gbuffer = 100,     # Marge de position (metres)
 
-    # Overlap filter parameters
-    cellsize_overlap = 0.3,    # Grid cell size (meters) - USDA standard
-    overlap_threshold = 0.5,   # Maximum overlap ratio
+    # Parametres de chevauchement
+    cellsize_overlap = 0.3,    # Taille de cellule (metres) - standard USDA
+    overlap_threshold = 0.5,   # Ratio max de chevauchement
 
-    # Local SD filter parameters
-    n_swaths = 5,              # Grid cell size in swath widths
-    lsd_limit = 2.4,           # Local SD multiplier (balanced)
-    min_cells = 3,             # Minimum observations per cell
+    # Parametres ecart-type local
+    n_swaths = 5,              # Taille de cellule en largeurs de passage
+    lsd_limit = 2.4,           # Multiplicateur d'ET local
+    min_cells = 3,             # Observations minimales par cellule
 
-    # Auto-detection parameters
-    n_std = 3                  # Number of std devs for auto-range detection
+    # Parametres d'auto-detection
+    n_std = 3                  # Nombre d'ET pour l'auto-detection
   )
 
-  # Merge parameters
+  # Fusion des parametres
   params <- modifyList(default_params, params %||% list())
 
-  # ----- Step 1: Read raw data -----
+  # ----- Etape 1 : lecture des donnees brutes -----
   rlang::inform("================================================")
   rlang::inform("   Yield Data Cleaning Pipeline               ")
   if (metrique) {
@@ -88,17 +88,17 @@ clean_yield <- function(file_path, metrique = TRUE, polygon = TRUE,
   rlang::inform("================================================")
   rlang::inform("")
 
-  rlang::inform("Step 1: Loading data...")
+  rlang::inform("Etape 1 : chargement des donnees...")
   data <- read_yield_data(file_path)
   data_raw <- data
   rlang::inform(paste("  -", nrow(data), "raw observations loaded"))
 
-  # ----- Step 2: UTM conversion -----
-  rlang::inform("Step 2: Converting to UTM coordinates...")
+  # ----- Etape 2 : conversion UTM -----
+  rlang::inform("Etape 2 : conversion en coordonnees UTM...")
   data <- latlon_to_utm(data)
 
-  # ----- Step 3: PCDI -----
-  rlang::inform("Step 3: PCDI - Flow Delay Optimization...")
+  # ----- Etape 3 : PCDI -----
+  rlang::inform("Etape 3 : PCDI - optimisation du delai de flux...")
   pcdi_result <- apply_pcdi(data,
     delay_range = params$delay_range,
     n_iterations = params$n_iterations,
@@ -107,12 +107,12 @@ clean_yield <- function(file_path, metrique = TRUE, polygon = TRUE,
   flow_delay <- pcdi_result$optimal_delay
   rlang::inform(paste("  Optimal delay:", flow_delay, "seconds"))
 
-  # ----- Step 3b: Calculate initial yield (before flow delay) for threshold estimation -----
-  rlang::inform("Step 3b: Calculating initial yield for threshold estimation...")
+  # ----- Etape 3b : calcul initial du rendement (avant delai) -----
+  rlang::inform("Etape 3b : calcul du rendement initial pour les seuils...")
   data <- convert_flow_to_yield(data)
 
-  # ----- Step 4: Auto thresholds -----
-  rlang::inform("Step 4: Calculating auto thresholds...")
+  # ----- Etape 4 : seuils automatiques -----
+  rlang::inform("Etape 4 : calcul des seuils automatiques...")
   thresholds <- calculate_auto_thresholds(data,
     yllim = params$yllim, yulim = params$yulim, yscale = params$yscale,
     vllim = params$v_lim, vulim = params$v_ulim, vscale = params$v_scale,
@@ -120,18 +120,18 @@ clean_yield <- function(file_path, metrique = TRUE, polygon = TRUE,
     gbuffer = params$gbuffer
   )
 
-  # ----- Step 5: Header filter -----
-  rlang::inform("Step 5: Header filter...")
+  # ----- Etape 5 : filtre header -----
+  rlang::inform("Etape 5 : filtre header...")
   data <- data |> dplyr::filter(HeaderStatus %in% c(1, 33) | is.na(HeaderStatus))
   rlang::inform(paste("  Rows:", nrow(data)))
 
-  # ----- Step 6: GPS filter -----
-  rlang::inform("Step 6: GPS filter...")
+  # ----- Etape 6 : filtre GPS -----
+  rlang::inform("Etape 6 : filtre GPS...")
   data <- data |> dplyr::filter(is.na(GPSStatus) | GPSStatus >= 4)
   rlang::inform(paste("  Rows:", nrow(data)))
 
-  # ----- Step 7: Calculate velocity -----
-  rlang::inform("Step 7: Calculating velocity...")
+  # ----- Etape 7 : calcul de la vitesse -----
+  rlang::inform("Etape 7 : calcul de la vitesse...")
   data <- data |>
     dplyr::mutate(
       velocity = sqrt((X - dplyr::lag(X))^2 + (Y - dplyr::lag(Y))^2) /
@@ -139,23 +139,23 @@ clean_yield <- function(file_path, metrique = TRUE, polygon = TRUE,
     )
   data$velocity[is.na(data$velocity) | !is.finite(data$velocity)] <- 0
 
-  # ----- Step 8: Velocity filter -----
-  rlang::inform("Step 8: Velocity filter...")
+  # ----- Etape 8 : filtre vitesse -----
+  rlang::inform("Etape 8 : filtre vitesse...")
   data <- data |>
     dplyr::filter(velocity >= thresholds$min_velocity & velocity <= thresholds$max_velocity)
   rlang::inform(paste("  Rows:", nrow(data)))
 
-  # ----- Step 9: Flow delay correction -----
-  rlang::inform(paste("Step 9: Flow delay correction (", flow_delay, "s)..."))
+  # ----- Etape 9 : correction du delai de flux -----
+  rlang::inform(paste("Etape 9 : correction du delai de flux (", flow_delay, "s)..."))
   data <- apply_flow_delay(data, delay = -flow_delay)
   rlang::inform(paste("  Rows:", nrow(data)))
 
-  # ----- Step 9b: Calculate yield from delayed Flow -----
-  rlang::inform("Step 9b: Calculating yield from delayed flow...")
+  # ----- Etape 9b : calcul du rendement apres delai -----
+  rlang::inform("Etape 9b : calcul du rendement apres delai...")
   data <- convert_flow_to_yield(data)
 
-  # ----- Step 9c: Recalculate yield thresholds after delay correction -----
-  rlang::inform("Step 9c: Recalculating yield thresholds after delay correction...")
+  # ----- Etape 9c : recalcul des seuils apres delai -----
+  rlang::inform("Etape 9c : recalcul des seuils apres delai...")
   thresholds <- calculate_auto_thresholds(data,
     yllim = params$yllim, yulim = params$yulim, yscale = params$yscale,
     vllim = params$v_lim, vulim = params$v_ulim, vscale = params$v_scale,
@@ -163,19 +163,19 @@ clean_yield <- function(file_path, metrique = TRUE, polygon = TRUE,
     gbuffer = params$gbuffer
   )
 
-  # ----- Step 9d: Validate Pass column using direction analysis -----
-  rlang::inform("Step 9d: Validating Pass column using direction analysis...")
+  # ----- Etape 9d : validation de Pass via analyse de direction -----
+  rlang::inform("Etape 9d : validation de Pass via analyse de direction...")
   if (all(c("X", "Y") %in% names(data))) {
     n <- nrow(data)
 
-    # If Pass column doesn't exist or has unreasonable values, skip validation
+    # Si la colonne Pass est absente ou incoherente, ignorer la validation
     if (!("Pass" %in% names(data)) || all(is.na(data$Pass))) {
       rlang::inform("  No valid Pass column, skipping validation")
     } else {
       n_original_passes <- length(unique(data$Pass))
       rlang::inform(paste("  Pass column has", n_original_passes, "unique values"))
 
-      # Check if Pass count is reasonable (10-500 for typical fields)
+      # Verifier si le nombre de passages est raisonnable (10-500 pour un champ)
       if (n_original_passes >= 10 && n_original_passes <= 500) {
         rlang::inform("  Pass column appears reasonable, using as-is")
       } else {
@@ -185,8 +185,8 @@ clean_yield <- function(file_path, metrique = TRUE, polygon = TRUE,
     }
   }
 
-  # ----- Step 9e: Remove boundary points (flow delay effect) -----
-  rlang::inform("Step 9e: Removing boundary points affected by flow delay...")
+  # ----- Etape 9e : suppression des points de bordure -----
+  rlang::inform("Etape 9e : suppression des points de bordure lies au delai...")
   if ("Pass" %in% names(data) && "Yield_buacre" %in% names(data) && !all(is.na(data$Pass)) && "Interval" %in% names(data)) {
     n_before <- nrow(data)
     abs_delay <- abs(flow_delay)
@@ -242,8 +242,8 @@ clean_yield <- function(file_path, metrique = TRUE, polygon = TRUE,
     data <- data
   }
 
-  # ----- Step 10: Remove zero yield -----
-  rlang::inform("Step 10: Removing zero yield points...")
+  # ----- Etape 10 : suppression des rendements nuls -----
+  rlang::inform("Etape 10 : suppression des rendements nuls...")
   n_before <- nrow(data)
   data <- data |> dplyr::filter(Yield_buacre > 0)
   n_removed <- n_before - nrow(data)
@@ -252,29 +252,29 @@ clean_yield <- function(file_path, metrique = TRUE, polygon = TRUE,
   }
   rlang::inform(paste("  Rows:", nrow(data)))
 
-  # ----- Step 11: Yield range filter -----
-  rlang::inform("Step 11: Yield range filter...")
+  # ----- Etape 11 : filtre plage de rendement -----
+  rlang::inform("Etape 11 : filtre plage de rendement...")
   data <- filter_yield_range(data,
     min_yield = thresholds$min_yield,
     max_yield = thresholds$max_yield
   )
   rlang::inform(paste("  Rows:", nrow(data)))
 
-  # ----- Step 12: Moisture filter -----
-  rlang::inform("Step 12: Moisture filter (auto-detection)...")
+  # ----- Etape 12 : filtre humidite -----
+  rlang::inform("Etape 12 : filtre humidite (auto-detection)...")
   data <- filter_moisture_range(data, n_std = params$n_std)
   rlang::inform(paste("  Rows:", nrow(data)))
 
-  # ----- Step 13: Overlap filter -----
-  rlang::inform("Step 13: Bitmap Overlap Filter...")
+  # ----- Etape 13 : filtre de chevauchement -----
+  rlang::inform("Etape 13 : filtre de chevauchement bitmap...")
   data <- apply_overlap_filter(data,
     cellsize = params$cellsize_overlap,
     overlap_threshold = params$overlap_threshold
   )
   rlang::inform(paste("  Rows:", nrow(data)))
 
-  # ----- Step 14: Local SD filter -----
-  rlang::inform("Step 14: Localized SD Filter...")
+  # ----- Etape 14 : filtre ecart-type local -----
+  rlang::inform("Etape 14 : filtre ecart-type localise...")
   data <- apply_local_sd_filter(data,
     n_swaths = params$n_swaths,
     lsd_limit = params$lsd_limit,
@@ -282,15 +282,15 @@ clean_yield <- function(file_path, metrique = TRUE, polygon = TRUE,
   )
   rlang::inform(paste("  Rows:", nrow(data)))
 
-  # ----- Step 15: Validation -----
-  rlang::inform("Step 15: Validation & Quality Control...")
+  # ----- Etape 15 : validation -----
+  rlang::inform("Etape 15 : validation et controle qualite...")
   validation <- ayce_validate(data, data_raw, pcdi_result, thresholds)
   rlang::inform(paste("  Retention rate:", round(validation$retention_rate * 100, 1), "%"))
 
-  # ----- Step 16: Format output -----
-  rlang::inform("Step 16: Formatting output...")
+  # ----- Etape 16 : formatage de la sortie -----
+  rlang::inform("Etape 16 : formatage de la sortie...")
 
-   # Calculate unit conversions
+   # Calcul des conversions d'unites
    if (metrique) {
      data$Yield_kg_ha <- data$Yield_buacre * 67.25  # kg/ha
      data$Flow_kg_s <- data$Flow * 0.453592         # kg/s
@@ -307,7 +307,7 @@ clean_yield <- function(file_path, metrique = TRUE, polygon = TRUE,
      unit_label <- "bu/acre"
    }
 
-   # For tibble output, remove intermediate columns
+    # Pour une sortie tibble, supprimer les colonnes intermediaires
    if (!polygon) {
      data$Yield_buacre <- NULL
      data$Flow <- NULL
@@ -317,9 +317,9 @@ clean_yield <- function(file_path, metrique = TRUE, polygon = TRUE,
      }
    }
 
-    if (polygon) {
-      # ----- Calculate heading for polygons -----
-      rlang::inform("Step 16b: Calculating heading...")
+     if (polygon) {
+       # ----- Calcul du cap pour les polygones -----
+       rlang::inform("Etape 16b : calcul du cap...")
       data <- data |>
         dplyr::mutate(
           heading = atan2(
@@ -329,28 +329,28 @@ clean_yield <- function(file_path, metrique = TRUE, polygon = TRUE,
         )
       data$heading[is.na(data$heading)] <- 0
 
-      # ----- Smooth heading to reduce noise (within segments, with local rolling for curves) -----
-      rlang::inform("Step 16b.1: Smoothing heading within segments...")
-      # Calculate heading differences to detect turns
+       # ----- Lissage du cap pour reduire le bruit -----
+       rlang::inform("Etape 16b.1 : lissage du cap par segments...")
+       # Calculer les variations pour detecter les virages
       n <- nrow(data)
       heading_diff <- c(data$heading[2:n] - data$heading[1:(n-1)], 0)
-      # Handle circular wrap-around for differences (e.g., -179 to +179 is only 2 degrees)
+       # Gerer le retour circulaire des angles
       heading_diff <- ((heading_diff + 180) %% 360) - 180
-      # Detect turns (threshold: 30 degrees)
+       # Detecter les virages (seuil : 30 degres)
       turn_threshold <- 30
       is_turn <- abs(heading_diff) > turn_threshold
 
-      # Identify segments (runs of consecutive non-turns)
+       # Identifier les segments (series sans virage)
       segment_id <- cumsum(c(TRUE, is_turn[1:(n-1)]))
       data$segment_id <- segment_id
 
-      # Smooth heading within each segment
+       # Lisser le cap dans chaque segment
       data <- data |>
         dplyr::group_by(segment_id) |>
         dplyr::mutate(
           row_in_segment = dplyr::row_number(),
           n_in_segment = dplyr::n(),
-          # Calculate heading variation within segment (circular SD)
+           # Calculer la variation du cap dans le segment (ET circulaire)
           heading_var = {
             angles_rad <- heading * pi / 180
             sin_mean <- mean(sin(angles_rad), na.rm = TRUE)
@@ -360,11 +360,11 @@ clean_yield <- function(file_path, metrique = TRUE, polygon = TRUE,
             circular_sd
           },
           heading_smooth = dplyr::case_when(
-            # Keep first and last point of each segment (boundaries) unchanged
+             # Conserver le premier et le dernier point du segment
             row_in_segment == 1 | row_in_segment == n_in_segment ~ heading,
-            # Curved segments (>15° variation): use small rolling window (3 obs)
+             # Segments courbes (>15 degres) : petite fenetre locale
             heading_var > 15 ~ {
-              # Local rolling mean with small window for curved paths
+               # Moyenne locale avec petite fenetre
               zoo::rollapply(
                 heading,
                 width = 3,
@@ -379,7 +379,7 @@ clean_yield <- function(file_path, metrique = TRUE, polygon = TRUE,
                 }
               )
             },
-            # Straight segments (<=15° variation): use full segment mean
+             # Segments droits (<=15 degres) : moyenne du segment
             n_in_segment >= 3 ~ {
               angles_rad <- heading * pi / 180
               real_part <- mean(cos(angles_rad), na.rm = TRUE)
@@ -387,7 +387,7 @@ clean_yield <- function(file_path, metrique = TRUE, polygon = TRUE,
               smoothed_angle <- atan2(imag_part, real_part) * 180 / pi
               smoothed_angle
             },
-            # Keep original for short segments
+             # Conserver l'original pour les segments courts
             TRUE ~ heading
           )
         ) |>
@@ -400,10 +400,10 @@ clean_yield <- function(file_path, metrique = TRUE, polygon = TRUE,
       data$n_in_segment <- NULL
       data$heading_var <- NULL
 
-     # ----- Create SF object with polygons -----
-     rlang::inform("Step 16c: Creating SF polygon object...")
+      # ----- Creation de l'objet SF avec polygones -----
+      rlang::inform("Etape 16c : creation de l'objet SF polygones...")
 
-     # Ensure metric columns exist for polygon creation
+      # S'assurer que les colonnes metriques existent
      if (!"Swath_m" %in% names(data)) {
        data$Swath_m <- data$Swath * 0.0254
      }
@@ -414,10 +414,10 @@ clean_yield <- function(file_path, metrique = TRUE, polygon = TRUE,
       data$Altitude_m <- data$Altitude * 0.3048
       }
 
-      # Create SF object
+      # Creer l'objet SF
       sf_result <- data_to_sf(data, crs = 4326)
 
-      # Select output columns (use existing column names)
+      # Selection des colonnes de sortie
       output_cols <- c("Yield_kg_ha", "Flow_kg_s", "Moisture", "Swath_m", "Distance_m",
                        "Heading_deg", "Altitude_m", "HeaderStatus", "Pass",
                        "GPS_Time", "Longitude", "Latitude", "X_utm", "Y_utm",
@@ -431,43 +431,43 @@ clean_yield <- function(file_path, metrique = TRUE, polygon = TRUE,
           Heading = Heading_deg
         )
 
-      # ----- Step 17: Export -----
+      # ----- Etape 17 : export -----
       if (!is.null(output_file)) {
-        rlang::inform("Step 17: Exporting...")
+        rlang::inform("Etape 17 : export...")
         ext <- tolower(tools::file_ext(output_file))
         if (ext == "geojson" || ext == "json") {
           sf::st_write(sf_output, output_file, driver = "GeoJSON", delete_dsn = TRUE)
         } else if (ext %in% c("shp", "gpkg")) {
           sf::st_write(sf_output, output_file, driver = toupper(ext), delete_dsn = TRUE)
         } else {
-          # Default to CSV
+          # CSV par defaut
           utils::write.csv(sf_output, output_file, row.names = FALSE)
         }
         rlang::inform(paste("  Saved to:", output_file))
       }
 
-      # ----- Step 18: Generate log -----
+      # ----- Etape 18 : generation du journal -----
       if (!is.null(log_file)) {
-        rlang::inform("Step 18: Generating log...")
+        rlang::inform("Etape 18 : generation du journal...")
         generate_clean_yield_log(sf_output, data_raw, params, pcdi_result,
                                 thresholds, validation, log_file, file_path)
       }
 
       rlang::inform("")
       rlang::inform("================================================")
-      rlang::inform(paste("Complete:", nrow(sf_output), "observations cleaned"))
-      rlang::inform(paste("Mean yield:", round(mean(sf_output$Yield), 0), unit_label))
+      rlang::inform(paste("Termine :", nrow(sf_output), "observations nettoyees"))
+      rlang::inform(paste("Rendement moyen :", round(mean(sf_output$Yield), 0), unit_label))
       rlang::inform("================================================")
 
       return(sf_output)
 
   } else {
-    # ----- Tibble output -----
-    # Rename final columns
+    # ----- Sortie tibble -----
+    # Renommer les colonnes finales
     data$Yield <- data$Yield_final
     data$Flow <- data$Flow_final
 
-    # Select output columns
+    # Selectionner les colonnes de sortie
     output_cols <- c("X", "Y", "Latitude", "Longitude", "Flow", "Moisture",
                      "Swath", "Distance", "Pass", "HeaderStatus", "GPS_Time",
                      "Interval", "Yield", "Variety", "GrainType", "Altitude")
@@ -479,9 +479,9 @@ clean_yield <- function(file_path, metrique = TRUE, polygon = TRUE,
       ) |>
       dplyr::arrange(GPS_Time)
 
-    # ----- Step 17: Export -----
+    # ----- Etape 17 : export -----
     if (!is.null(output_file)) {
-      rlang::inform("Step 17: Exporting...")
+      rlang::inform("Etape 17 : export...")
       ext <- tolower(tools::file_ext(output_file))
       if (ext == "csv") {
         utils::write.csv(data_output, output_file, row.names = FALSE)
@@ -495,20 +495,20 @@ clean_yield <- function(file_path, metrique = TRUE, polygon = TRUE,
       rlang::inform(paste("  Saved to:", output_file))
     }
 
-    # ----- Step 18: Generate log -----
+    # ----- Etape 18 : generation du journal -----
     if (!is.null(log_file)) {
-      rlang::inform("Step 18: Generating log...")
+      rlang::inform("Etape 18 : generation du journal...")
       generate_clean_yield_log(data_output, data_raw, params, pcdi_result,
                               thresholds, validation, log_file, file_path)
     }
 
     rlang::inform("")
     rlang::inform("================================================")
-    rlang::inform(paste("Complete:", nrow(data_output), "observations cleaned"))
-    rlang::inform(paste("Mean yield:", round(mean(data_output$Yield), 1), unit_label))
+    rlang::inform(paste("Termine :", nrow(data_output), "observations nettoyees"))
+    rlang::inform(paste("Rendement moyen :", round(mean(data_output$Yield), 1), unit_label))
     rlang::inform("================================================")
 
-    # Add attributes for compatibility
+    # Ajouter des attributs pour compatibilite
     attr(data_output, "ayce_params") <- params
     attr(data_output, "pcdi_result") <- pcdi_result
     attr(data_output, "thresholds") <- thresholds
@@ -519,7 +519,7 @@ clean_yield <- function(file_path, metrique = TRUE, polygon = TRUE,
 }
 
 
-#' Generate log for clean_yield function
+#' Generer le journal pour clean_yield
 #' @noRd
 generate_clean_yield_log <- function(data_clean, data_raw, params, pcdi_result,
                                      thresholds, validation, log_file,
@@ -529,7 +529,7 @@ generate_clean_yield_log <- function(data_clean, data_raw, params, pcdi_result,
   n_clean <- nrow(data_clean)
   n_removed <- n_raw - n_clean
 
-  # Calculate stats
+  # Calcul des statistiques
   stats_raw <- data_raw |>
     dplyr::summarise(
       mean_yield = mean(Yield_buacre, na.rm = TRUE),
@@ -546,53 +546,53 @@ generate_clean_yield_log <- function(data_clean, data_raw, params, pcdi_result,
       n = dplyr::n()
     )
 
-  # Get RSC value
+  # Recuperer la valeur RSC
   rsc_value <- tryCatch({
     pcdi_result$rsc_values$mean_rsc[pcdi_result$rsc_values$delay == pcdi_result$optimal_delay][1]
   }, error = function(e) NA)
 
   log_lines <- c(
     "=======================================================",
-    "         Yield Data Cleaning Pipeline - Log           ",
+    "         Journal du pipeline de nettoyage            ",
     "=======================================================",
     paste0("Date: ", Sys.time()),
-    paste0("Source file: ", source_file),
+    paste0("Fichier source : ", source_file),
     "",
-    "--- SUMMARY ---",
-    paste0("Original points: ", n_raw),
-    paste0("Cleaned points: ", n_clean),
-    paste0("Points removed: ", n_removed, " (", round(n_removed/n_raw*100, 1), "%)"),
-    paste0("Retention rate: ", round(validation$retention_rate * 100, 1), "%"),
+    "--- RESUME ---",
+    paste0("Points d'origine : ", n_raw),
+    paste0("Points nettoyes : ", n_clean),
+    paste0("Points supprimes : ", n_removed, " (", round(n_removed/n_raw*100, 1), "%)"),
+    paste0("Taux de retention : ", round(validation$retention_rate * 100, 1), "%"),
     "",
-    "--- PCDI RESULTS (Flow Delay) ---",
-    paste0("Optimal Delay: ", pcdi_result$optimal_delay, " seconds"),
-    paste0("RSC at optimal: ", round(rsc_value, 4) %||% "NA"),
-    paste0("Stability (CV): ", round(pcdi_result$stability, 4) %||% "NA"),
+    "--- RESULTATS PCDI (Delai de flux) ---",
+    paste0("Delai optimal : ", pcdi_result$optimal_delay, " secondes"),
+    paste0("RSC a l'optimal : ", round(rsc_value, 4) %||% "NA"),
+    paste0("Stabilite (CV) : ", round(pcdi_result$stability, 4) %||% "NA"),
     "",
-    "--- AUTOMATIC THRESHOLDS ---",
-    paste0("Yield Range: [", round(thresholds$min_yield, 2), " - ", round(thresholds$max_yield, 2), "]"),
-    paste0("Velocity Range: [", round(thresholds$min_velocity, 2), " - ", round(thresholds$max_velocity, 2), " m/s]"),
+    "--- SEUILS AUTOMATIQUES ---",
+    paste0("Plage rendement : [", round(thresholds$min_yield, 2), " - ", round(thresholds$max_yield, 2), "]"),
+    paste0("Plage vitesse : [", round(thresholds$min_velocity, 2), " - ", round(thresholds$max_velocity, 2), " m/s]"),
     "",
-    "--- FILTER PARAMETERS ---",
-    paste0("Overlap - Cellsize: ", params$cellsize_overlap, " m"),
-    paste0("Overlap - Threshold: ", params$overlap_threshold * 100, "%"),
-    paste0("Local SD - Swaths: ", params$n_swaths),
-    paste0("Local SD - Limit: ", params$lsd_limit, " SD"),
+    "--- PARAMETRES DE FILTRAGE ---",
+    paste0("Chevauchement - Cellule : ", params$cellsize_overlap, " m"),
+    paste0("Chevauchement - Seuil : ", params$overlap_threshold * 100, "%"),
+    paste0("ET local - Passages : ", params$n_swaths),
+    paste0("ET local - Limite : ", params$lsd_limit, " ET"),
     "",
-    "--- STATISTICS ---",
-    paste0("Raw:    Mean=", round(stats_raw$mean_yield, 1),
+    "--- STATISTIQUES ---",
+    paste0("Brut :  Moyenne=", round(stats_raw$mean_yield, 1),
            " SD=", round(stats_raw$sd_yield, 1),
            " CV=", round(stats_raw$cv, 1), "%",
            " N=", stats_raw$n),
-    paste0("Clean:  Mean=", round(stats_clean$mean_yield, 1),
+    paste0("Net :   Moyenne=", round(stats_clean$mean_yield, 1),
            " SD=", round(stats_clean$sd_yield, 1),
            " CV=", round(stats_clean$cv, 1), "%",
            " N=", stats_clean$n),
-    paste0("CV Improvement: ", round(validation$cv_improvement * 100, 1), "%"),
+    paste0("Amelioration CV : ", round(validation$cv_improvement * 100, 1), "%"),
     "",
     "======================================================="
   )
 
   writeLines(log_lines, log_file)
-  rlang::inform(paste("Log file saved:", log_file))
+  rlang::inform(paste("Journal sauvegarde :", log_file))
 }

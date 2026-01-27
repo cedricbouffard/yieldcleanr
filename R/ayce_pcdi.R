@@ -1,6 +1,6 @@
-#' AYCE: Auto Yield Cleaning Engine
+#' AYCE : Auto Yield Cleaning Engine
 #'
-#' Système expert automatisé pour le nettoyage des données de rendement
+#' Systeme expert automatise pour le nettoyage des donnees de rendement
 #' sans intervention humaine ou avec intervention minimale.
 #'
 #' @name ayce
@@ -9,32 +9,32 @@
 "_PACKAGE"
 
 
-# ==============================================================================
+# ============================================================================== 
 # AYCE - AUTO YIELD CLEANING ENGINE
-# Implémentation basée sur USDA Yield Editor AYCE methodology
-# ==============================================================================
+# Implementation basee sur la methode USDA Yield Editor AYCE
+# ============================================================================== 
 
-#' Calculate RSC (Relative Spatial Coherence) for PCDI method
+#' Calculer le RSC (Relative Spatial Coherence) pour la methode PCDI
 #'
-#' Mesure la cohérence spatiale relative du rendement pour optimiser les délais.
-#' Plus le RSC est élevé, meilleure est l'alignement spatial.
+#' Mesure la coherence spatiale relative du rendement pour optimiser les delais.
+#' Plus le RSC est eleve, meilleur est l'alignement spatial.
 #'
-#' @param x Vector of X coordinates
-#' @param y Vector of Y coordinates
-#' @param yield Vector of yield values
-#' @return RSC value between 0 and 1
+#' @param x Vecteur des coordonnees X
+#' @param y Vecteur des coordonnees Y
+#' @param yield Vecteur des valeurs de rendement
+#' @return Valeur RSC entre 0 et 1
 #' @noRd
 calculate_rsc <- function(x, y, yield) {
   if (length(x) < 10 || length(unique(x)) < 3 || length(unique(y)) < 3) {
     return(0)
   }
 
-  # Create grid and bin yield values
+  # Creer la grille et binariser les valeurs
   n_bins <- 50
   x_bins <- quantile(x, probs = seq(0, 1, length.out = n_bins))
   y_bins <- quantile(y, probs = seq(0, 1, length.out = n_bins))
 
-  # Calculate binned means
+  # Calculer les moyennes par cellule
   grid_yield <- matrix(NA, nrow = n_bins - 1, ncol = n_bins - 1)
   count_grid <- matrix(0, nrow = n_bins - 1, ncol = n_bins - 1)
 
@@ -49,14 +49,14 @@ calculate_rsc <- function(x, y, yield) {
     }
   }
 
-  # Calculate spatial structure - ratio of within-cell variance to total variance
+  # Calculer la structure spatiale - ratio variance intra/total
   valid_cells <- !is.na(grid_yield) & count_grid > 2
   if (sum(valid_cells) < 10) return(0)
 
   cell_means <- grid_yield[valid_cells]
   global_mean <- mean(yield, na.rm = TRUE)
 
-  # Spatial coherence = 1 - (within-cell variance / total variance)
+  # Coherence spatiale = 1 - (variance intra / variance totale)
   within_var <- mean((cell_means - global_mean)^2, na.rm = TRUE)
   total_var <- var(yield, na.rm = TRUE)
 
@@ -67,16 +67,16 @@ calculate_rsc <- function(x, y, yield) {
 }
 
 
-#' PCDI: Phase Correlation Delay Identification
+#' PCDI : Phase Correlation Delay Identification
 #'
-#' Détermine automatiquement le délai optimal entre le flux et la position GPS
-#' en utilisant la méthode de corrélation de phase.
+#' Determine automatiquement le delai optimal entre le flux et la position GPS
+#' en utilisant la methode de correlation de phase.
 #'
-#' @param data Tibble with yield data (must have X, Y, Flow, GPS_Time, Interval)
-#' @param delay_range Range of delays to test (default 0:20 seconds)
-#' @param n_iterations Number of iterations with random noise (default 10)
-#' @param noise_level Gaussian noise level as proportion of yield range
-#' @return List with optimal_delay, rsc_values, and stability_metrics
+#' @param data Tibble avec donnees de rendement (X, Y, Flow, GPS_Time, Interval)
+#' @param delay_range Plage de delais a tester (defaut 0:20 secondes)
+#' @param n_iterations Nombre d'iterations avec bruit aleatoire (defaut 10)
+#' @param noise_level Niveau de bruit gaussien en proportion de la plage
+#' @return Liste avec optimal_delay, rsc_values et stability_metrics
 #' @noRd
 #' @examples
 #' \dontrun{
@@ -87,7 +87,7 @@ apply_pcdi <- function(data, delay_range = 0:20, n_iterations = 10,
 
   rlang::inform("=== PCDI: Phase Correlation Delay Identification ===")
 
-  # Validate input
+  # Valider l'entree
   required_cols <- c("X", "Y", "Flow", "GPS_Time", "Interval")
   if (!all(required_cols %in% names(data))) {
     rlang::warn("Colonnes requises manquantes pour PCDI")
@@ -99,32 +99,32 @@ apply_pcdi <- function(data, delay_range = 0:20, n_iterations = 10,
     ))
   }
 
-  # Calculate yield range for noise
+  # Calculer l'amplitude de rendement pour le bruit
   yield_range <- diff(range(data$Flow, na.rm = TRUE))
   yield_sd <- stats::sd(data$Flow, na.rm = TRUE)
 
-  # Store RSC for each delay
+  # Stocker le RSC pour chaque delai
   rsc_matrix <- matrix(NA, nrow = length(delay_range), ncol = n_iterations)
 
   for (iter in 1:n_iterations) {
-    # Add small random noise for robustness
+    # Ajouter un bruit aleatoire pour robustesse
     noise <- rnorm(nrow(data), 0, yield_sd * noise_level)
     yield_noisy <- data$Flow + noise
 
     for (d_idx in seq_along(delay_range)) {
       delay <- delay_range[d_idx]
 
-      # Shift yield by delay (positive = forward, negative = backward)
+      # Decaler le rendement selon le delai (positif = avant, negatif = arriere)
       if (delay >= 0) {
-        # Shift forward: prepend NAs
+        # Decaler vers l'avant : ajouter des NA au debut
         shifted_yield <- c(rep(NA, delay), yield_noisy[1:(length(yield_noisy) - delay)])
       } else {
-        # Shift backward: remove from start, append NAs at end
+        # Decaler vers l'arriere : enlever au debut, NA a la fin
         abs_delay <- abs(delay)
         shifted_yield <- c(yield_noisy[(abs_delay + 1):length(yield_noisy)], rep(NA, abs_delay))
       }
 
-      # Calculate RSC
+      # Calculer le RSC
       valid <- !is.na(shifted_yield) & !is.na(data$X) & !is.na(data$Y)
       if (sum(valid) > 100) {
         rsc_matrix[d_idx, iter] <- calculate_rsc(
@@ -136,27 +136,27 @@ apply_pcdi <- function(data, delay_range = 0:20, n_iterations = 10,
     }
   }
 
-  # Calculate mean RSC across iterations
+  # Calculer le RSC moyen sur les iterations
   mean_rsc <- rowMeans(rsc_matrix, na.rm = TRUE)
   std_rsc <- apply(rsc_matrix, 1, stats::sd, na.rm = TRUE)
 
-  # Find optimal delay (maximum mean RSC)
+  # Trouver le delai optimal (maximum du RSC moyen)
   opt_idx <- which.min(mean_rsc)
   optimal_delay <- delay_range[opt_idx]
 
-  # Calculate stability (coefficient of variation across iterations)
+  # Calculer la stabilite (CV entre iterations)
   stability <- ifelse(mean_rsc[opt_idx] > 0,
                       std_rsc[opt_idx] / mean_rsc[opt_idx],
                       NA)
 
-  # Generate warning if stability is low
+  # Avertir si la stabilite est faible
   warning_msg <- NULL
   if (!is.na(stability) && stability > 0.1) {
     warning_msg <- paste("PCDI stability issue - CV =", round(stability, 3))
     rlang::warn(warning_msg)
   }
 
-  # Results
+  # Resultats
   result <- list(
     optimal_delay = optimal_delay,
     delay_range_tested = delay_range,
@@ -171,30 +171,30 @@ apply_pcdi <- function(data, delay_range = 0:20, n_iterations = 10,
     warning = warning_msg
   )
 
-  rlang::inform(paste("Optimal Flow Delay:", optimal_delay, "seconds"))
-  rlang::inform(paste("RSC at optimal:", round(mean_rsc[opt_idx], 4)))
-  rlang::inform(paste("Stability (CV):", round(stability, 4)))
+  rlang::inform(paste("Delai optimal :", optimal_delay, "secondes"))
+  rlang::inform(paste("RSC a l'optimal :", round(mean_rsc[opt_idx], 4)))
+  rlang::inform(paste("Stabilite (CV) :", round(stability, 4)))
 
   return(result)
 }
 
 
-#' Calculate automatic thresholds using quantile-IQR method
+#' Calculer les seuils automatiques (methode quantiles-IQR)
 #'
-#' Automatise les filtres MINY, MAXY, MINV, MAXV, POS à partir d'analyses
-#' de distributions basées sur les quantiles.
+#' Automatise les filtres MINY, MAXY, MINV, MAXV, POS a partir d'analyses
+#' de distributions basees sur les quantiles.
 #'
-#' @param data Tibble with yield data
-#' @param yllim Lower quantile limit for yield (default 0.05)
-#' @param yulim Upper quantile limit for yield (default 0.95)
-#' @param yscale Scale factor for IQR extension (default 1.5)
-#' @param vllim Lower quantile limit for velocity (default 0.02)
-#' @param vulim Upper quantile limit for velocity (default 0.98)
-#' @param vscale Scale factor for velocity IQR extension (default 1.5)
-#' @param minv_abs Absolute minimum velocity threshold (default 0.5 m/s)
-#' @param miny_abs Absolute minimum yield threshold (default 0)
-#' @param gbuffer Buffer for position filter in meters (default 100)
-#' @return List with all calculated thresholds
+#' @param data Tibble avec donnees de rendement
+#' @param yllim Limite quantile basse (defaut 0.05)
+#' @param yulim Limite quantile haute (defaut 0.95)
+#' @param yscale Facteur d'extension IQR (defaut 1.5)
+#' @param vllim Limite quantile basse vitesse (defaut 0.02)
+#' @param vulim Limite quantile haute vitesse (defaut 0.98)
+#' @param vscale Facteur d'extension IQR vitesse (defaut 1.5)
+#' @param minv_abs Seuil minimal absolu de vitesse (defaut 0.5 m/s)
+#' @param miny_abs Seuil minimal absolu de rendement (defaut 0)
+#' @param gbuffer Marge pour le filtre de position en metres (defaut 100)
+#' @return Liste avec tous les seuils calcules
 #' @noRd
 #' @examples
 #' \dontrun{
@@ -210,8 +210,8 @@ calculate_auto_thresholds <- function(data,
 
   thresholds <- list()
 
-  # ---- Yield thresholds (MINY / MAXY) ----
-  # Use Yield_buacre if available, otherwise fall back to Flow
+  # ---- Seuils de rendement (MINY / MAXY) ----
+  # Utiliser Yield_buacre si disponible, sinon Flow
   if ("Yield_buacre" %in% names(data)) {
     y_col <- "Yield_buacre"
   } else if ("Flow" %in% names(data)) {
@@ -221,7 +221,7 @@ calculate_auto_thresholds <- function(data,
   }
 
   if (!is.null(y_col)) {
-    # Filter out Inf values for quantile calculation
+    # Exclure les Inf pour le calcul des quantiles
     data_yield <- data |>
       dplyr::filter(is.finite(.data[[y_col]]))
 
@@ -235,14 +235,14 @@ calculate_auto_thresholds <- function(data,
       rlang::inform(paste("Yield:", y_col, "MIN =", round(thresholds$min_yield, 2),
                           "MAX =", round(thresholds$max_yield, 2)))
     } else {
-      # Use default values if not enough valid data
+      # Utiliser les valeurs par defaut si donnees insuffisantes
       thresholds$min_yield <- miny_abs
       thresholds$max_yield <- 300  # Reasonable max for corn
       rlang::warn("Pas assez de données valides pour calculer seuils de rendement - utilisation valeurs par défaut")
     }
   }
 
-  # ---- Velocity thresholds (MINV / MAXV) ----
+  # ---- Seuils de vitesse (MINV / MAXV) ----
   if (all(c("X", "Y", "Interval") %in% names(data))) {
     data_vel <- data |>
       dplyr::mutate(
@@ -262,18 +262,18 @@ calculate_auto_thresholds <- function(data,
       rlang::inform(paste("Velocity: MIN =", round(thresholds$min_velocity, 2),
                           "MAX =", round(thresholds$max_velocity, 2)))
     } else {
-      # Use default values if not enough data
+      # Utiliser les valeurs par defaut si donnees insuffisantes
       thresholds$min_velocity <- minv_abs
       thresholds$max_velocity <- 15
       rlang::warn("Pas assez de données pour calculer seuils de vélocité - utilisation valeurs par défaut")
     }
   } else {
-    # Use default values
+    # Utiliser les valeurs par defaut
     thresholds$min_velocity <- minv_abs
     thresholds$max_velocity <- 15
   }
 
-  # ---- Position filter (POS) ----
+  # ---- Filtre de position (POS) ----
   if (all(c("X", "Y") %in% names(data))) {
     x_quantiles <- quantile(data$X, c(0.02, 0.98), na.rm = TRUE)
     y_quantiles <- quantile(data$Y, c(0.02, 0.98), na.rm = TRUE)
@@ -289,7 +289,7 @@ calculate_auto_thresholds <- function(data,
                         round(thresholds$pos_y_max, 0), "]"))
   }
 
-  # Store parameters for reference
+  # Stocker les parametres pour reference
   thresholds$parameters <- list(
     yllim = yllim, yulim = yulim, yscale = yscale,
     vllim = vllim, vulim = vulim, vscale = vscale,
@@ -297,7 +297,7 @@ calculate_auto_thresholds <- function(data,
     gbuffer = gbuffer
   )
 
-  # Unname all numeric thresholds to avoid issues with paste()
+  # Enlever les noms des seuils numeriques pour eviter les soucis avec paste()
   numeric_fields <- c("min_yield", "max_yield", "min_velocity", "max_velocity",
                       "pos_x_min", "pos_x_max", "pos_y_min", "pos_y_max")
   for (field in numeric_fields) {
@@ -310,14 +310,14 @@ calculate_auto_thresholds <- function(data,
 }
 
 
-#' Apply position filter (POS)
+#' Appliquer le filtre de position (POS)
 #'
-#' Élimine les flyers GPS en vérifiant que les points sont dans l'enveloppe
-#' inter-quantile étendue du champ.
+#' Elimine les flyers GPS en verifiant que les points sont dans l'enveloppe
+#' inter-quantile etendue du champ.
 #'
-#' @param data Tibble with X, Y coordinates
-#' @param thresholds List with position thresholds
-#' @return Filtered tibble
+#' @param data Tibble avec coordonnees X, Y
+#' @param thresholds Liste des seuils de position
+#' @return Tibble filtre
 #' @noRd
 apply_position_filter <- function(data, thresholds) {
   if (!all(c("X", "Y") %in% names(data))) {

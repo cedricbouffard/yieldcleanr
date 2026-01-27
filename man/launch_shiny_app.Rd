@@ -2,17 +2,17 @@
 % Please edit documentation in R/shiny_app.R
 \name{launch_shiny_app}
 \alias{launch_shiny_app}
-\title{Launch Yield Cleaning Shiny App}
+\title{Lancer l'application Shiny de nettoyage des rendements}
 \usage{
 launch_shiny_app()
 }
 \value{
-Launches Shiny app in browser (invisible)
+Lance l'application Shiny dans le navigateur (invisible)
 }
 \description{
-Launches an interactive Shiny application for visualizing yield data cleaning.
-Users can upload files, see which points are removed and why, view yield maps,
-and download cleaned data.
+Lance une application Shiny interactive pour visualiser le nettoyage des
+donnees de rendement. L'utilisateur peut importer un fichier, voir les
+suppressions par etape, visualiser les cartes et telecharger les resultats.
 }
 \examples{
 \dontrun{

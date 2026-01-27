@@ -1,15 +1,15 @@
-#' Complete AYCE pipeline with SF output
+#' Pipeline AYCE complet avec sortie SF
 #'
-#' Cette fonction exécute le pipeline AYCE complet et retourne un objet SF
-#' avec des polygones rectangles orientés et toutes les mesures en métrique.
-#' Wrapper around clean_yield() with metric + polygon output.
+#' Cette fonction execute le pipeline AYCE complet et retourne un objet SF
+#' avec des polygones rectangles orientes et toutes les mesures en metrique.
+#' Enveloppe de clean_yield() avec sortie metrique + polygones.
 #'
-#' @param file_path Path to input file
-#' @param output_file Optional path to save GeoJSON
-#' @param log_file Optional path to save log
-#' @param geometry_type "polygon" or "point" (kept for compatibility)
-#' @param params AYCE parameters list
-#' @return SF object with cleaned data
+#' @param file_path Chemin du fichier d'entree
+#' @param output_file Chemin optionnel pour GeoJSON
+#' @param log_file Chemin optionnel pour le journal
+#' @param geometry_type "polygon" ou "point" (compatibilite)
+#' @param params Liste des parametres AYCE
+#' @return Objet SF avec donnees nettoyees
 #' @noRd
 #' @examples
 #' \dontrun{
@@ -26,7 +26,7 @@ ayce_sf <- function(file_path, output_file = NULL, log_file = NULL,
   geometry_type <- match.arg(geometry_type)
 
   if (geometry_type == "point") {
-    # Point output (tibble without geometry for compatibility)
+    # Sortie points (tibble sans geometrie pour compatibilite)
     clean_yield(file_path = file_path,
                 metrique = TRUE,
                 polygon = FALSE,
@@ -34,7 +34,7 @@ ayce_sf <- function(file_path, output_file = NULL, log_file = NULL,
                 output_file = output_file,
                 log_file = log_file)
   } else {
-    # Polygon output (SF object)
+    # Sortie polygones (objet SF)
     clean_yield(file_path = file_path,
                 metrique = TRUE,
                 polygon = TRUE,
@@ -45,14 +45,14 @@ ayce_sf <- function(file_path, output_file = NULL, log_file = NULL,
 }
 
 
-#' Convert cleaned data to SF object with polygon geometries
+#' Convertir les donnees nettoyees en objet SF avec polygones
 #'
 #' Cette fonction convertit les données nettoyées en objet SF avec des polygones
 #' représentant la zone récoltée (rectangles orientés selon la direction de déplacement).
 #'
-#' @param data Cleaned data tibble with Latitude, Longitude, Distance, Swath columns
-#' @param crs Coordinate reference system (default 4326 for WGS84)
-#' @return SF object with POLYGON geometries
+#' @param data Tibble nettoye avec Latitude, Longitude, Distance, Swath
+#' @param crs Systeme de reference (defaut 4326 pour WGS84)
+#' @return Objet SF avec geometries POLYGON
 #' @noRd
 #' @examples
 #' \dontrun{
@@ -66,9 +66,9 @@ data_to_sf <- function(data, crs = 4326) {
     return(NULL)
   }
 
-  rlang::inform("Creating SF object with polygon geometries...")
+  rlang::inform("Creation d'un objet SF avec polygones...")
 
-  # Helper function to create oriented rectangle polygon - PROPERLY CLOSED
+  # Fonction helper pour creer un rectangle oriente - bien ferme
   create_rectangle <- function(lon, lat, heading_deg, width_m, length_m) {
     lat_rad <- lat * pi / 180
     lon_per_m <- 1 / (111320 * cos(lat_rad))
@@ -83,7 +83,7 @@ data_to_sf <- function(data, crs = 4326) {
     dx_perp <- cos(heading_rad) * half_width
     dy_perp <- -sin(heading_rad) * half_width
 
-    # Create 5 points (point 5 = point 1 to close the polygon)
+    # Creer 5 points (le point 5 = point 1 pour fermer)
     x <- c(
       lon + (dx_forward + dx_perp) * lon_per_m,    # front-right
       lon + (dx_forward - dx_perp) * lon_per_m,    # front-left
@@ -100,11 +100,11 @@ data_to_sf <- function(data, crs = 4326) {
       lat + (dy_forward + dy_perp) * lat_per_m
     )
 
-    # Return matrix with 5 rows (closed polygon)
+    # Retourner une matrice 5x2 (polygone ferme)
     matrix(c(x, y), nrow = 5, ncol = 2, byrow = FALSE)
   }
 
-  # Calculate heading from coordinates if not present
+  # Calculer le cap si absent
   if (!"heading" %in% names(data)) {
     data <- data |>
       dplyr::mutate(
@@ -116,7 +116,7 @@ data_to_sf <- function(data, crs = 4326) {
     data$heading[is.na(data$heading)] <- 0
   }
 
-  # Ensure metric columns exist
+  # S'assurer que les colonnes metriques existent
   if (!"Swath_m" %in% names(data)) {
     data$Swath_m <- data$Swath * 0.0254
   }
@@ -130,8 +130,8 @@ data_to_sf <- function(data, crs = 4326) {
     data$Flow_kg_s <- data$Flow * 0.453592
   }
 
-  # Create polygon geometries
-  rlang::inform("Creating polygon geometries...")
+  # Creer les geometries des polygones
+  rlang::inform("Creation des geometries des polygones...")
   polygons_list <- list()
 
   for (i in 1:nrow(data)) {
@@ -145,10 +145,10 @@ data_to_sf <- function(data, crs = 4326) {
     polygons_list[[i]] <- sf::st_polygon(list(coords))
   }
 
-   # Create SF object
+   # Creer l'objet SF
    sf_data <- sf::st_sf(
      geometry = sf::st_sfc(polygons_list, crs = crs),
-     # Metric columns (primary)
+      # Colonnes metriques (principales)
      Flow_kg_s = data$Flow_kg_s,
      Yield_kg_ha = data$Yield_kg_ha,
      Moisture_pct = data$Moisture,
@@ -156,13 +156,13 @@ data_to_sf <- function(data, crs = 4326) {
      Distance_m = data$Distance_m,
      Heading_deg = data$heading,
      Altitude_m = data$Altitude * 0.3048,
-     # Imperial columns (secondary)
+      # Colonnes imperiales (secondaires)
      Flow_lbs_s = data$Flow,
      Yield_bu_ac = data$Yield_buacre,
      Swath_in = data$Swath,
      Distance_in = data$Distance,
      Altitude_ft = data$Altitude,
-     # Metadata columns
+      # Colonnes de metadonnees
      GPS_Time = data$GPS_Time,
      HeaderStatus = data$HeaderStatus,
      Pass = data$Pass,
@@ -175,19 +175,19 @@ data_to_sf <- function(data, crs = 4326) {
      GrainType = if ("GrainType" %in% names(data)) data$GrainType else NA_character_
    )
 
-  rlang::inform(paste("SF object created:", nrow(sf_data), "polygons"))
+  rlang::inform(paste("Objet SF cree :", nrow(sf_data), "polygones"))
 
   return(sf_data)
 }
 
 
-#' Convert cleaned data to SF points
+#' Convertir les donnees nettoyees en points SF
 #'
 #' Cette fonction crée un objet SF avec des points (centroïdes) au lieu de polygones.
 #'
-#' @param data Cleaned data tibble
-#' @param crs Coordinate reference system
-#' @return SF object with POINT geometries
+#' @param data Tibble nettoye
+#' @param crs Systeme de reference
+#' @return Objet SF avec geometries POINT
 #' @noRd
 #' @examples
 #' \dontrun{
@@ -201,16 +201,16 @@ data_to_sf_points <- function(data, crs = 4326) {
     return(NULL)
   }
 
-  rlang::inform("Creating SF object with point geometries...")
+  rlang::inform("Creation d'un objet SF avec points...")
 
-  # Calculate yield in kg/ha
+  # Calculer le rendement en kg/ha
   data$Yield_kg_ha <- data$Yield_buacre * 67.25
   data$Flow_kg_s <- data$Flow * 0.453592
   data$Swath_m <- data$Swath * 0.0254
   data$Distance_m <- data$Distance * 0.0254
   data$Altitude_m <- data$Altitude * 0.3048
 
-  # Create SF object with points
+  # Creer l'objet SF avec points
   sf_data <- sf::st_as_sf(
     data,
     coords = c("Longitude", "Latitude"),
@@ -225,20 +225,20 @@ data_to_sf_points <- function(data, crs = 4326) {
       Altitude_m = Altitude * 0.3048
     )
 
-  rlang::inform(paste("SF points object created:", nrow(sf_data), "points"))
+  rlang::inform(paste("Objet SF points cree :", nrow(sf_data), "points"))
 
   return(sf_data)
 }
 
 
-#' Plot SF yield data
+#' Tracer les donnees de rendement SF
 #'
-#' Fonction utilitaire pour visualiser les données de rendement SF.
+#' Fonction utilitaire pour visualiser les donnees de rendement SF.
 #'
-#' @param sf_data SF object from clean_yield or ayce_sf
-#' @param column Column to plot (default "Yield")
-#' @param ... Additional arguments passed to plot()
-#' @return Plot object
+#' @param sf_data Objet SF issu de clean_yield ou ayce_sf
+#' @param column Colonne a tracer (defaut "Yield")
+#' @param ... Arguments additionnels passes a plot()
+#' @return Objet plot
 #' @noRd
 #' @examples
 #' \dontrun{
@@ -250,13 +250,13 @@ plot_yield <- function(sf_data, column = "Yield", ...) {
   }
 
   if (column == "Yield") {
-    # Use the appropriate yield column based on units
+    # Utiliser la colonne de rendement adaptee aux unites
     if ("Yield_kg_ha" %in% names(sf_data)) {
       column <- "Yield_kg_ha"
-      title <- "Yield (kg/ha)"
+      title <- "Rendement (kg/ha)"
     } else {
       column <- "Yield_bu_ac"
-      title <- "Yield (bu/acre)"
+      title <- "Rendement (bu/acre)"
     }
   } else {
     title <- column
@@ -271,12 +271,12 @@ plot_yield <- function(sf_data, column = "Yield", ...) {
 }
 
 
-#' Summary statistics for SF yield data
+#' Statistiques de synthese pour les donnees SF
 #'
-#' Génère un résumé statistique des données de rendement.
+#' Genere un resume statistique des donnees de rendement.
 #'
-#' @param sf_data SF object from clean_yield
-#' @return Data frame with statistics
+#' @param sf_data Objet SF issu de clean_yield
+#' @return Data frame avec statistiques
 #' @noRd
 #' @examples
 #' \dontrun{
@@ -287,7 +287,7 @@ yield_summary <- function(sf_data) {
     rlang::abort("sf_data must be an SF object")
   }
 
-  # Use appropriate yield column
+  # Utiliser la colonne de rendement adaptee
   yield_col <- if ("Yield_kg_ha" %in% names(sf_data)) "Yield_kg_ha" else "Yield_bu_ac"
 
   dplyr::summarise(sf_data,
@@ -296,7 +296,7 @@ yield_summary <- function(sf_data) {
     Yield_sd = sd(!!dplyr::sym(yield_col), na.rm = TRUE),
     Yield_min = min(!!dplyr::sym(yield_col), na.rm = TRUE),
     Yield_max = max(!!dplyr::sym(yield_col), na.rm = TRUE),
-    Area_ha = sum(sf::st_area(geometry)) / 10000,  # Convert m² to ha
+    Area_ha = sum(sf::st_area(geometry)) / 10000,  # Conversion m2 -> ha
     Total_mass_kg = sum(!!dplyr::sym(yield_col) * sf::st_area(geometry) / 10000)
   )
 }

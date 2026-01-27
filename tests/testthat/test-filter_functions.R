@@ -21,20 +21,20 @@ test_that("read_yield_data handles missing file", {
 test_that("filter_header_status keeps active harvesting (default: 1 and 33)", {
   data <- yield_test_data_header_mixed
 
-  # Default behavior: keep both 1 (harvesting) and 33 (header down)
+  # Comportement par defaut : conserver 1 (actif) et 33 (header bas)
   result <- filter_header_status(data)
 
-  expect_equal(nrow(result), 4)  # Keeps points with HeaderStatus 1, 33, 33, 33 (filters out 0)
+  expect_equal(nrow(result), 4)  # Conserve 1, 33, 33, 33 (filtre 0)
   expect_true(all(result$HeaderStatus %in% c(1, 33)))
 })
 
 test_that("filter_header_status with only header down value (33)", {
   data <- yield_test_data_header_mixed
 
-  # Keep only header down (33), filter out harvesting (1)
+  # Conserver seulement header bas (33), filtrer 1
   result <- filter_header_status(data, header_values = c(33))
 
-  expect_equal(nrow(result), 3)  # Keeps points with HeaderStatus 33, 33, 33
+  expect_equal(nrow(result), 3)  # Conserve 33, 33, 33
   expect_true(all(result$HeaderStatus == 33))
 })
 
@@ -53,7 +53,7 @@ test_that("filter_gps_status filters by minimum status", {
 
   result <- filter_gps_status(data, min_gps_status = 4)
 
-  expect_equal(nrow(result), 4)  # Keep GPSStatus >= 4 (indices 2, 3, 4, 5)
+  expect_equal(nrow(result), 4)  # Conserve GPSStatus >= 4 (indices 2, 3, 4, 5)
 })
 
 # Test filter_dop ----
@@ -63,17 +63,16 @@ test_that("filter_dop removes high DOP values", {
 
   result <- filter_dop(data, max_dop = 10)
 
-  expect_equal(nrow(result), 4)  # Keep DOP <= 10 (indices 1, 3, 4, 5)
+  expect_equal(nrow(result), 4)  # Conserve DOP <= 10 (indices 1, 3, 4, 5)
 })
 
 # Test filter_velocity ----
 test_that("filter_velocity filters by speed range", {
-  # Create X, Y that give velocity ~5 m/s when 10m apart and Interval=2s
-  # With X = 435000, 435010, 435020... (10m apart) and Y similar
-  # Distance between consecutive points = sqrt(10^2 + 10^2) = 14.14 m
-  # Velocity = 14.14 / 2 = 7.07 m/s (in range 3-6? No, too high)
+  # Creer X, Y pour obtenir ~5 m/s avec 10m et Interval=2s
+  # Distance entre points = sqrt(10^2 + 10^2) = 14.14 m
+  # Vitesse = 14.14 / 2 = 7.07 m/s (trop elevee pour 3-6)
 
-  # Let me use points that are 8m apart to get ~4 m/s
+  # Utiliser 8m pour obtenir ~4 m/s
   data <- yield_test_data |>
     mutate(
       X = c(435000, 435008, 435016, 435024, 435032),  # 8m apart
@@ -84,9 +83,9 @@ test_that("filter_velocity filters by speed range", {
 
   result <- filter_velocity(data, min_velocity = 3, max_velocity = 6)
 
-  # Distance between consecutive points = sqrt(8^2 + 8^2) = 11.31 m
-  # Velocity = 11.31 / 2 = 5.66 m/s (in range 3-6)
-  # First point has NA velocity and is filtered
+  # Distance entre points = sqrt(8^2 + 8^2) = 11.31 m
+  # Vitesse = 11.31 / 2 = 5.66 m/s (dans la plage 3-6)
+  # Premier point = NA, il est filtre
   expect_equal(nrow(result), 4)
 })
 
@@ -128,7 +127,7 @@ test_that("apply_flow_delay shifts flow values", {
   result <- apply_flow_delay(data, delay = 1)
 
   expect_equal(nrow(result), nrow(data) - 1)
-  expect_equal(result$Flow[1], 1)  # First value is the old Flow[1] (lagged)
+  expect_equal(result$Flow[1], 1)  # Premiere valeur = ancien Flow[1] (lag)
 })
 
 # Test apply_moisture_delay ----
