@@ -117,12 +117,33 @@ data_to_sf <- function(data, crs = 4326) {
   }
 
   # S'assurer que les colonnes metriques existent
+  # Detection automatique des unites pour Swath et Distance
   if (!"Swath_m" %in% names(data)) {
-    data$Swath_m <- data$Swath * 0.0254
+    mean_swath <- mean(data$Swath, na.rm = TRUE)
+    # Si Swath > 5, c'est probablement deja en metres (headers standards: 7.5-12m)
+    # Si Swath < 5, c'est probablement en pouces (295-472 pouces pour headers 30-40 pieds)
+    if (mean_swath > 5) {
+      rlang::inform(paste("Swath detecte en metres (moyenne:", round(mean_swath, 2), "m)"))
+      data$Swath_m <- data$Swath
+    } else {
+      rlang::inform(paste("Swath detecte en pouces (moyenne:", round(mean_swath, 2), "in) - conversion en metres"))
+      data$Swath_m <- data$Swath * 0.0254
+    }
   }
+  
   if (!"Distance_m" %in% names(data)) {
-    data$Distance_m <- data$Distance * 0.0254
+    mean_dist <- mean(data$Distance, na.rm = TRUE)
+    # Si Distance > 0.5, c'est probablement deja en metres (typique: 1-3m entre points)
+    # Si Distance < 0.5, c'est probablement en pouces (40-120 pouces)
+    if (mean_dist > 0.5) {
+      rlang::inform(paste("Distance detectee en metres (moyenne:", round(mean_dist, 2), "m)"))
+      data$Distance_m <- data$Distance
+    } else {
+      rlang::inform(paste("Distance detectee en pouces (moyenne:", round(mean_dist, 2), "in) - conversion en metres"))
+      data$Distance_m <- data$Distance * 0.0254
+    }
   }
+  
   if (!"Yield_kg_ha" %in% names(data)) {
     data$Yield_kg_ha <- data$Yield_buacre * 67.25
   }
@@ -130,6 +151,21 @@ data_to_sf <- function(data, crs = 4326) {
     data$Flow_kg_s <- data$Flow * 0.453592
   }
 
+  # Filtrer les lignes avec des valeurs manquantes necessaires pour les polygones
+  required_cols <- c("Longitude", "Latitude", "heading", "Swath_m", "Distance_m")
+  valid_rows <- stats::complete.cases(data[, required_cols])
+  
+  if (!all(valid_rows)) {
+    n_invalid <- sum(!valid_rows)
+    rlang::warn(paste(n_invalid, "lignes avec valeurs manquantes exclues de la creation des polygones"))
+    data <- data[valid_rows, ]
+  }
+  
+  if (nrow(data) == 0) {
+    rlang::warn("Aucune donnee valide pour creer les polygones")
+    return(NULL)
+  }
+  
   # Creer les geometries des polygones
   rlang::inform("Creation des geometries des polygones...")
   polygons_list <- list()
@@ -151,6 +187,7 @@ data_to_sf <- function(data, crs = 4326) {
       # Colonnes metriques (principales)
      Flow_kg_s = data$Flow_kg_s,
      Yield_kg_ha = data$Yield_kg_ha,
+     Yield_kg_ha_wet = if ("Yield_kg_ha_wet" %in% names(data)) data$Yield_kg_ha_wet else NA_real_,
      Moisture_pct = data$Moisture,
      Swath_m = data$Swath_m,
      Distance_m = data$Distance_m,
@@ -159,6 +196,7 @@ data_to_sf <- function(data, crs = 4326) {
       # Colonnes imperiales (secondaires)
      Flow_lbs_s = data$Flow,
      Yield_bu_ac = data$Yield_buacre,
+     Yield_bu_ac_wet = if ("Yield_buacre_wet" %in% names(data)) data$Yield_buacre_wet else NA_real_,
      Swath_in = data$Swath,
      Distance_in = data$Distance,
      Altitude_ft = data$Altitude,

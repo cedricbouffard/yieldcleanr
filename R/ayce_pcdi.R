@@ -83,14 +83,15 @@ calculate_rsc <- function(x, y, yield) {
 #' result <- apply_pcdi(data, delay_range = 0:20)
 #' }
 apply_pcdi <- function(data, delay_range = 0:20, n_iterations = 10,
-                       noise_level = 0.05) {
+                       noise_level = 0.05, value_col = "Flow") {
 
-  rlang::inform("=== PCDI: Phase Correlation Delay Identification ===")
+  rlang::inform(paste("=== PCDI: Phase Correlation Delay Identification (", value_col, ") ==="))
 
   # Valider l'entree
-  required_cols <- c("X", "Y", "Flow", "GPS_Time", "Interval")
+  required_cols <- c("X", "Y", "GPS_Time", "Interval", value_col)
   if (!all(required_cols %in% names(data))) {
-    rlang::warn("Colonnes requises manquantes pour PCDI")
+    missing <- setdiff(required_cols, names(data))
+    rlang::warn(paste("Colonnes requises manquantes pour PCDI:", paste(missing, collapse = ", ")))
     return(list(
       optimal_delay = 2,
       rsc_values = NULL,
@@ -100,37 +101,61 @@ apply_pcdi <- function(data, delay_range = 0:20, n_iterations = 10,
   }
 
   # Calculer l'amplitude de rendement pour le bruit
-  yield_range <- diff(range(data$Flow, na.rm = TRUE))
-  yield_sd <- stats::sd(data$Flow, na.rm = TRUE)
+  # Verifier qu'il y a des valeurs valides
+  valid_values <- data[[value_col]][!is.na(data[[value_col]]) & is.finite(data[[value_col]])]
+  
+  if (length(valid_values) < 10) {
+    rlang::warn(paste("Pas assez de valeurs valides pour PCDI sur", value_col))
+    return(list(
+      optimal_delay = 0,
+      rsc_values = NULL,
+      stability = NA,
+      warning = "Insufficient valid data"
+    ))
+  }
+  
+  value_range <- diff(range(valid_values))
+  value_sd <- stats::sd(valid_values)
+  
+  # Verifier que les statistiques sont valides
+  if (!is.finite(value_range) || !is.finite(value_sd) || value_sd == 0) {
+    rlang::warn(paste("Statistiques invalides pour PCDI sur", value_col))
+    return(list(
+      optimal_delay = 0,
+      rsc_values = NULL,
+      stability = NA,
+      warning = "Invalid statistics"
+    ))
+  }
 
   # Stocker le RSC pour chaque delai
   rsc_matrix <- matrix(NA, nrow = length(delay_range), ncol = n_iterations)
 
   for (iter in 1:n_iterations) {
     # Ajouter un bruit aleatoire pour robustesse
-    noise <- rnorm(nrow(data), 0, yield_sd * noise_level)
-    yield_noisy <- data$Flow + noise
+    noise <- rnorm(nrow(data), 0, value_sd * noise_level)
+    values_noisy <- data[[value_col]] + noise
 
     for (d_idx in seq_along(delay_range)) {
       delay <- delay_range[d_idx]
 
-      # Decaler le rendement selon le delai (positif = avant, negatif = arriere)
+      # Decaler les valeurs selon le delai (positif = avant, negatif = arriere)
       if (delay >= 0) {
         # Decaler vers l'avant : ajouter des NA au debut
-        shifted_yield <- c(rep(NA, delay), yield_noisy[1:(length(yield_noisy) - delay)])
+        shifted_values <- c(rep(NA, delay), values_noisy[1:(length(values_noisy) - delay)])
       } else {
         # Decaler vers l'arriere : enlever au debut, NA a la fin
         abs_delay <- abs(delay)
-        shifted_yield <- c(yield_noisy[(abs_delay + 1):length(yield_noisy)], rep(NA, abs_delay))
+        shifted_values <- c(values_noisy[(abs_delay + 1):length(values_noisy)], rep(NA, abs_delay))
       }
 
       # Calculer le RSC
-      valid <- !is.na(shifted_yield) & !is.na(data$X) & !is.na(data$Y)
+      valid <- !is.na(shifted_values) & !is.na(data$X) & !is.na(data$Y)
       if (sum(valid) > 100) {
         rsc_matrix[d_idx, iter] <- calculate_rsc(
           data$X[valid],
           data$Y[valid],
-          shifted_yield[valid]
+          shifted_values[valid]
         )
       }
     }
@@ -141,7 +166,7 @@ apply_pcdi <- function(data, delay_range = 0:20, n_iterations = 10,
   std_rsc <- apply(rsc_matrix, 1, stats::sd, na.rm = TRUE)
 
   # Trouver le delai optimal (maximum du RSC moyen)
-  opt_idx <- which.min(mean_rsc)
+  opt_idx <- which.max(mean_rsc)
   optimal_delay <- delay_range[opt_idx]
 
   # Calculer la stabilite (CV entre iterations)
@@ -168,10 +193,11 @@ apply_pcdi <- function(data, delay_range = 0:20, n_iterations = 10,
     stability = stability,
     noise_level = noise_level,
     n_iterations = n_iterations,
+    value_col = value_col,
     warning = warning_msg
   )
 
-  rlang::inform(paste("Delai optimal :", optimal_delay, "secondes"))
+  rlang::inform(paste("Delai optimal (", value_col, "):", optimal_delay, "secondes"))
   rlang::inform(paste("RSC a l'optimal :", round(mean_rsc[opt_idx], 4)))
   rlang::inform(paste("Stabilite (CV) :", round(stability, 4)))
 

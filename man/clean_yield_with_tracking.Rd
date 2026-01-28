@@ -5,7 +5,8 @@
 \title{Nettoyage des donnees de rendement avec suivi des suppressions}
 \usage{
 clean_yield_with_tracking(
-  file_path,
+  file_path = NULL,
+  data = NULL,
   metrique = TRUE,
   polygon = TRUE,
   params = NULL
@@ -13,6 +14,9 @@ clean_yield_with_tracking(
 }
 \arguments{
 \item{file_path}{Chemin du fichier d'entree (txt/csv)}
+
+\item{data}{Donnees brutes a nettoyer (tibble). Alternative a file_path.
+Si fourni, file_path est ignore.}
 
 \item{metrique}{TRUE pour les unites metriques (kg/ha), FALSE pour l'imperial (bu/acre)}
 
@@ -34,7 +38,12 @@ ainsi que la raison. Utile pour la visualisation et le diagnostic.
 }
 \examples{
 \dontrun{
+# Avec un fichier
 result <- clean_yield_with_tracking("data.txt", metrique = TRUE, polygon = TRUE)
+
+# Avec des donnees en memoire
+result <- clean_yield_with_tracking(data = my_data, metrique = TRUE, polygon = TRUE)
+
 print(result$stats)
 head(result$deletions)
 }

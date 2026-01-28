@@ -20,58 +20,50 @@
 #' # Appliquer la correction de delai de flux
 #' data_corrected <- apply_flow_delay(data, delay = 1)
 #' print(data_corrected)
-apply_flow_delay <- function(data, delay = 2, direction = "forward") {
+apply_flow_delay <- function(data, delay = 2, direction = "forward", value_col = "Flow") {
   n_before <- nrow(data)
 
   if (delay == 0) {
-    rlang::inform("Flow delay = 0, pas de correction appliquée")
-    data <- data |> dplyr::mutate(Flow_raw = Flow, Flow = Flow)
+    rlang::inform(paste(value_col, "delay = 0, pas de correction appliquée"))
+    return(data)
+  }
+
+  if (!value_col %in% names(data)) {
+    rlang::warn(paste("Colonne", value_col, "non trouvée pour correction de délai"))
     return(data)
   }
 
   # Sauvegarde de la valeur originale
-  data <- data |> dplyr::mutate(Flow_raw = Flow)
+  raw_col <- paste0(value_col, "_raw")
+  data[[raw_col]] <- data[[value_col]]
 
   if (delay >= 0) {
     if (direction == "forward") {
-      # Delai positif : flux mesure APRES la position
-      # Deplacer le flux vers l'arriere pour aligner la position
-      # Utiliser lead() pour decaler dans le jeu de donnees
-      data <- data |>
-        dplyr::mutate(
-          Flow = dplyr::lead(Flow, n = delay, default = NA_real_)
-        )
+      # Delai positif : valeur mesuree APRES la position
+      # Deplacer la valeur vers l'arriere pour aligner la position
+      data[[value_col]] <- dplyr::lead(data[[value_col]], n = delay, default = NA_real_)
     } else {
-      # Decaler le flux vers l'arriere (delai positif en backward)
-      data <- data |>
-        dplyr::mutate(
-          Flow = dplyr::lag(Flow, n = delay, default = NA_real_)
-        )
+      # Decaler la valeur vers l'arriere (delai positif en backward)
+      data[[value_col]] <- dplyr::lag(data[[value_col]], n = delay, default = NA_real_)
     }
   } else {
-    # Delai negatif : flux mesure AVANT la position
+    # Delai negatif : valeur mesuree AVANT la position
     abs_delay <- abs(delay)
     if (direction == "forward") {
-      # Delai negatif : decaler le flux vers l'avant
-      data <- data |>
-        dplyr::mutate(
-          Flow = dplyr::lag(Flow, n = abs_delay, default = NA_real_)
-        )
+      # Delai negatif : decaler la valeur vers l'avant
+      data[[value_col]] <- dplyr::lag(data[[value_col]], n = abs_delay, default = NA_real_)
     } else {
       # Delai negatif en backward = decaler vers l'avant
-      data <- data |>
-        dplyr::mutate(
-          Flow = dplyr::lag(Flow, n = abs_delay, default = NA_real_)
-        )
+      data[[value_col]] <- dplyr::lag(data[[value_col]], n = abs_delay, default = NA_real_)
     }
   }
 
   # Compter les NA crees
-  n_na <- sum(is.na(data$Flow))
-  data <- data |> dplyr::filter(!is.na(Flow))
+  n_na <- sum(is.na(data[[value_col]]))
+  data <- data |> dplyr::filter(!is.na(!!dplyr::sym(value_col)))
 
   rlang::inform(paste(
-    "Flow delay correction:", delay, "seconds,",
+    value_col, "delay correction:", delay, "seconds,",
     n_na, "points éliminés (valeurs NA)"
   ))
 

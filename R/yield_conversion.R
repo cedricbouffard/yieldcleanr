@@ -39,14 +39,48 @@ convert_flow_to_yield <- function(data, lbs_per_bushel = NULL,
                                    sqft_per_acre = 43560,
                                    inches_per_foot = 12) {
 
-  if (!all(c("Flow", "Interval", "Swath", "Distance") %in% names(data))) {
-    rlang::warn("Colonnes Flow, Interval, Swath, Distance requises")
-    return(data)
-  }
-
   # Auto-detecter lbs_per_bushel via GrainType si absent
   if (is.null(lbs_per_bushel)) {
     lbs_per_bushel <- get_lbs_per_bushel(data)
+  }
+  
+  # Si Yield_kg_ha existe deja (donnees metriques John Deere), 
+  # convertir directement en bu/acre au lieu de calculer a partir du flux
+  if ("Yield_kg_ha" %in% names(data) && !all(is.na(data$Yield_kg_ha))) {
+    # Conversion kg/ha -> bu/acre
+    # 1 bu/acre = 62.77 kg/ha pour mais (56 lbs/bu)
+    # 1 bu/acre = 67.25 kg/ha pour soja/cereales (60 lbs/bu)
+    # Formule generale: bu/acre = kg/ha / (lbs_per_bu * 0.453592 / 0.404686)
+    # = kg/ha / (lbs_per_bu * 1.12085)
+    kg_per_buacre <- lbs_per_bushel * 1.12085
+    
+    data <- data |>
+      dplyr::mutate(
+        Yield_buacre = .data$Yield_kg_ha / kg_per_buacre
+      )
+    
+    # Calculer aussi le rendement humide si disponible
+    if ("Yield_kg_ha_wet" %in% names(data) && !all(is.na(data$Yield_kg_ha_wet))) {
+      data$Yield_buacre_wet <- data$Yield_kg_ha_wet / kg_per_buacre
+      rlang::inform(paste("Yield wet converti de kg/ha:", 
+                          round(mean(data$Yield_buacre_wet, na.rm = TRUE), 1),
+                          "bu/acre"))
+    }
+    
+    # Calculer la moyenne en excluant les Inf et NA
+    finite_yield <- data$Yield_buacre[is.finite(data$Yield_buacre) & !is.na(data$Yield_buacre)]
+    mean_yield <- if (length(finite_yield) > 0) mean(finite_yield, na.rm = TRUE) else NA
+    
+    rlang::inform(paste("Yield converti de kg/ha:", round(mean_yield, 1),
+                        "bu/acre (lbs/bu =", lbs_per_bushel, ")"))
+    
+    return(data)
+  }
+
+  # Sinon, calculer a partir du flux (methode originale pour donnees imperiales)
+  if (!all(c("Flow", "Interval", "Swath", "Distance") %in% names(data))) {
+    rlang::warn("Colonnes Flow, Interval, Swath, Distance requises pour calculer le rendement")
+    return(data)
   }
 
   # Calculer Width_ft et Distance_ft

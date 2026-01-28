@@ -92,23 +92,59 @@ clean_yield <- function(file_path, metrique = TRUE, polygon = TRUE,
   data <- read_yield_data(file_path)
   data_raw <- data
   rlang::inform(paste("  -", nrow(data), "raw observations loaded"))
+  
+  # Creer Yield_kg_ha_wet si Flow_Wet existe (pour fichiers non-ZIP)
+  if ("Flow_Wet" %in% names(data) && !all(is.na(data$Flow_Wet))) {
+    if (!"Yield_kg_ha_wet" %in% names(data)) {
+      rlang::inform("Creation de Yield_kg_ha_wet a partir de Flow_Wet...")
+      data$Yield_kg_ha_wet <- data$Flow_Wet
+    }
+  }
+  
+  # Calculer le rendement sec a partir du rendement humide et de l'humidite
+  # Formule: Rendement sec = Rendement humide × (100 - Humidite%) / (100 - 14.5%)
+  if ("Moisture" %in% names(data) && !all(is.na(data$Moisture))) {
+    if ("Yield_kg_ha_wet" %in% names(data) && !all(is.na(data$Yield_kg_ha_wet))) {
+      rlang::inform("Calcul du rendement sec a partir du rendement humide...")
+      data$Yield_kg_ha <- data$Yield_kg_ha_wet * (100 - data$Moisture) / 85.5
+      rlang::inform(paste("Rendement sec calcule:", round(mean(data$Yield_kg_ha, na.rm = TRUE), 1), "kg/ha"))
+    }
+    if ("Flow_Wet" %in% names(data) && !all(is.na(data$Flow_Wet))) {
+      data$Flow <- data$Flow_Wet * (100 - data$Moisture) / 85.5
+    }
+  }
 
   # ----- Etape 2 : conversion UTM -----
   rlang::inform("Etape 2 : conversion en coordonnees UTM...")
   data <- latlon_to_utm(data)
 
-  # ----- Etape 3 : PCDI -----
+  # ----- Etape 3 : PCDI sur le flux -----
   rlang::inform("Etape 3 : PCDI - optimisation du delai de flux...")
   pcdi_result <- apply_pcdi(data,
     delay_range = params$delay_range,
     n_iterations = params$n_iterations,
-    noise_level = params$noise_level
+    noise_level = params$noise_level,
+    value_col = "Flow"
   )
   flow_delay <- pcdi_result$optimal_delay
-  rlang::inform(paste("  Optimal delay:", flow_delay, "seconds"))
+  rlang::inform(paste("  Delai optimal flux:", flow_delay, "secondes"))
+  
+  # ----- Etape 3b : PCDI sur l'humidite -----
+  moisture_delay <- 0
+  if ("Moisture" %in% names(data) && !all(is.na(data$Moisture))) {
+    rlang::inform("Etape 3b : PCDI - optimisation du delai d'humidite...")
+    pcdi_moisture <- apply_pcdi(data,
+      delay_range = params$delay_range,
+      n_iterations = params$n_iterations,
+      noise_level = params$noise_level,
+      value_col = "Moisture"
+    )
+    moisture_delay <- pcdi_moisture$optimal_delay
+    rlang::inform(paste("  Delai optimal humidite:", moisture_delay, "secondes"))
+  }
 
-  # ----- Etape 3b : calcul initial du rendement (avant delai) -----
-  rlang::inform("Etape 3b : calcul du rendement initial pour les seuils...")
+  # ----- Etape 3c : calcul initial du rendement (avant delai) -----
+  rlang::inform("Etape 3c : calcul du rendement initial pour les seuils...")
   data <- convert_flow_to_yield(data)
 
   # ----- Etape 4 : seuils automatiques -----
@@ -127,7 +163,14 @@ clean_yield <- function(file_path, metrique = TRUE, polygon = TRUE,
 
   # ----- Etape 6 : filtre GPS -----
   rlang::inform("Etape 6 : filtre GPS...")
-  data <- data |> dplyr::filter(is.na(GPSStatus) | GPSStatus >= 4)
+  # Verifier si GPSStatus existe avant de filtrer
+  if ("GPSStatus" %in% names(data)) {
+    # S'assurer que GPSStatus est numerique
+    data$GPSStatus <- suppressWarnings(as.numeric(data$GPSStatus))
+    data <- data |> dplyr::filter(is.na(GPSStatus) | GPSStatus >= 4)
+  } else {
+    rlang::inform("  GPSStatus non present, saut du filtre GPS")
+  }
   rlang::inform(paste("  Rows:", nrow(data)))
 
   # ----- Etape 7 : calcul de la vitesse -----
@@ -147,8 +190,15 @@ clean_yield <- function(file_path, metrique = TRUE, polygon = TRUE,
 
   # ----- Etape 9 : correction du delai de flux -----
   rlang::inform(paste("Etape 9 : correction du delai de flux (", flow_delay, "s)..."))
-  data <- apply_flow_delay(data, delay = -flow_delay)
+  data <- apply_flow_delay(data, delay = -flow_delay, value_col = "Flow")
   rlang::inform(paste("  Rows:", nrow(data)))
+  
+  # ----- Etape 9a : correction du delai d'humidite -----
+  if (moisture_delay != 0 && "Moisture" %in% names(data)) {
+    rlang::inform(paste("Etape 9a : correction du delai d'humidite (", moisture_delay, "s)..."))
+    data <- apply_flow_delay(data, delay = -moisture_delay, value_col = "Moisture")
+    rlang::inform(paste("  Rows:", nrow(data)))
+  }
 
   # ----- Etape 9b : calcul du rendement apres delai -----
   rlang::inform("Etape 9b : calcul du rendement apres delai...")
@@ -299,6 +349,10 @@ clean_yield <- function(file_path, metrique = TRUE, polygon = TRUE,
      yield_label <- "Yield_kg_ha"
      flow_label <- "Flow_kg_s"
      unit_label <- "kg/ha"
+     # Calculer aussi le rendement humide en kg/ha si disponible
+     if ("Yield_buacre_wet" %in% names(data)) {
+       data$Yield_kg_ha_wet <- data$Yield_buacre_wet * 67.25
+     }
    } else {
      data$Yield_final <- data$Yield_buacre
      data$Flow_final <- data$Flow
@@ -404,24 +458,40 @@ clean_yield <- function(file_path, metrique = TRUE, polygon = TRUE,
       rlang::inform("Etape 16c : creation de l'objet SF polygones...")
 
       # S'assurer que les colonnes metriques existent
-     if (!"Swath_m" %in% names(data)) {
-       data$Swath_m <- data$Swath * 0.0254
-     }
-     if (!"Distance_m" %in% names(data)) {
-       data$Distance_m <- data$Distance * 0.0254
-     }
-     if (!"Altitude_m" %in% names(data)) {
-      data$Altitude_m <- data$Altitude * 0.3048
+      # Detection automatique des unites pour Swath et Distance
+      if (!"Swath_m" %in% names(data)) {
+        mean_swath <- mean(data$Swath, na.rm = TRUE)
+        if (mean_swath > 5) {
+          data$Swath_m <- data$Swath  # Deja en metres
+        } else {
+          data$Swath_m <- data$Swath * 0.0254  # Conversion pouces -> metres
+        }
+      }
+      if (!"Distance_m" %in% names(data)) {
+        mean_dist <- mean(data$Distance, na.rm = TRUE)
+        if (mean_dist > 0.5) {
+          data$Distance_m <- data$Distance  # Deja en metres
+        } else {
+          data$Distance_m <- data$Distance * 0.0254  # Conversion pouces -> metres
+        }
+      }
+      if (!"Altitude_m" %in% names(data)) {
+        data$Altitude_m <- data$Altitude * 0.3048
       }
 
       # Creer l'objet SF
       sf_result <- data_to_sf(data, crs = 4326)
+      
+      if (is.null(sf_result)) {
+        rlang::warn("Impossible de creer les polygones - retour des donnees sous forme de points")
+        return(data)
+      }
 
       # Selection des colonnes de sortie
-      output_cols <- c("Yield_kg_ha", "Flow_kg_s", "Moisture", "Swath_m", "Distance_m",
-                       "Heading_deg", "Altitude_m", "HeaderStatus", "Pass",
-                       "GPS_Time", "Longitude", "Latitude", "X_utm", "Y_utm",
-                       "Variety", "GrainType")
+      output_cols <- c("Yield_kg_ha", "Yield_kg_ha_wet", "Flow_kg_s", "Moisture_pct", 
+                       "Swath_m", "Distance_m", "Heading_deg", "Altitude_m", 
+                       "HeaderStatus", "Pass", "GPS_Time", "Longitude", "Latitude", 
+                       "X_utm", "Y_utm", "Variety", "GrainType")
 
       sf_output <- sf_result |>
         dplyr::select(dplyr::any_of(output_cols)) |>

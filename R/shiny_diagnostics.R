@@ -18,19 +18,74 @@ build_filter_diagnostics <- function(data_raw, deletions, metrique = TRUE) {
     return(list())
   }
 
+  # S'assurer que les donnees sont en format tibble, pas sf
+  if (inherits(data_raw, "sf")) {
+    data_raw <- sf::st_drop_geometry(data_raw)
+  }
+
   if (!"orig_row_id" %in% names(data_raw)) {
     data_raw <- data_raw |>
       dplyr::mutate(orig_row_id = dplyr::row_number())
   }
 
-  base_data <- data_raw |>
-    dplyr::select(orig_row_id, Flow)
+  # Determiner la colonne de rendement a utiliser
+  yield_col <- NULL
+  if (isTRUE(metrique)) {
+    if ("Yield_kg_ha" %in% names(data_raw)) {
+      yield_col <- "Yield_kg_ha"
+    } else if ("Yield_buacre" %in% names(data_raw)) {
+      yield_col <- "Yield_buacre"
+    }
+  } else {
+    if ("Yield_buacre" %in% names(data_raw)) {
+      yield_col <- "Yield_buacre"
+    } else if ("Yield_kg_ha" %in% names(data_raw)) {
+      yield_col <- "Yield_kg_ha"
+    }
+  }
 
-  base_data <- base_data |>
-    dplyr::mutate(
-      valeur = if (isTRUE(metrique)) Flow * 0.453592 else Flow,
-      unite = if (isTRUE(metrique)) "kg/s" else "lb/s"
-    )
+  # Si aucune colonne de rendement trouvee, utiliser Flow comme fallback
+  if (is.null(yield_col)) {
+    if ("Flow" %in% names(data_raw)) {
+      yield_col <- "Flow"
+    } else {
+      return(list())  # Aucune donnee disponible
+    }
+  }
+
+  base_data <- data_raw |>
+    dplyr::select(orig_row_id, dplyr::all_of(yield_col))
+
+  # Conversion des unites si necessaire
+  if (yield_col == "Yield_buacre" && isTRUE(metrique)) {
+    # Convertir bu/acre en kg/ha
+    base_data <- base_data |>
+      dplyr::mutate(
+        valeur = !!rlang::sym(yield_col) * 67.25,
+        unite = "kg/ha"
+      )
+  } else if (yield_col == "Yield_kg_ha" && !isTRUE(metrique)) {
+    # Convertir kg/ha en bu/acre
+    base_data <- base_data |>
+      dplyr::mutate(
+        valeur = !!rlang::sym(yield_col) / 67.25,
+        unite = "bu/acre"
+      )
+  } else if (yield_col == "Flow") {
+    # Flux en kg/s ou lb/s
+    base_data <- base_data |>
+      dplyr::mutate(
+        valeur = if (isTRUE(metrique)) Flow * 0.453592 else Flow,
+        unite = if (isTRUE(metrique)) "kg/s" else "lb/s"
+      )
+  } else {
+    # Rendement deja dans la bonne unite
+    base_data <- base_data |>
+      dplyr::mutate(
+        valeur = !!rlang::sym(yield_col),
+        unite = if (isTRUE(metrique)) "kg/ha" else "bu/acre"
+      )
+  }
 
   steps <- unique(deletions$step)
 
@@ -117,6 +172,13 @@ create_diagnostic_plot <- function(diag_data, step_name, base_size = 11) {
   unit_label <- unique(plot_data$unite)
   
   # Creer le graphique avec deux panneaux
+  # Determiner le label de l'axe X selon l'unite
+  x_label <- if (unit_label %in% c("kg/s", "lb/s")) {
+    paste0("Flux (", unit_label, ")")
+  } else {
+    paste0("Rendement (", unit_label, ")")
+  }
+
   p <- ggplot2::ggplot(plot_data, ggplot2::aes(x = valeur, fill = statut)) +
     ggplot2::geom_histogram(alpha = 0.7, bins = 40, position = "identity") +
     ggplot2::scale_fill_manual(
@@ -128,7 +190,7 @@ create_diagnostic_plot <- function(diag_data, step_name, base_size = 11) {
       title = step_name,
       subtitle = paste0("Taux de suppression: ", removal_rate, "% | ",
                        "Total: ", total_count, " points"),
-      x = paste0("Flux (", unit_label, ")"),
+      x = x_label,
       y = "Frequence",
       caption = paste0(
         "Conserve - Moy: ", kept_stats$mean, " | Med: ", kept_stats$median,
@@ -186,20 +248,39 @@ create_diagnostic_plot <- function(diag_data, step_name, base_size = 11) {
 #' @param crs_code Code EPSG du systeme de coordonnees (defaut: NULL, auto-detecte)
 #' @return Objet SpatRaster
 #' @export
-export_raster <- function(data, cell_size = 1, column_colonne = "Yield_kg_ha", 
-                          fun = mean, crs_code = NULL) {
+export_raster <- function(data, cell_size = 1, column_colonne = "Yield_kg_ha",
+                            fun = mean, crs_code = NULL) {
+  # Charger les packages necessaires
   if (!requireNamespace("terra", quietly = TRUE)) {
     stop("Le package 'terra' est requis pour cette fonction. Installez-le avec: install.packages('terra')")
   }
-  if (!requireNamespace("concaveman", quietly = TRUE)) {
-    stop("Le package 'concaveman' est requis pour cette fonction. Installez-le avec: install.packages('concaveman')")
+  
+  if (!requireNamespace("sf", quietly = TRUE)) {
+    stop("Le package 'sf' est requis pour cette fonction. Installez-le avec: install.packages('sf')")
   }
   
+  # Charger explicitement les namespaces pour eviter les problemes de conversion
+  requireNamespace("terra", quietly = TRUE)
+  requireNamespace("sf", quietly = TRUE)
+
   # Verifier que data est un objet sf
   if (!inherits(data, "sf")) {
     stop("Les donnees doivent etre un objet sf")
   }
-  
+
+  # Verifier que la colonne de geometrie existe et n'est pas vide
+  geom_check <- tryCatch({
+    sf::st_geometry(data)
+  }, error = function(e) {
+    NULL
+  })
+  if (is.null(geom_check)) {
+    stop("Aucune colonne de geometrie presente dans l'objet sf")
+  }
+  if (length(geom_check) == 0 || all(sf::st_is_empty(geom_check))) {
+    stop("La colonne de geometrie est vide dans l'objet sf")
+  }
+
   # Verifier que la colonne existe
   if (!column_colonne %in% names(data)) {
     # Essayer de trouver une colonne de rendement alternative
@@ -212,75 +293,193 @@ export_raster <- function(data, cell_size = 1, column_colonne = "Yield_kg_ha",
       stop(paste0("Colonne '", column_colonne, "' non trouvee dans les donnees"))
     }
   }
+
+  # Convertir en terra - utiliser vect() directement
+  message("Etape 1: Conversion sf -> terra...")
   
-  # Convertir en points si ce sont des polygones
-  if (any(sf::st_geometry_type(data) %in% c("POLYGON", "MULTIPOLYGON"))) {
-    data <- sf::st_centroid(data)
+  # Conversion sf -> terra avec tryCatch pour capturer les erreurs
+  vect_data <- tryCatch({
+    v <- terra::vect(data)
+    if (is.null(v) || terra::nrow(v) == 0) {
+      stop("Conversion resultat vide")
+    }
+    message(paste("  -> Conversion reussie:", terra::nrow(v), "geometries"))
+    message(paste("  -> Type de geometrie:", terra::geomtype(v)))
+    message(paste("  -> CRS source:", terra::crs(v, describe = TRUE)$name))
+    v
+  }, error = function(e) {
+    stop(paste("Erreur lors de la conversion sf vers terra:", e$message))
+  })
+  
+  if (is.null(vect_data) || terra::nrow(vect_data) == 0) {
+    stop("Echec de la conversion en SpatVector - aucune geometrie valide")
   }
+
+  # Si polygones, convertir en centroides
+  geom_types <- sf::st_geometry_type(data)
+  if (any(geom_types %in% c("POLYGON", "MULTIPOLYGON"))) {
+    message("Conversion des polygones en centroides...")
+    vect_data <- terra::centroids(vect_data)
+  }
+
+  # Determiner le CRS et projeter en coordonnees metriques si necessaire
+  utm_epsg <- NULL
   
-  # Determiner le CRS
   if (is.null(crs_code)) {
     crs_info <- sf::st_crs(data)
-    if (is.na(crs_info$epsg)) {
-      # Projecter en UTM si necessaire
-      data <- latlon_to_utm(data)
+    current_epsg <- crs_info$epsg
+
+    # Si les donnees sont en WGS84 (4326) ou sans CRS, projeter en UTM
+    if (is.na(current_epsg) || current_epsg == 4326) {
+      # Calculer la zone UTM appropriee
+      coords_ll <- terra::geom(vect_data)[, c("x", "y")]
+      mean_lon <- mean(coords_ll[, 1], na.rm = TRUE)
+      mean_lat <- mean(coords_ll[, 2], na.rm = TRUE)
+      utm_zone <- floor((mean_lon + 180) / 6) + 1
+      utm_epsg <- ifelse(mean_lat < 0, 32700 + utm_zone, 32600 + utm_zone)
+
+      message(paste("Projection en UTM zone", utm_zone, "(EPSG:", utm_epsg, ")"))
+
+      # Projeter avec terra - utiliser tryCatch
+      message("Etape 2: Projection terra...")
+      vect_data <- tryCatch({
+        v <- terra::project(vect_data, paste0("EPSG:", utm_epsg))
+        if (is.null(v) || terra::nrow(v) == 0) {
+          stop("Projection resultat vide")
+        }
+        message(paste("  -> Projection reussie:", terra::nrow(v), "points projetes"))
+        message(paste("  -> CRS apres projection:", terra::crs(v, describe = TRUE)$name))
+        v
+      }, error = function(e) {
+        stop(paste("Erreur lors de la projection UTM:", e$message))
+      })
     }
   } else {
-    data <- sf::st_transform(data, crs_code)
+    message(paste("Projection en EPSG:", crs_code))
+    utm_epsg <- crs_code
+    # Projeter avec terra
+    vect_data <- tryCatch({
+      terra::project(vect_data, paste0("EPSG:", crs_code))
+    }, error = function(e) {
+      stop(paste("Erreur lors de la projection:", e$message))
+    })
   }
-  
-  # Extraire les coordonnees et valeurs
-  coords <- sf::st_coordinates(data)
-  values <- data[[column_colonne]]
-  
-  # Creer un SpatVector pour terra
-  vect_data <- terra::vect(data)
-  
+
+  # Verifier que vect_data est valide
+  if (is.null(vect_data) || terra::nrow(vect_data) == 0) {
+    stop("Echec de la conversion en SpatVector")
+  }
+
+  # Verifier que les donnees contiennent des valeurs valides
+  values_check <- terra::values(vect_data)[[column_colonne]]
+  valid_count <- sum(!is.na(values_check))
+
+  if (valid_count == 0) {
+    stop(paste("Aucune valeur valide dans la colonne", column_colonne))
+  }
+
   # Creer une grille raster vide
-  ext <- terra::ext(vect_data)
+  message("Etape 3: Creation du template raster...")
   
+  ext <- terra::ext(vect_data)
+  message(paste("  -> Extension:", as.character(ext)))
+
   # Ajouter une marge
   margin <- cell_size * 5
   ext <- terra::extend(ext, margin)
-  
+
   # Creer le raster template
   r_template <- terra::rast(
     ext = ext,
     resolution = cell_size,
     crs = terra::crs(vect_data)
   )
+  message(paste("  -> Template cree:", terra::ncell(r_template), "cellules"))
+
+  # Interpolation avec interpNear - utiliser radius uniquement (pas k, pas maxdist)
+  message("Etape 4: Interpolation IDW avec plus proche voisin...")
+  message(paste("  - Nombre de points:", terra::nrow(vect_data)))
+  message(paste("  - Resolution cellule:", cell_size, "m"))
+  message(paste("  - Colonne utilisee:", column_colonne))
+
+  r <- tryCatch({
+    terra::interpNear(
+      x = r_template,
+      y = vect_data,
+      field = column_colonne,
+      radius = cell_size * 10  # Distance de recherche (pas maxdist)
+    )
+  }, error = function(e) {
+    stop(paste("Erreur lors de l'interpolation:", e$message))
+  })
+
+  # Verifier le resultat
+  na_count <- sum(is.na(terra::values(r)))
+  total_count <- length(terra::values(r))
+  message(paste("  - Cellules raster:", total_count))
+  message(paste("  - Cellules avec NA:", na_count))
+
+  # Si interpNear ne fonctionne pas bien, essayer avec rasterize + focal
+  if (na_count > total_count * 0.9) {
+    message("Interpolation IDW a trop de trous, utilisation de rasterize + lissage...")
+
+    r <- tryCatch({
+      terra::rasterize(
+        x = vect_data,
+        y = r_template,
+        field = column_colonne,
+        fun = fun
+      )
+    }, error = function(e) {
+      stop(paste("Erreur lors de la rasterization:", e$message))
+    })
+
+    # Remplir les trous avec focal (moyenne des voisins)
+    r <- tryCatch({
+      terra::focal(r, w = 3, fun = mean, na.rm = TRUE, na.policy = "only")
+    }, error = function(e) {
+      message(paste("Avertissement lors du lissage:", e$message))
+      r  # Retourner le raster non lisse si le lissage echoue
+    })
+
+    na_count_after <- sum(is.na(terra::values(r)))
+    message(paste("  - Cellules avec NA apres lissage:", na_count_after))
+  }
+
+  # Creer un polygone de masque en utilisant terra directement
+  message("Creation du polygone de masque...")
+
+  # Creer un buffer autour des points pour definir la zone d'interpolation
+  buffer_dist <- cell_size * 3
   
-  # Rasteriser les points
-  r <- terra::rasterize(
-    x = vect_data,
-    y = r_template,
-    field = column_colonne,
-    fun = fun
-  )
-  
-  # Creer le polygone concave
-  coords_df <- as.data.frame(coords)
-  names(coords_df) <- c("x", "y")
-  
-  # Utiliser concaveman pour creer un polygone concave
-  concave_poly <- concaveman::concaveman(coords_df, concavity = 2)
-  
-  # Convertir en objet sf
-  concave_sf <- sf::st_as_sf(concave_poly, coords = c("x", "y"), crs = sf::st_crs(data))
-  concave_sf <- sf::st_combine(concave_sf) |> 
-    sf::st_cast("POLYGON") |>
-    sf::st_sf()
-  
-  # Convertir en SpatVector pour terra
-  concave_vect <- terra::vect(concave_sf)
-  
-  # Masquer le raster avec le polygone concave
-  r_masked <- terra::mask(r, concave_vect)
-  
+  mask_vect <- tryCatch({
+    terra::buffer(vect_data, width = buffer_dist)
+  }, error = function(e) {
+    message(paste("Avertissement lors du buffer:", e$message))
+    # Si le buffer echoue, utiliser les points directement
+    vect_data
+  })
+
+  # Fusionner tous les buffers en un seul polygone avec tryCatch
+  mask_vect <- tryCatch({
+    terra::aggregate(mask_vect)
+  }, error = function(e) {
+    message(paste("Avertissement lors de l'aggregation:", e$message))
+    mask_vect  # Retourner le vecteur non aggrege si l'aggregation echoue
+  })
+
+  # Masquer le raster avec le polygone - avec tryCatch
+  r_masked <- tryCatch({
+    terra::mask(r, mask_vect)
+  }, error = function(e) {
+    message(paste("Avertissement lors du masquage:", e$message))
+    r  # Retourner le raster non masque si le masquage echoue
+  })
+
   # Ajouter des metadonnees
   names(r_masked) <- column_colonne
   terra::units(r_masked) <- ifelse(grepl("kg", column_colonne), "kg/ha", "bu/acre")
-  
+
   return(r_masked)
 }
 
