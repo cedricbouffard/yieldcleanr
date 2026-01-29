@@ -65,7 +65,7 @@ cleaned <- clean_yield_data(
 
 ```r
 # Launch the interactive cleaning application
-yieldcleanr::run_app()
+yieldcleanr::launch_shiny_app()
 ```
 
 The Shiny application provides:
@@ -165,7 +165,7 @@ This project is licensed under the MIT License - see [LICENSE](LICENSE) for deta
 ## Contact
 
 - **Issues**: [GitHub Issues](https://github.com/cedricbouffard/yieldcleanr/issues)
-- **Email**: cedric.bouffard@example.com
+- **Email**: cedric.bouffard@irda.qc.ca
 
 ---
 
