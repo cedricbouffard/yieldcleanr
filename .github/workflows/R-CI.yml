@@ -71,7 +71,7 @@ jobs:
         run: |
           Rscript -e '
             cov <- covr::package_coverage(type = "tests")
-            covr::print.coverage(cov)
+            print(cov)
             covr::report(cov, file = "coverage/index.html")
           '
 
