@@ -65,7 +65,7 @@ test_that("read_yield_data handles missing file", {
   expect_error(read_yield_data("nonexistent_file_12345.txt"))
 })
 
-test_that("read_yield_data returns tibble for valid file", {
+ test_that("read_yield_data returns tibble for valid file", {
   skip_if_not_installed("sf")
 
   data <- tibble::tibble(
@@ -84,7 +84,7 @@ test_that("read_yield_data returns tibble for valid file", {
     Altitude = c(61.3, 61.5)
   )
 
-  result <- read_yield_data(data)
+  result <- read_yield_data(data = data)
 
   expect_s3_class(result, "tbl_df")
 })
@@ -451,7 +451,7 @@ test_that("apply_local_sd_filter warns on missing columns", {
   expect_warning(apply_local_sd_filter(data))
 })
 
-# Test filter_heading_anomalies ----
+ # Test filter_heading_anomalies ----
 test_that("filter_heading_anomalies filters heading changes", {
   data <- tibble::tibble(
     X = c(435000, 435010, 435020, 435030, 435040),
@@ -459,9 +459,11 @@ test_that("filter_heading_anomalies filters heading changes", {
     Flow = 1:5
   )
 
-  result <- filter_heading_anomalies(data, max_change = 45)
+  result <- filter_heading_anomalies(data, max_heading_change = 45)
 
-  expect_equal(nrow(result), nrow(data))
+  expect_type(result, "list")
+  expect_true("data" %in% names(result))
+  expect_equal(nrow(result$data), nrow(data))
 })
 
 # Test filter_velocity_jumps ----
@@ -473,12 +475,14 @@ test_that("filter_velocity_jumps filters sudden changes", {
     Flow = 1:5
   )
 
-  result <- filter_velocity_jumps(data, max_change = 5)
+  result <- filter_velocity_jumps(data, max_acceleration = 5)
 
-  expect_equal(nrow(result), nrow(data))
+  expect_type(result, "list")
+  expect_true("data" %in% names(result))
+  expect_equal(nrow(result$data), nrow(data))
 })
 
-# Test apply_position_filter ----
+ # Test apply_position_filter ----
 test_that("apply_position_filter filters by position", {
   data <- tibble::tibble(
     X = c(435000, 435010, 435020, 435030, 435040),
@@ -486,12 +490,13 @@ test_that("apply_position_filter filters by position", {
     Flow = 1:5
   )
 
-  result <- apply_position_filter(data, min_distance = 1)
+  thresholds <- list(pos_x_min = 434000, pos_x_max = 436000, pos_y_min = 5261000, pos_y_max = 5263000)
+  result <- apply_position_filter(data, thresholds = thresholds)
 
   expect_equal(nrow(result), nrow(data))
 })
 
-# Test clean_yield ----
+ # Test clean_yield ----
 test_that("clean_yield handles missing file", {
   expect_error(clean_yield("nonexistent_file_12345.txt"))
 })
@@ -499,7 +504,7 @@ test_that("clean_yield handles missing file", {
 test_that("clean_yield returns result object", {
   data <- create_basic_test_data()
 
-  result <- clean_yield(data)
+  result <- clean_yield(data = data)
 
   expect_true(is.data.frame(result) || inherits(result, "tbl_df"))
 })
@@ -508,7 +513,7 @@ test_that("clean_yield returns result object", {
 test_that("ayce_clean returns cleaned data", {
   data <- create_basic_test_data()
 
-  result <- ayce_clean(data)
+  result <- ayce_clean(data = data)
 
   expect_true(is.data.frame(result) || inherits(result, "tbl_df"))
 })
@@ -519,7 +524,7 @@ test_that("ayce_sf returns SF object", {
 
   data <- create_basic_test_data()
 
-  result <- ayce_sf(data, geometry_type = "point")
+  result <- ayce_sf(data = data, geometry_type = "point")
 
   expect_true(inherits(result, "sf") || inherits(result, "tbl_df"))
 })
@@ -535,26 +540,39 @@ test_that("clean_yield_with_tracking returns list with tracking", {
   expect_true("removed_points" %in% names(result))
 })
 
-# Test export_raster ----
-test_that("export_raster saves file", {
+ # Test export_raster ----
+test_that("export_raster returns SpatRaster", {
+  skip_if_not_installed("sf")
+  skip_if_not_installed("terra")
+
   data <- create_basic_test_data()
+  data$Yield_kg_ha <- data$Flow * 10  # Add a test yield column
 
-  temp_file <- tempfile(fileext = ".tif")
+  data_sf <- sf::st_as_sf(data, coords = c("Longitude", "Latitude"), crs = 4326)
 
-  result <- export_raster(data, temp_file)
+  result <- export_raster(data_sf)
 
-  expect_true(file.exists(temp_file) || is.null(result))
+  expect_true(inherits(result, "SpatRaster") || is.null(result))
 })
 
 # Test save_raster ----
 test_that("save_raster saves file", {
+  skip_if_not_installed("sf")
+  skip_if_not_installed("terra")
+
   data <- create_basic_test_data()
+  data$Yield_kg_ha <- data$Flow * 10  # Add a test yield column
+
+  data_sf <- sf::st_as_sf(data, coords = c("Longitude", "Latitude"), crs = 4326)
 
   temp_file <- tempfile(fileext = ".tif")
 
-  result <- save_raster(data, temp_file)
+  raster <- export_raster(data_sf)
 
-  expect_true(file.exists(temp_file) || is.null(result))
+  if (!is.null(raster)) {
+    result <- save_raster(raster, temp_file)
+    expect_true(file.exists(temp_file))
+  }
 })
 
 # Test launch_shiny_app ----

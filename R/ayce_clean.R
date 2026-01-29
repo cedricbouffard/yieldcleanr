@@ -14,15 +14,16 @@
  #' \dontrun{
  #' cleaned <- ayce_clean("data/original.txt")
  #' }
- ayce_clean <- function(file_path, output_file = NULL, log_file = NULL,
-                       params = NULL) {
-  clean_yield(file_path = file_path,
-              metrique = FALSE,
-              polygon = FALSE,
-              params = params,
-              output_file = output_file,
-              log_file = log_file)
-}
+ ayce_clean <- function(file_path = NULL, data = NULL, output_file = NULL, log_file = NULL,
+                        params = NULL) {
+   clean_yield(file_path = file_path,
+               data = data,
+               metrique = FALSE,
+               polygon = FALSE,
+               params = params,
+               output_file = output_file,
+               log_file = log_file)
+ }
 
 
 #' Nettoyage AYCE rapide avec valeurs par defaut

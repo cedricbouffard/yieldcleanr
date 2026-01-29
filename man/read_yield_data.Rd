@@ -4,7 +4,7 @@
 \alias{read_yield_data}
 \title{Lire des donnees de rendement brutes depuis un fichier texte}
 \usage{
-read_yield_data(file_path, col_names = TRUE)
+read_yield_data(file_path = NULL, data = NULL, col_names = TRUE)
 }
 \arguments{
 \item{file_path}{Chemin du fichier texte d'entree}

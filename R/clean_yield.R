@@ -35,8 +35,12 @@
 #'   )
 #' )
 #' }
-clean_yield <- function(file_path, metrique = TRUE, polygon = TRUE,
+ clean_yield <- function(file_path = NULL, data = NULL, metrique = TRUE, polygon = TRUE,
                         params = NULL, output_file = NULL, log_file = NULL) {
+
+  if (is.null(file_path) && is.null(data)) {
+    rlang::abort("Either 'file_path' or 'data' must be provided")
+  }
 
   # ----- Parametres AYCE par defaut -----
   default_params <- list(
@@ -89,7 +93,11 @@ clean_yield <- function(file_path, metrique = TRUE, polygon = TRUE,
   rlang::inform("")
 
   rlang::inform("Etape 1 : chargement des donnees...")
-  data <- read_yield_data(file_path)
+  if (!is.null(data)) {
+    data <- data
+  } else {
+    data <- read_yield_data(file_path)
+  }
   data_raw <- data
   rlang::inform(paste("  -", nrow(data), "raw observations loaded"))
   
@@ -373,30 +381,35 @@ clean_yield <- function(file_path, metrique = TRUE, polygon = TRUE,
 
      if (polygon) {
        # ----- Calcul du cap pour les polygones -----
-       rlang::inform("Etape 16b : calcul du cap...")
-      data <- data |>
-        dplyr::mutate(
-          heading = atan2(
-            dplyr::lag(Longitude, default = Longitude[1]) - Longitude,
-            dplyr::lag(Latitude, default = Latitude[1]) - Latitude
-          ) * 180 / pi
-        )
-      data$heading[is.na(data$heading)] <- 0
+        rlang::inform("Etape 16b : calcul du cap...")
+       data <- data |>
+         dplyr::mutate(
+           heading = atan2(
+             dplyr::lag(Longitude, default = Longitude[1]) - Longitude,
+             dplyr::lag(Latitude, default = Latitude[1]) - Latitude
+           ) * 180 / pi
+         )
+       data$heading[is.na(data$heading)] <- 0
 
-       # ----- Lissage du cap pour reduire le bruit -----
-       rlang::inform("Etape 16b.1 : lissage du cap par segments...")
-       # Calculer les variations pour detecter les virages
-      n <- nrow(data)
-      heading_diff <- c(data$heading[2:n] - data$heading[1:(n-1)], 0)
-       # Gerer le retour circulaire des angles
-      heading_diff <- ((heading_diff + 180) %% 360) - 180
-       # Detecter les virages (seuil : 30 degres)
-      turn_threshold <- 30
-      is_turn <- abs(heading_diff) > turn_threshold
+        # ----- Lissage du cap pour reduire le bruit -----
+        rlang::inform("Etape 16b.1 : lissage du cap par segments...")
+        # Calculer les variations pour detecter les virages
+       n <- nrow(data)
 
-       # Identifier les segments (series sans virage)
-      segment_id <- cumsum(c(TRUE, is_turn[1:(n-1)]))
-      data$segment_id <- segment_id
+       if (n < 2) {
+         data$segment_id <- 1
+       } else {
+         heading_diff <- c(data$heading[2:n] - data$heading[1:(n-1)], 0)
+         # Gerer le retour circulaire des angles
+         heading_diff <- ((heading_diff + 180) %% 360) - 180
+         # Detecter les virages (seuil : 30 degres)
+         turn_threshold <- 30
+         is_turn <- abs(heading_diff) > turn_threshold
+
+         # Identifier les segments (series sans virage)
+         segment_id <- cumsum(c(TRUE, is_turn[1:(n-1)]))
+         data$segment_id <- segment_id
+       }
 
        # Lisser le cap dans chaque segment
       data <- data |>
@@ -457,24 +470,24 @@ clean_yield <- function(file_path, metrique = TRUE, polygon = TRUE,
       # ----- Creation de l'objet SF avec polygones -----
       rlang::inform("Etape 16c : creation de l'objet SF polygones...")
 
-      # S'assurer que les colonnes metriques existent
-      # Detection automatique des unites pour Swath et Distance
-      if (!"Swath_m" %in% names(data)) {
-        mean_swath <- mean(data$Swath, na.rm = TRUE)
-        if (mean_swath > 5) {
-          data$Swath_m <- data$Swath  # Deja en metres
-        } else {
-          data$Swath_m <- data$Swath * 0.0254  # Conversion pouces -> metres
-        }
-      }
-      if (!"Distance_m" %in% names(data)) {
-        mean_dist <- mean(data$Distance, na.rm = TRUE)
-        if (mean_dist > 0.5) {
-          data$Distance_m <- data$Distance  # Deja en metres
-        } else {
-          data$Distance_m <- data$Distance * 0.0254  # Conversion pouces -> metres
-        }
-      }
+       # S'assurer que les colonnes metriques existent
+       # Detection automatique des unites pour Swath et Distance
+       if (!"Swath_m" %in% names(data)) {
+         mean_swath <- mean(data$Swath, na.rm = TRUE)
+         if (is.na(mean_swath) || mean_swath > 5) {
+           data$Swath_m <- data$Swath  # Deja en metres ou inconnu
+         } else {
+           data$Swath_m <- data$Swath * 0.0254  # Conversion pouces -> metres
+         }
+       }
+       if (!"Distance_m" %in% names(data)) {
+         mean_dist <- mean(data$Distance, na.rm = TRUE)
+         if (is.na(mean_dist) || mean_dist > 0.5) {
+           data$Distance_m <- data$Distance  # Deja en metres ou inconnu
+         } else {
+           data$Distance_m <- data$Distance * 0.0254  # Conversion pouces -> metres
+         }
+       }
       if (!"Altitude_m" %in% names(data)) {
         data$Altitude_m <- data$Altitude * 0.3048
       }

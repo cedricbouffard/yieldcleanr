@@ -638,12 +638,11 @@ clean_yield_with_tracking <- function(file_path = NULL, data = NULL, metrique = 
       }
     }
     rlang::inform(paste("  Supprimes :", n_removed, "points"))
-  } else {
-    rlang::inform("Etape 14 : filtre ecart-type localise saute")
-  }
-  rlang::inform(paste("  Supprimes :", n_removed, "points"))
-  
-  # Etape 15 : filtre par passage
+   } else {
+     rlang::inform("Etape 14 : filtre ecart-type localise saute")
+   }
+
+   # Etape 15 : filtre par passage
   rlang::inform("Etape 15 : filtre par passage...")
   if ("Pass" %in% names(data) && !all(is.na(data$Pass))) {
     pass_stats <- data |>
@@ -759,10 +758,12 @@ clean_yield_with_tracking <- function(file_path = NULL, data = NULL, metrique = 
   rlang::inform(paste("Taux de retention :", round(stats$retention_rate * 100, 1), "%"))
   rlang::inform("================================================")
   
-  list(
-    data_clean = data_clean,
-    data_raw = data_raw |> dplyr::mutate(orig_row_id = dplyr::row_number()),
-    deletions = deletions,
-    stats = stats
-  )
+   list(
+     data = data_clean,
+     data_clean = data_clean,
+     data_raw = data_raw |> dplyr::mutate(orig_row_id = dplyr::row_number()),
+     deletions = deletions,
+     removed_points = deletions,
+     stats = stats
+   )
 }

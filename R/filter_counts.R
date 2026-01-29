@@ -8,7 +8,7 @@
 #' @param params Liste des parametres de filtrage
 #' @return Liste avec le nombre de points retires par filtre
 #' @export
-calculate_filter_counts <- function(data, params = NULL) {
+ calculate_filter_counts <- function(data, params = NULL) {
   if (is.null(data) || nrow(data) == 0) {
     return(list())
   }
@@ -26,50 +26,58 @@ calculate_filter_counts <- function(data, params = NULL) {
   }
 
   # Conversion UTM si necessaire
-  if (!all(c("X", "Y") %in% names(data))) {
+  has_xy <- all(c("X", "Y") %in% names(data))
+  has_latlon <- all(c("Latitude", "Longitude") %in% names(data))
+
+  if (!has_xy && has_latlon) {
     data <- latlon_to_utm(data)
     # S'assurer que latlon_to_utm ne retourne pas un objet sf
     if (inherits(data, "sf")) {
       data <- sf::st_drop_geometry(data)
     }
-  }
+   } else if (!has_xy && !has_latlon) {
+     rlang::warn("Colonnes Latitude/Longitude ou X/Y requises pour le calcul des filtres - resultat partiel")
+     return(list(rows_removed = 0, retention_rate = 1))
+   }
 
-  # Etape 5 : filtre header
-  if ("HeaderStatus" %in% names(data)) {
-    to_keep <- dplyr::filter(data, HeaderStatus %in% c(1, 33) | is.na(HeaderStatus))
-    counts$header <- nrow(data) - nrow(to_keep)
-  }
+   # Etape 5 : filtre header
+   if ("HeaderStatus" %in% names(data)) {
+     to_keep <- dplyr::filter(data, HeaderStatus %in% c(1, 33) | is.na(HeaderStatus))
+     counts$header <- nrow(data) - nrow(to_keep)
+   }
 
-  # Etape 6 : filtre GPS
-  if ("GPSStatus" %in% names(data)) {
-    data$GPSStatus <- suppressWarnings(as.numeric(data$GPSStatus))
-    to_keep <- dplyr::filter(data, is.na(GPSStatus) | GPSStatus >= 4)
-    counts$gps <- nrow(data) - nrow(to_keep)
-  }
+   # Etape 6 : filtre GPS
+   if ("GPSStatus" %in% names(data)) {
+     data$GPSStatus <- suppressWarnings(as.numeric(data$GPSStatus))
+     to_keep <- dplyr::filter(data, is.na(GPSStatus) | GPSStatus >= 4)
+     counts$gps <- nrow(data) - nrow(to_keep)
+   }
 
-  # Etape 7-8 : calcul vitesse et filtre vitesse
-  data <- data |>
-    dplyr::mutate(
-      velocity = sqrt((X - dplyr::lag(X))^2 + (Y - dplyr::lag(Y))^2) /
-                    dplyr::coalesce(Interval, 1)
-    )
-  data$velocity[is.na(data$velocity) | !is.finite(data$velocity)] <- 0
+   # Etape 7-8 : calcul vitesse et filtre vitesse
+   if (has_xy) {
+     data <- data |>
+       dplyr::mutate(
+         velocity = sqrt((X - dplyr::lag(X))^2 + (Y - dplyr::lag(Y))^2) /
+                       dplyr::coalesce(Interval, 1)
+       )
+     data$velocity[is.na(data$velocity) | !is.finite(data$velocity)] <- 0
 
-  # Calculer les seuils automatiques
-  thresholds <- calculate_auto_thresholds(data,
-    yllim = params$yllim %||% 0.10,
-    yulim = params$yulim %||% 0.90,
-    yscale = params$yscale %||% 1.1,
-    vllim = params$v_lim %||% 0.05,
-    vulim = params$v_ulim %||% 0.95,
-    vscale = params$v_scale %||% 1.1,
-    minv_abs = params$minv_abs %||% 0.5,
-    miny_abs = params$miny_abs %||% 0,
-    gbuffer = params$gbuffer %||% 100
-  )
+     # Calculer les seuils automatiques
+     thresholds <- calculate_auto_thresholds(data,
+       yllim = params$yllim %||% 0.10,
+       yulim = params$yulim %||% 0.90,
+       yscale = params$yscale %||% 1.1,
+       vllim = params$v_lim %||% 0.05,
+       vulim = params$v_ulim %||% 0.95,
+       vscale = params$v_scale %||% 1.1,
+       minv_abs = params$minv_abs %||% 0.5,
+       miny_abs = params$miny_abs %||% 0,
+       gbuffer = params$gbuffer %||% 100
+     )
 
-  to_keep <- dplyr::filter(data, velocity >= thresholds$min_velocity & velocity <= thresholds$max_velocity)
-  counts$velocity <- nrow(data) - nrow(to_keep)
+     to_keep <- dplyr::filter(data, velocity >= thresholds$min_velocity & velocity <= thresholds$max_velocity)
+     counts$velocity <- nrow(data) - nrow(to_keep)
+   }
 
   # Etape 8b : filtre changements brusques de vitesse
   if (isTRUE(params$apply_velocity_jump)) {

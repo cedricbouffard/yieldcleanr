@@ -18,7 +18,26 @@
 #'
 #' data <- read_yield_data(temp_file)
 #' print(data)
-read_yield_data <- function(file_path, col_names = TRUE) {
+  read_yield_data <- function(file_path = NULL, data = NULL, col_names = TRUE) {
+  # Check if file_path is actually a data frame (when called without named arguments)
+  if (!is.null(file_path) && (is.data.frame(file_path) || inherits(file_path, "tbl_df"))) {
+    if (!".row_id" %in% names(file_path)) {
+      file_path <- file_path |> dplyr::mutate(.row_id = dplyr::row_number())
+    }
+    return(file_path)
+  }
+
+  if (!is.null(data) && (is.data.frame(data) || inherits(data, "tbl_df"))) {
+    if (!".row_id" %in% names(data)) {
+      data <- data |> dplyr::mutate(.row_id = dplyr::row_number())
+    }
+    return(data)
+  }
+
+  if (is.null(file_path)) {
+    rlang::abort("Either 'file_path' or 'data' must be provided")
+  }
+
   # Verification du fichier
   if (!file.exists(file_path)) {
     rlang::abort(paste("Le fichier n'existe pas:", file_path))

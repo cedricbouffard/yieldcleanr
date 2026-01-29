@@ -9,10 +9,15 @@
 #' @param max_deceleration Deceleration maximale autorisee (m/s, defaut: -8)
 #' @return Liste avec data (donnees filtrees) et removed (points supprimes)
 #' @export
-filter_velocity_jumps <- function(data, max_acceleration = 5, max_deceleration = -8) {
+ filter_velocity_jumps <- function(data, max_acceleration = 5, max_deceleration = -8) {
   if (!all(c("X", "Y", "Interval") %in% names(data))) {
     rlang::warn("Colonnes X, Y ou Interval manquantes - saut du filtre de changements de vitesse")
     return(list(data = data, removed = data[0, ]))
+  }
+
+  if (!"GPS_Time" %in% names(data)) {
+    rlang::warn("Colonne GPS_Time manquante - utilisation de l'ordre des lignes")
+    data <- data |> dplyr::mutate(GPS_Time = dplyr::row_number())
   }
 
   # Calculer la vitesse entre points consecutifs
@@ -47,12 +52,12 @@ filter_velocity_jumps <- function(data, max_acceleration = 5, max_deceleration =
     dplyr::select(-dist_to_next, -dist_to_prev, -time_to_next, -time_to_prev,
                   -velocity_next, -velocity_prev, -acceleration)
 
-  removed <- to_remove |>
-    dplyr::select(-dist_to_next, -dist_to_prev, -time_to_next, -time_to_prev,
-                  -velocity_next, -velocity_prev, -acceleration)
+   removed <- to_remove |>
+     dplyr::select(-dist_to_next, -dist_to_prev, -time_to_next, -time_to_prev,
+                   -velocity_next, -velocity_prev, -acceleration)
 
-  list(data = to_keep, removed = removed)
-}
+   return(list(data = to_keep, removed = removed))
+ }
 
 
 #' Filtre pour variations brusques de direction du header
@@ -66,10 +71,15 @@ filter_velocity_jumps <- function(data, max_acceleration = 5, max_deceleration =
 #' @param window_size Taille de la fenetre pour detecter les anomalies (defaut: 3)
 #' @return Liste avec data (donnees filtrees) et removed (points supprimes)
 #' @export
-filter_heading_anomalies <- function(data, max_heading_change = 45, window_size = 3) {
+ filter_heading_anomalies <- function(data, max_heading_change = 45, window_size = 3) {
   if (!all(c("X", "Y") %in% names(data))) {
     rlang::warn("Colonnes X ou Y manquantes - saut du filtre de direction")
     return(list(data = data, removed = data[0, ]))
+  }
+
+  if (!"GPS_Time" %in% names(data)) {
+    rlang::warn("Colonne GPS_Time manquante - utilisation de l'ordre des lignes")
+    data <- data |> dplyr::mutate(GPS_Time = dplyr::row_number())
   }
 
   # Calculer le cap (heading) entre points consecutifs
@@ -96,14 +106,14 @@ filter_heading_anomalies <- function(data, max_heading_change = 45, window_size 
   to_remove <- data_with_heading |>
     dplyr::filter(is_anomaly == TRUE)
 
-  to_keep <- data_with_heading |>
-    dplyr::filter(is_anomaly == FALSE | is.na(is_anomaly)) |>
-    dplyr::select(-dx_next, -dy_next, -dx_prev, -dy_prev,
-                  -heading_next, -heading_prev, -heading_change, -is_anomaly)
+   to_keep <- data_with_heading |>
+     dplyr::filter(is_anomaly == FALSE | is.na(is_anomaly)) |>
+     dplyr::select(-dx_next, -dy_next, -dx_prev, -dy_prev,
+                   -heading_next, -heading_prev, -heading_change, -is_anomaly)
 
-  removed <- to_remove |>
-    dplyr::select(-dx_next, -dy_next, -dx_prev, -dy_prev,
-                  -heading_next, -heading_prev, -heading_change, -is_anomaly)
+   removed <- to_remove |>
+     dplyr::select(-dx_next, -dy_next, -dx_prev, -dy_prev,
+                   -heading_next, -heading_prev, -heading_change, -is_anomaly)
 
-  list(data = to_keep, removed = removed)
-}
+   return(list(data = to_keep, removed = removed))
+ }

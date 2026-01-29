@@ -123,15 +123,19 @@
  #' @return Tibble filtre avec vitesses valides
  #' @export
  filter_velocity <- function(data, min_velocity = 0.5, max_velocity = 10) {
-  if (!"X" %in% names(data) || !"Y" %in% names(data)) {
-    rlang::warn("Coordonnees X,Y non trouvees, calcul de velocite ignore")
-    return(data)
-  }
+   if (!"X" %in% names(data) || !"Y" %in% names(data)) {
+     rlang::warn("Coordonnees X,Y non trouvees, calcul de velocite ignore")
+     return(data)
+   }
 
-  # Calcul de la vitesse basee sur la distance euclidienne
-  data <- data |>
-    dplyr::arrange(.row_id) |>
-    dplyr::mutate(
+   if (!".row_id" %in% names(data)) {
+     data <- data |> dplyr::mutate(.row_id = dplyr::row_number())
+   }
+
+   # Calcul de la vitesse basee sur la distance euclidienne
+   data <- data |>
+     dplyr::arrange(.row_id) |>
+     dplyr::mutate(
       dist_eucl = sqrt((X - dplyr::lag(X))^2 + (Y - dplyr::lag(Y))^2),
       velocity = dist_eucl / Interval
     )

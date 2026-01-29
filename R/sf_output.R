@@ -19,30 +19,32 @@
  #' )
  #' plot(sf_result["Yield"])
  #' }
- ayce_sf <- function(file_path, output_file = NULL, log_file = NULL,
+ ayce_sf <- function(file_path = NULL, data = NULL, output_file = NULL, log_file = NULL,
                     geometry_type = c("polygon", "point"),
                     params = NULL) {
 
-  geometry_type <- match.arg(geometry_type)
+   geometry_type <- match.arg(geometry_type)
 
-  if (geometry_type == "point") {
-    # Sortie points (tibble sans geometrie pour compatibilite)
-    clean_yield(file_path = file_path,
-                metrique = TRUE,
-                polygon = FALSE,
-                params = params,
-                output_file = output_file,
-                log_file = log_file)
-  } else {
-    # Sortie polygones (objet SF)
-    clean_yield(file_path = file_path,
-                metrique = TRUE,
-                polygon = TRUE,
-                params = params,
-                output_file = output_file,
-                log_file = log_file)
-  }
-}
+   if (geometry_type == "point") {
+     # Sortie points (tibble sans geometrie pour compatibilite)
+     clean_yield(file_path = file_path,
+                 data = data,
+                 metrique = TRUE,
+                 polygon = FALSE,
+                 params = params,
+                 output_file = output_file,
+                 log_file = log_file)
+   } else {
+     # Sortie polygones (objet SF)
+     clean_yield(file_path = file_path,
+                 data = data,
+                 metrique = TRUE,
+                 polygon = TRUE,
+                 params = params,
+                 output_file = output_file,
+                 log_file = log_file)
+   }
+ }
 
 
 #' Convertir les donnees nettoyees en objet SF avec polygones

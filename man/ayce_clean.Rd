@@ -4,7 +4,13 @@
 \alias{ayce_clean}
 \title{AYCE : Auto Yield Cleaning Engine (sortie imperiale)}
 \usage{
-ayce_clean(file_path, output_file = NULL, log_file = NULL, params = NULL)
+ayce_clean(
+  file_path = NULL,
+  data = NULL,
+  output_file = NULL,
+  log_file = NULL,
+  params = NULL
+)
 }
 \arguments{
 \item{file_path}{Chemin du fichier d'entree (txt)}

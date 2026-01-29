@@ -5,7 +5,8 @@
 \title{Fonction unifiee de nettoyage des donnees de rendement}
 \usage{
 clean_yield(
-  file_path,
+  file_path = NULL,
+  data = NULL,
   metrique = TRUE,
   polygon = TRUE,
   params = NULL,
