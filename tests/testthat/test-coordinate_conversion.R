@@ -26,8 +26,6 @@ test_that("calculate_distances requires X and Y columns", {
 })
 
 test_that("utm_to_latlon converts to geographic coordinates", {
-  skip_if_not_installed("sf")
-
   # Create data with X, Y columns in UTM zone 19N
   data <- data.frame(
     X = c(435000, 435050),
@@ -41,8 +39,6 @@ test_that("utm_to_latlon converts to geographic coordinates", {
 })
 
 test_that("utm_to_latlon handles southern hemisphere", {
-  skip_if_not_installed("sf")
-
   data <- data.frame(
     X = c(500000, 500050),
     Y = c(8000000, 8000050)  # Southern hemisphere
@@ -62,8 +58,6 @@ test_that("utm_to_latlon requires X and Y columns", {
 })
 
 test_that("latlon_to_utm converts to UTM coordinates", {
-  skip_if_not_installed("sf")
-
   data <- tibble::tibble(
     Latitude = c(47.506122, 47.506136),
     Longitude = c(-69.856661, -69.856681)
@@ -78,8 +72,6 @@ test_that("latlon_to_utm converts to UTM coordinates", {
 })
 
 test_that("latlon_to_utm auto-detects UTM zone", {
-  skip_if_not_installed("sf")
-
   data <- tibble::tibble(
     Latitude = c(47.506122, 47.506136),
     Longitude = c(-69.856661, -69.856681)
@@ -95,8 +87,6 @@ test_that("latlon_to_utm auto-detects UTM zone", {
 })
 
 test_that("latlon_to_utm uses specified zone", {
-  skip_if_not_installed("sf")
-
   data <- tibble::tibble(
     Latitude = c(47.5, 47.6),
     Longitude = c(-69.8, -69.7)

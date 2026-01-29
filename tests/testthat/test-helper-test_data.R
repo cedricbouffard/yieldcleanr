@@ -1,4 +1,4 @@
-library(testthat)
+# Test helper-test_data.R ----
 
 test_that("generation of test data works", {
   # Verify test data objects exist

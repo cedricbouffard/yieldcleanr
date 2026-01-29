@@ -81,11 +81,7 @@ test_that("filter_local_std skips when no Pass column", {
 })
 
 test_that("filter_sliding_window removes temporal outliers", {
-  skip_if_not_installed("zoo")
-
   # Create data with an outlier in the middle where rolling mean will be calculated
-  # With window_size = 7, indices 1-3 and 8-11 will have NA rolling_mean
-  # Only indices 4-7 will have actual rolling mean
   data <- tibble::tibble(
     Flow = c(10, 10, 10, 10, 100, 10, 10, 10, 10, 10, 10, 10, 10),  # 100 is at position 5
     .row_id = 1:13
@@ -95,13 +91,10 @@ test_that("filter_sliding_window removes temporal outliers", {
   result <- filter_sliding_window(data, window_size = 7, n_std = 2)
 
   # The outlier 100 should be removed if it's within the window
-  # Position 5 is in the window for indices 2-6
   expect_true(nrow(result) <= nrow(data))
 })
 
 test_that("filter_sliding_window handles edge cases", {
-  skip_if_not_installed("zoo")
-
   # Dataset with window larger than data - should still work
   data <- tibble::tibble(
     Flow = c(10, 20, 30),
@@ -115,8 +108,6 @@ test_that("filter_sliding_window handles edge cases", {
 })
 
 test_that("apply_overlap_filter returns filtered data", {
-  skip_if_not_installed("sf")
-
   data <- tibble::tibble(
     X = c(435000, 435001, 435002, 435003, 435100),
     Y = c(5262000, 5262001, 5262002, 5262003, 5262100),
@@ -137,8 +128,6 @@ test_that("apply_overlap_filter warns on missing columns", {
 })
 
 test_that("apply_local_sd_filter returns filtered data", {
-  skip_if_not_installed("sf")
-
   data <- create_advanced_test_data()
 
   result <- apply_local_sd_filter(data, n_swaths = 5, lsd_limit = 3)

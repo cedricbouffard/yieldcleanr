@@ -1,7 +1,3 @@
-library(testthat)
-library(dplyr)
-library(yieldcleanr)
-
 # Test suite for ayce_clean.R and ayce_pcdi.R ----
 
 # Helper function to create test data
@@ -50,8 +46,6 @@ test_that("apply_moisture_delay with zero delay returns original", {
 
 # Test calculate_auto_thresholds (exported) ----
 test_that("calculate_auto_thresholds calculates thresholds", {
-  skip_if_not_installed("sf")
-
   data <- create_test_data(50) |>
     mutate(
       X = 435000 + seq(0, length.out = 50, by = 10),
