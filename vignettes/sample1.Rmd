@@ -3,7 +3,7 @@ title: "sample1.txt - Données de Soja"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{sample1.txt - Données de Soja}
-  %\VignetteEngine{knittr::rmarkdown}
+  %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
 

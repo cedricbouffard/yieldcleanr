@@ -64,21 +64,6 @@ ggplot() +
   labs(title = "Données Nettoyées - test4.csv", subtitle = "Après AYCE")
 ```
 
-## Comparaison Avant/Après
-
-```{r comparison, fig.width=14, fig.height=7}
-par(mfrow = c(1, 2))
-
-# Before
-data_raw_sf$Yield_kg_ha <- data_raw_sf$Flow * 0.453592 * 3600 / 4046 * 1000
-plot(sf::st_geometry(data_raw_sf), main = "Avant AYCE", border = NA)
-plot(data_raw_sf["Yield_kg_ha"], add = TRUE, pch = 19, cex = 0.3, pal = viridis::viridis)
-
-# After
-plot(sf::st_geometry(cleaned), main = "Après AYCE", border = NA)
-plot(cleaned["Yield"], add = TRUE, pch = 19, cex = 0.3, pal = viridis::viridis)
-```
-
 ## Statistiques
 
 ```{r stats}

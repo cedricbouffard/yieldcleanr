@@ -64,51 +64,41 @@ jobs:
       - name: Installer le package local
         run: R CMD INSTALL .
 
-      - name: Run tests with coverage
+      - name: Run tests
+        run: Rscript -e 'testthat::test_dir("tests/testthat", reporter = testthat::ProgressReporter$new())'
+
+      - name: Calculate code coverage
         run: |
           Rscript -e '
           library(covr)
-          library(testthat)
 
-          # Run tests first
-          test_results <- test_dir("tests/testthat", reporter = ProgressReporter$new())
+          # Calculate coverage
+          cov <- package_coverage(path = ".", type = "tests")
 
-          # Calculate coverage using package_coverage
-          cov <- package_coverage(
-            type = "tests",
-            path = ".",
-            line_exclusions = list(
-              "inst/shinyapp" = 1,  # Shiny app code excluded
-              "tests" = 1
-            )
-          )
-
-          # Print detailed coverage
+          # Print coverage summary
           cat("\n=== COVERAGE SUMMARY ===\n")
           print(summary(cov))
 
-          # Save as cobertura XML for GitHub Actions
+          # Save as cobertura XML
           cobertura(cov, file = "coverage.xml")
 
-          # Also save RDS for Codecov
-          saveRDS(cov, "coverage.rds")
-
+          # Print per-file coverage
           cat("\n=== PER FILE COVERAGE ===\n")
           cov_df <- as.data.frame(cov)
-          print(cov_df)
+          print(cov_df[, c("filename", "coverage", "covered", "total")])
 
-          # Exit with error if coverage is too low
-          total_cov <- sum(cov$fractions[[1]]$covered) / sum(cov$fractions[[1]]$total) * 100
-          cat("\nTotal coverage:", round(total_cov, 1), "%\n")
+          # Calculate total coverage
+          total <- sum(cov_df$total)
+          covered <- sum(cov_df$covered)
+          pct <- round(covered / total * 100, 1)
+          cat("\nTotal coverage:", pct, "%\n")
           '
 
       - name: Upload coverage results
         uses: actions/upload-artifact@v4
         with:
           name: coverage-results
-          path: |
-            coverage.xml
-            coverage.rds
+          path: coverage.xml
 
       - name: Codecov
         uses: codecov/codecov-action@v4

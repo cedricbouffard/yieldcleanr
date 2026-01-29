@@ -3,7 +3,7 @@ title: "sample4.txt - White Corn Data"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{sample4.txt - White Corn Data}
-  %\VignetteEngine{knittr::rmarkdown}
+  %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
 

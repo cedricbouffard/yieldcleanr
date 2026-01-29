@@ -3,7 +3,7 @@ title: "Example Data Usage"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{Example Data Usage}
-  %\VignetteEngine{knittr::rmarkdown}
+  %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
 

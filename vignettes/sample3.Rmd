@@ -66,20 +66,6 @@ ggplot() +
   labs(title = "Données Nettoyées - sample3.txt", subtitle = "Maïs - Rendement après AYCE")
 ```
 
-## Comparaison Avant/Après
-
-```{r comparison, fig.width=14, fig.height=7}
-par(mfrow = c(1, 2))
-
-# Before
-plot(sf::st_geometry(data_raw_sf), main = "Avant AYCE", border = NA)
-plot(data_raw_sf["Flow"], add = TRUE, pch = 19, cex = 0.3, pal = viridis::viridis)
-
-# After
-plot(sf::st_geometry(cleaned), main = "Après AYCE", border = NA)
-plot(cleaned["Yield"], add = TRUE, pch = 19, cex = 0.3, pal = viridis::viridis)
-```
-
 ## Statistiques
 
 ```{r stats}

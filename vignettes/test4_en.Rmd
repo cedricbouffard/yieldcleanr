@@ -3,7 +3,7 @@ title: "test4.csv - Test Data (File 4)"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{test4.csv - Test Data (File 4)}
-  %\VignetteEngine{knittr::rmarkdown}
+  %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
 
