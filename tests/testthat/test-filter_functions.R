@@ -1,4 +1,6 @@
 # Test filter_functions ----
+library(dplyr)
+library(yieldcleanr)
 
 # Test filter_header_status ----
 test_that("filter_header_status keeps active harvesting (default: 1 and 33)", {

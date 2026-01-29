@@ -1,4 +1,6 @@
 # Test suite for ayce_clean.R and ayce_pcdi.R ----
+library(dplyr)
+library(yieldcleanr)
 
 # Helper function to create test data
 create_test_data <- function(n = 50) {

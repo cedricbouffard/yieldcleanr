@@ -1,4 +1,6 @@
 # Test suite for read_data.R ----
+library(dplyr)
+library(yieldcleanr)
 
 test_that("read_yield_data works with valid data frame", {
   data <- tibble::tibble(

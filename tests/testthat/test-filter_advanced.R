@@ -1,8 +1,6 @@
-library(testthat)
+# Test suite for filter_advanced.R ----
 library(dplyr)
 library(yieldcleanr)
-
-# Test suite for filter_advanced.R ----
 
 # Create test data for advanced filters
 create_advanced_test_data <- function() {

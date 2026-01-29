@@ -1,4 +1,6 @@
 # Test shiny_diagnostics.R ----
+library(dplyr)
+library(yieldcleanr)
 
 test_that("build_filter_diagnostics construit les diagnostics par filtre", {
   data_raw <- tibble::tibble(

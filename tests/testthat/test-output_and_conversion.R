@@ -1,4 +1,6 @@
 # Test suite for output.R and unit_conversion.R ----
+library(dplyr)
+library(yieldcleanr)
 
 test_that("add_flags initializes all flag columns", {
   data <- tibble::tibble(

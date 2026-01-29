@@ -1,5 +1,4 @@
 # Comprehensive tests for all exported functions
-library(testthat)
 library(dplyr)
 library(yieldcleanr)
 

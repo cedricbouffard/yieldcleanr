@@ -1,8 +1,6 @@
-library(testthat)
+# Test suite for coordinate_conversion.R ----
 library(dplyr)
 library(yieldcleanr)
-
-# Test suite for coordinate_conversion.R ----
 
 test_that("calculate_distances computes inter-point distances", {
   data <- tibble::tibble(
