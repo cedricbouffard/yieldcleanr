@@ -35,7 +35,8 @@ Suggests:
     covr,
     pkgdown,
     knitr,
-    rmarkdown
+    rmarkdown,
+    readr
 VignetteBuilder: knitr
 Config/testthat/edition: 3
 URL: https://github.com/cedricbouffard/yieldcleanr
