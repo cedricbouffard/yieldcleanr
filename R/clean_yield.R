@@ -480,8 +480,13 @@ clean_yield <- function(file_path, metrique = TRUE, polygon = TRUE,
       }
 
       # Creer l'objet SF
-      sf_result <- data_to_sf(data, crs = 4326)
-      
+      sf_result <- tryCatch({
+        data_to_sf(data, crs = 4326)
+      }, error = function(e) {
+        rlang::warn(paste("Erreur lors de la creation des polygones:", e$message))
+        NULL
+      })
+
       if (is.null(sf_result)) {
         rlang::warn("Impossible de creer les polygones - retour des donnees sous forme de points")
         return(data)

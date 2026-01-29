@@ -67,6 +67,14 @@ jobs:
       - name: Run tests
         run: Rscript -e 'testthat::test_dir("tests/testthat", reporter = testthat::ProgressReporter$new())'
 
+      - name: Calculate coverage
+        run: |
+          Rscript -e '
+            cov <- covr::package_coverage(type = "tests")
+            covr::print.coverage(cov)
+            covr::report(cov, file = "coverage/index.html")
+          '
+
   pkgdown:
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'

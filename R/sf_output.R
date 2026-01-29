@@ -66,6 +66,11 @@ data_to_sf <- function(data, crs = 4326) {
     return(NULL)
   }
 
+  if (nrow(data) == 0) {
+    rlang::warn("Aucune donnee a convertir en SF")
+    return(NULL)
+  }
+
   rlang::inform("Creation d'un objet SF avec polygones...")
 
   # Fonction helper pour creer un rectangle oriente - bien ferme
@@ -153,24 +158,29 @@ data_to_sf <- function(data, crs = 4326) {
 
   # Filtrer les lignes avec des valeurs manquantes necessaires pour les polygones
   required_cols <- c("Longitude", "Latitude", "heading", "Swath_m", "Distance_m")
-  valid_rows <- stats::complete.cases(data[, required_cols])
-  
+  valid_rows <- tryCatch({
+    complete_cases <- complete.cases(data[, required_cols, drop = FALSE])
+    as.logical(complete_cases)
+  }, error = function(e) {
+    rep(TRUE, nrow(data))
+  })
+
   if (!all(valid_rows)) {
     n_invalid <- sum(!valid_rows)
     rlang::warn(paste(n_invalid, "lignes avec valeurs manquantes exclues de la creation des polygones"))
-    data <- data[valid_rows, ]
+    data <- data[valid_rows, , drop = FALSE]
   }
-  
+
   if (nrow(data) == 0) {
     rlang::warn("Aucune donnee valide pour creer les polygones")
     return(NULL)
   }
-  
+
   # Creer les geometries des polygones
   rlang::inform("Creation des geometries des polygones...")
   polygons_list <- list()
 
-  for (i in 1:nrow(data)) {
+  for (i in seq_len(nrow(data))) {
     coords <- create_rectangle(
       data$Longitude[i],
       data$Latitude[i],
