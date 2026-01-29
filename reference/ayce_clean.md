@@ -7,7 +7,13 @@ Cette fonction retourne un tibble en unites imperiales (bu/acre).
 ## Usage
 
 ``` r
-ayce_clean(file_path, output_file = NULL, log_file = NULL, params = NULL)
+ayce_clean(
+  file_path = NULL,
+  data = NULL,
+  output_file = NULL,
+  log_file = NULL,
+  params = NULL
+)
 ```
 
 ## Arguments

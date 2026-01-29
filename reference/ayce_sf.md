@@ -8,7 +8,8 @@ metrique. Enveloppe de clean_yield() avec sortie metrique + polygones.
 
 ``` r
 ayce_sf(
-  file_path,
+  file_path = NULL,
+  data = NULL,
   output_file = NULL,
   log_file = NULL,
   geometry_type = c("polygon", "point"),

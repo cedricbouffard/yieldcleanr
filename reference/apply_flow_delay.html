@@ -3,7 +3,29 @@
 sous le capteur de flux et le moment ou la position GPS est enregistree.
 Le flux de grain est decale dans le temps pour correspondre a la position."><meta property="og:description" content="Cette fonction compense le delai entre le moment ou le grain passe
 sous le capteur de flux et le moment ou la position GPS est enregistree.
-Le flux de grain est decale dans le temps pour correspondre a la position."><meta name="description" content="Outils pour nettoyer les données de rendement agricole"></head><body>
+Le flux de grain est decale dans le temps pour correspondre a la position."><meta name="description" content="Outils pour nettoyer les données de rendement agricole / Tools for cleaning agricultural yield data"><style>
+.lang-toggle { cursor: pointer; padding: 8px 12px; }
+</style><script>
+document.addEventListener('DOMContentLoaded', function() {
+  const langToggle = document.getElementById('lang-toggle');
+  if (langToggle) {
+    langToggle.addEventListener('click', function(e) {
+      e.preventDefault();
+      const currentPath = window.location.pathname;
+      const isEn = currentPath.includes('/en/') || currentPath.endsWith('_en.html');
+      let newPath;
+      if (isEn) {
+        newPath = currentPath.replace('/en/', '/fr/').replace('_en.html', '_fr.html');
+      } else {
+        newPath = currentPath.replace('/fr/', '/en/').replace('_fr.html', '_en.html');
+      }
+      if (newPath !== currentPath) {
+        window.location.href = newPath;
+      }
+    });
+  }
+});
+</script></head><body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
@@ -20,9 +42,10 @@ Le flux de grain est decale dans le temps pour correspondre a la position."><met
 
     <div id="navbar" class="collapse navbar-collapse ms-3">
       <ul class="navbar-nav me-auto"><li class="nav-item"><a class="nav-link" href="../articles/index.html">Articles</a></li>
-<li class="active nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
-<li class="nav-item"><a class="nav-link" href="../news/index.html">News</a></li>
+<li class="active nav-item"><a class="nav-link" href="../reference/index.html">Référence</a></li>
+<li class="nav-item"><a class="nav-link" href="../news/index.html">Nouveautés</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><a class="external-link nav-link" href="https://github.com/cedricbouffard/yieldcleanr">GitHub</a></li>
+<li class="nav-item"><a class="nav-link lang-toggle" id="lang-toggle" href="../#">FR | EN</a></li>
       </ul></div>
 
 

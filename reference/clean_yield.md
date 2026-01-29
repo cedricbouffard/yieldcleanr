@@ -8,7 +8,8 @@ imperiales, et avec ou sans geometries SF (polygones ou points).
 
 ``` r
 clean_yield(
-  file_path,
+  file_path = NULL,
+  data = NULL,
   metrique = TRUE,
   polygon = TRUE,
   params = NULL,

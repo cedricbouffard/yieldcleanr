@@ -7,7 +7,7 @@ differents formats de fichiers (15-17 colonnes).
 ## Usage
 
 ``` r
-read_yield_data(file_path, col_names = TRUE)
+read_yield_data(file_path = NULL, data = NULL, col_names = TRUE)
 ```
 
 ## Arguments
