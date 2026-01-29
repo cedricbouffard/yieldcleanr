@@ -17,8 +17,8 @@ latlon_to_utm(data, zone = NULL, datum = "WGS84")
 Tibble avec colonnes X (Easting) et Y (Northing)
 }
 \description{
-Cette fonction convertit les coordonnées géographiques (WGS84)
-en coordonnées UTM (Eastings/Northings).
+Cette fonction convertit les coordonnees geographiques (WGS84)
+en coordonnees UTM (Eastings/Northings).
 }
 \examples{
 # Creer des donnees d'exemple

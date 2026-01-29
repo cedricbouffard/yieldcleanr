@@ -11,7 +11,6 @@ Description: Outils pour nettoyer, filtrer et valider les données de rendement
   basées sur les standards USDA Yield Editor.
 License: MIT + file LICENSE
 Encoding: UTF-8
-LazyData: true
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.3
 Depends: R (>= 4.0.0)

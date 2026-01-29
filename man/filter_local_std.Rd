@@ -19,10 +19,10 @@ filter_local_std(data, swath_window = 5, std_limit = 3, yield_col = "Flow")
 Tibble filtre avec outliers supprimes
 }
 \description{
-Cette fonction identifie et élimine les points anormaux en utilisant
+Cette fonction identifie et elimine les points anormaux en utilisant
 un voisinage de n swathes autour de chaque point. Les points dont le
-rendement s'écarte de plus de STD_limit écarts-types de la moyenne
-locale sont éliminés.
+rendement s'ecarte de plus de STD_limit ecarts-types de la moyenne
+locale sont elimines.
 }
 \examples{
 \dontrun{

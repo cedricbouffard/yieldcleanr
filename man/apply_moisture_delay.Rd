@@ -17,5 +17,5 @@ apply_moisture_delay(data, delay = 15, direction = "forward")
 Tibble avec valeurs d'humidite corrigees
 }
 \description{
-Cette fonction compense le délai entre la mesure d'humidité et la position GPS.
+Cette fonction compense le delai entre la mesure d'humidite et la position GPS.
 }

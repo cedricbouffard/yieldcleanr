@@ -1,9 +1,9 @@
 #' Filtrer selon le statut du header
 #'
-#' Cette fonction filtre les données pour ne garder que les points où la
-#' moissonneuse est en position de travail (header abaissé ou actif).
-#' Header Status: 1 = harvesting (actif), 33 = header down (abaissé).
-#' Les deux valeurs indiquent une récolte active.
+#' Cette fonction filtre les donnees pour ne garder que les points ou la
+#' moissonneuse est en position de travail (header abaisse ou actif).
+#' Header Status: 1 = harvesting (actif), 33 = header down (abaisse).
+#' Les deux valeurs indiquent une recolte active.
 #'
 #' @param data Tibble avec donnees de rendement
 #' @param header_values Valeurs indiquant une recolte active (defaut c(1, 33))
@@ -21,7 +21,7 @@
  #' print(data_filtered)
  filter_header_status <- function(data, header_values = c(1, 33)) {
   if (!"HeaderStatus" %in% names(data)) {
-    rlang::warn("Colonne HeaderStatus non trouvée, saut du filtrage")
+    rlang::warn("Colonne HeaderStatus non trouvee, saut du filtrage")
     return(data)
   }
 
@@ -35,8 +35,8 @@
   # Log du filtrage
   if (n_removed > 0) {
     rlang::inform(paste(
-      "Header Status filter:", n_removed, "points éliminés",
-      "(header non actif, valeurs acceptées:", paste(header_values, collapse = ", "), ")"
+      "Header Status filter:", n_removed, "points elimines",
+      "(header non actif, valeurs acceptees:", paste(header_values, collapse = ", "), ")"
     ))
   }
 
@@ -46,7 +46,7 @@
 
 #' Filtrer selon le statut GPS
 #'
-#' Cette fonction filtre les données selon la qualité du signal GPS.
+#' Cette fonction filtre les donnees selon la qualite du signal GPS.
 #'
 #' @param data Tibble avec donnees de rendement
 #' @param min_gps_status Statut GPS minimal (defaut 4 = bon)
@@ -54,13 +54,13 @@
  #' @export
  filter_gps_status <- function(data, min_gps_status = 4) {
   if (!"GPSStatus" %in% names(data)) {
-    rlang::warn("Colonne GPSStatus non trouvée, saut du filtrage")
+    rlang::warn("Colonne GPSStatus non trouvee, saut du filtrage")
     return(data)
   }
 
   n_before <- nrow(data)
 
-  # Conserver les lignes avec GPSStatus NA (données de qualité inconnue)
+  # Conserver les lignes avec GPSStatus NA (donnees de qualite inconnue)
   data <- data |>
     dplyr::filter(is.na(GPSStatus) | GPSStatus >= min_gps_status)
 
@@ -68,7 +68,7 @@
 
   if (n_removed > 0) {
     rlang::inform(paste(
-      "GPS Status filter:", n_removed, "points éliminés",
+      "GPS Status filter:", n_removed, "points elimines",
       "(GPS status <", min_gps_status, ")"
     ))
   }
@@ -79,8 +79,8 @@
 
 #' Filtrer selon le DOP (Dilution of Precision)
 #'
-#' Cette fonction élimine les points avec un DOP trop élevé
-#' (mauvaise précision GPS).
+#' Cette fonction elimine les points avec un DOP trop eleve
+#' (mauvaise precision GPS).
 #'
 #' @param data Tibble avec donnees de rendement
 #' @param max_dop Valeur maximale acceptable du DOP (defaut 10)
@@ -88,7 +88,7 @@
  #' @export
  filter_dop <- function(data, max_dop = 10) {
   if (!"DOP" %in% names(data)) {
-    rlang::warn("Colonne DOP non trouvée, saut du filtrage")
+    rlang::warn("Colonne DOP non trouvee, saut du filtrage")
     return(data)
   }
 
@@ -102,7 +102,7 @@
 
   if (n_removed > 0) {
     rlang::inform(paste(
-      "DOP filter:", n_removed, "points éliminés",
+      "DOP filter:", n_removed, "points elimines",
       "(DOP >", max_dop, ")"
     ))
   }
@@ -113,9 +113,9 @@
 
 #' Filtrer selon la plage de vitesse
 #'
-#' Cette fonction filtre les points selon la vitesse de déplacement.
-#' La vélocité est calculée comme la distance euclidienne entre points
-#' consécutifs divisée par l'intervalle de temps.
+#' Cette fonction filtre les points selon la vitesse de deplacement.
+#' La velocite est calculee comme la distance euclidienne entre points
+#' consecutifs divisee par l'intervalle de temps.
 #'
 #' @param data Tibble avec donnees de rendement
 #' @param min_velocity Vitesse minimale en m/s (defaut 0.5)
@@ -124,11 +124,11 @@
  #' @export
  filter_velocity <- function(data, min_velocity = 0.5, max_velocity = 10) {
   if (!"X" %in% names(data) || !"Y" %in% names(data)) {
-    rlang::warn("Coordonnées X,Y non trouvées, calcul de vélocité ignoré")
+    rlang::warn("Coordonnees X,Y non trouvees, calcul de velocite ignore")
     return(data)
   }
 
-  # Calcul de la vitesse basée sur la distance euclidienne
+  # Calcul de la vitesse basee sur la distance euclidienne
   data <- data |>
     dplyr::arrange(.row_id) |>
     dplyr::mutate(
@@ -145,7 +145,7 @@
 
   if (n_removed > 0) {
     rlang::inform(paste(
-      "Velocity filter:", n_removed, "points éliminés",
+      "Velocity filter:", n_removed, "points elimines",
       "(vitesse hors plage:", min_velocity, "-", max_velocity, ")"
     ))
   }
@@ -159,7 +159,7 @@
 
 #' Filtrer selon les limites geographiques
 #'
-#' Cette fonction filtre les points selon les limites géographiques
+#' Cette fonction filtre les points selon les limites geographiques
 #' du champ (Easting/Northing ou Lat/Lon).
 #'
 #' @param data Tibble avec donnees de rendement
@@ -189,7 +189,7 @@
 
   if (n_removed > 0) {
     rlang::inform(paste(
-      "Bounds filter:", n_removed, "points éliminés",
+      "Bounds filter:", n_removed, "points elimines",
       "(hors limites du champ)"
     ))
   }
@@ -201,7 +201,7 @@
 #' Filtrer selon la plage de rendement
 #'
 #' Cette fonction filtre les points selon la plage de rendement valide.
-#' Peut utiliser des valeurs explicites ou l'auto-détection basée sur l'écart-type.
+#' Peut utiliser des valeurs explicites ou l'auto-detection basee sur l'ecart-type.
 #'
 #' @param data Tibble avec donnees de rendement
 #' @param min_yield Rendement minimal acceptable. Si NULL, calcule automatiquement.
@@ -220,20 +220,20 @@
  #' # Valeurs explicites
  #' data_filtered <- filter_yield_range(data, min_yield = 50, max_yield = 200)
  #'
- #' # Auto-detection basee sur l'ecart-type (moyenne ± 3*ET)
+ #' # Auto-detection basee sur l'ecart-type (moyenne +/- 3*ET)
  #' data_filtered <- filter_yield_range(data)
  #'
- #' # Auto-detection avec plage plus large (moyenne ± 4*ET)
+ #' # Auto-detection avec plage plus large (moyenne +/- 4*ET)
  #' data_filtered <- filter_yield_range(data, n_std = 4)
  filter_yield_range <- function(data, min_yield = NULL, max_yield = NULL,
                                 yield_column = "Yield_buacre", n_std = 3) {
 
   if (!yield_column %in% names(data)) {
-    rlang::warn(paste("Colonne", yield_column, "non trouvée, saut du filtrage"))
+    rlang::warn(paste("Colonne", yield_column, "non trouvee, saut du filtrage"))
     return(data)
   }
 
-  # Auto-calcul si nécessaire
+  # Auto-calcul si necessaire
   if (is.null(min_yield) || is.null(max_yield)) {
     yield_vals <- data[[yield_column]]
     yield_vals <- yield_vals[is.finite(yield_vals)]
@@ -244,12 +244,12 @@
     min_yield_calc <- mean_yield - n_std * sd_yield
     max_yield_calc <- mean_yield + n_std * sd_yield
 
-    # Utiliser les valeurs calculées ou celles fournies
+    # Utiliser les valeurs calculees ou celles fournies
     min_yield <- if (is.null(min_yield)) min_yield_calc else min_yield
     max_yield <- if (is.null(max_yield)) max_yield_calc else max_yield
 
     rlang::inform(paste("Yield auto-range:", round(min_yield, 1), "-", round(max_yield, 1),
-                       "(mean ±", n_std, "SD =", round(mean_yield, 1), "±", round(sd_yield, 1), ")"))
+                       "(mean +/-", n_std, "SD =", round(mean_yield, 1), "+/-", round(sd_yield, 1), ")"))
   }
 
   n_before <- nrow(data)
@@ -263,7 +263,7 @@
 
   if (n_removed > 0) {
     rlang::inform(paste(
-      "Yield range filter:", n_removed, "points éliminés",
+      "Yield range filter:", n_removed, "points elimines",
       "(rendement hors plage:", round(min_yield, 1), "-", round(max_yield, 1), ")"
     ))
   }
@@ -274,8 +274,8 @@
 
 #' Filtrer selon la plage d'humidite
 #'
-#' Cette fonction filtre les points selon la plage d'humidité valide.
-#' Peut utiliser des valeurs explicites ou l'auto-détection basée sur l'écart-type.
+#' Cette fonction filtre les points selon la plage d'humidite valide.
+#' Peut utiliser des valeurs explicites ou l'auto-detection basee sur l'ecart-type.
 #'
 #' @param data Tibble avec donnees de rendement
 #' @param min_moisture Humidite minimale acceptable. Si NULL, calcule automatiquement.
@@ -287,19 +287,19 @@
  #' # Valeurs explicites
  #' data_clean <- filter_moisture_range(data, min_moisture = 8, max_moisture = 15)
  #'
- #' # Auto-détection basée sur l'écart-type (mean ± 3*sd)
+ #' # Auto-detection basee sur l'ecart-type (mean +/- 3*sd)
  #' data_clean <- filter_moisture_range(data)
  #'
- #' # Auto-détection avec plage plus large (mean ± 4*sd)
+ #' # Auto-detection avec plage plus large (mean +/- 4*sd)
  #' data_clean <- filter_moisture_range(data, n_std = 4)
  filter_moisture_range <- function(data, min_moisture = NULL, max_moisture = NULL, n_std = 3) {
 
   if (!"Moisture" %in% names(data)) {
-    rlang::warn("Colonne Moisture non trouvée, saut du filtrage")
+    rlang::warn("Colonne Moisture non trouvee, saut du filtrage")
     return(data)
   }
 
-  # Auto-calcul si nécessaire
+  # Auto-calcul si necessaire
   if (is.null(min_moisture) || is.null(max_moisture)) {
     mean_moisture <- mean(data$Moisture, na.rm = TRUE)
     sd_moisture <- stats::sd(data$Moisture, na.rm = TRUE)
@@ -307,12 +307,12 @@
     min_moisture_calc <- mean_moisture - n_std * sd_moisture
     max_moisture_calc <- mean_moisture + n_std * sd_moisture
 
-    # Utiliser les valeurs calculées ou celles fournies
+    # Utiliser les valeurs calculees ou celles fournies
     min_moisture <- if (is.null(min_moisture)) min_moisture_calc else min_moisture
     max_moisture <- if (is.null(max_moisture)) max_moisture_calc else max_moisture
 
     rlang::inform(paste("Moisture auto-range:", round(min_moisture, 1), "-", round(max_moisture, 1),
-                       "(mean ±", n_std, "SD =", round(mean_moisture, 1), "±", round(sd_moisture, 1), ")"))
+                       "(mean +/-", n_std, "SD =", round(mean_moisture, 1), "+/-", round(sd_moisture, 1), ")"))
   }
 
   n_before <- nrow(data)
@@ -324,8 +324,8 @@
 
   if (n_removed > 0) {
     rlang::inform(paste(
-      "Moisture range filter:", n_removed, "points éliminés",
-      "(humidité hors plage:", round(min_moisture, 1), "-", round(max_moisture, 1), ")"
+      "Moisture range filter:", n_removed, "points elimines",
+      "(humidite hors plage:", round(min_moisture, 1), "-", round(max_moisture, 1), ")"
     ))
   }
 

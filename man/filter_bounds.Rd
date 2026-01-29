@@ -17,6 +17,6 @@ filter_bounds(data, bounds = NULL, coord_type = "latlon")
 Tibble filtre dans les limites
 }
 \description{
-Cette fonction filtre les points selon les limites géographiques
+Cette fonction filtre les points selon les limites geographiques
 du champ (Easting/Northing ou Lat/Lon).
 }

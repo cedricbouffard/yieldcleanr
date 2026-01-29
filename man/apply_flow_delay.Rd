@@ -17,9 +17,9 @@ apply_flow_delay(data, delay = 2, direction = "forward", value_col = "Flow")
 Tibble avec valeurs de flux corrigees
 }
 \description{
-Cette fonction compense le délai entre le moment où le grain passe
-sous le capteur de flux et le moment où la position GPS est enregistrée.
-Le flux de grain est décalé dans le temps pour correspondre à la position.
+Cette fonction compense le delai entre le moment ou le grain passe
+sous le capteur de flux et le moment ou la position GPS est enregistree.
+Le flux de grain est decale dans le temps pour correspondre a la position.
 }
 \examples{
 # Creer des donnees d'exemple

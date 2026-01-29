@@ -15,10 +15,10 @@ filter_header_status(data, header_values = c(1, 33))
 Tibble filtre avec header actif
 }
 \description{
-Cette fonction filtre les données pour ne garder que les points où la
-moissonneuse est en position de travail (header abaissé ou actif).
-Header Status: 1 = harvesting (actif), 33 = header down (abaissé).
-Les deux valeurs indiquent une récolte active.
+Cette fonction filtre les donnees pour ne garder que les points ou la
+moissonneuse est en position de travail (header abaisse ou actif).
+Header Status: 1 = harvesting (actif), 33 = header down (abaisse).
+Les deux valeurs indiquent une recolte active.
 }
 \examples{
 # Creer des donnees d'exemple avec header mixte

@@ -15,5 +15,5 @@ filter_gps_status(data, min_gps_status = 4)
 Tibble filtre avec GPS valide
 }
 \description{
-Cette fonction filtre les données selon la qualité du signal GPS.
+Cette fonction filtre les donnees selon la qualite du signal GPS.
 }

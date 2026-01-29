@@ -17,9 +17,9 @@ remove_overlap(data, cellsize = 0.3, max_pass = 50)
 Tibble filtre sans chevauchement
 }
 \description{
-Cette fonction identifie et élimine les points de chevauchement
+Cette fonction identifie et elimine les points de chevauchement
 en utilisant une grille cellsize x cellsize. Les points dans les cellules
-avec PLUS de max_pass sont considérés comme du chevauchement et éliminés.
+avec PLUS de max_pass sont consideres comme du chevauchement et elimines.
 }
 \examples{
 \dontrun{

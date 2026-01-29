@@ -134,7 +134,7 @@
     dplyr::filter(overlap_ratio <= overlap_threshold)
 
   n_removed <- n_before - nrow(data)
-  rlang::inform(paste("Overlap filter:", n_removed, "points éliminés",
+  rlang::inform(paste("Overlap filter:", n_removed, "points elimines",
                       paste0("(", round(n_removed/n_before*100, 1), "%)")))
 
   return(data)
@@ -221,7 +221,7 @@
                   -n, -sd_upper, -sd_lower, -is_outlier)
 
   n_removed <- n_before - nrow(data)
-  rlang::inform(paste("Local SD filter:", n_removed, "points éliminés",
+  rlang::inform(paste("Local SD filter:", n_removed, "points elimines",
                       paste0("(", round(n_removed/n_before*100, 1), "%)")))
 
   return(data)

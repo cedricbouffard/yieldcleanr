@@ -1,8 +1,8 @@
 #' Supprimer les points en chevauchement
 #'
-#' Cette fonction identifie et élimine les points de chevauchement
+#' Cette fonction identifie et elimine les points de chevauchement
 #' en utilisant une grille cellsize x cellsize. Les points dans les cellules
-#' avec PLUS de max_pass sont considérés comme du chevauchement et éliminés.
+#' avec PLUS de max_pass sont consideres comme du chevauchement et elimines.
 #'
 #' @param data Tibble avec donnees (colonnes X, Y en UTM)
 #' @param cellsize Taille des cellules en metres (defaut 0.3m = 30cm)
@@ -31,7 +31,7 @@
 
   n_before <- nrow(data)
 
-  # Créer un ID de cellule basé sur la grille
+  # Creer un ID de cellule base sur la grille
   data <- data |>
     dplyr::mutate(
       cell_id_x = floor(X / cellsize),
@@ -43,7 +43,7 @@
   cell_counts <- data |>
     dplyr::count(cell_id, name = "cell_count")
 
-  # Joindre et filtrer - éliminer les cellules avec TROP de passages (chevauchement)
+  # Joindre et filtrer - eliminer les cellules avec TROP de passages (chevauchement)
   data <- data |>
     dplyr::left_join(cell_counts, by = "cell_id") |>
     dplyr::filter(cell_count <= max_pass) |>
@@ -54,7 +54,7 @@
   rlang::inform(paste(
     "Overlap filter complete: Cellsize:", cellsize,
     "Max Pass:", max_pass,
-    "-", n_removed, "points éliminés"
+    "-", n_removed, "points elimines"
   ))
 
   return(data)
@@ -63,10 +63,10 @@
 
 #' Appliquer le filtre ET local
 #'
-#' Cette fonction identifie et élimine les points anormaux en utilisant
+#' Cette fonction identifie et elimine les points anormaux en utilisant
 #' un voisinage de n swathes autour de chaque point. Les points dont le
-#' rendement s'écarte de plus de STD_limit écarts-types de la moyenne
-#' locale sont éliminés.
+#' rendement s'ecarte de plus de STD_limit ecarts-types de la moyenne
+#' locale sont elimines.
 #'
 #' @param data Tibble avec donnees (colonne Pass requise)
 #' @param swath_window Nombre de passages dans le voisinage local
@@ -81,7 +81,7 @@
  filter_local_std <- function(data, swath_window = 5, std_limit = 3,
                               yield_col = "Flow") {
   if (!"Pass" %in% names(data)) {
-    rlang::warn("Colonne Pass non trouvée, saut du filtrage STD local")
+    rlang::warn("Colonne Pass non trouvee, saut du filtrage STD local")
     return(data)
   }
 
@@ -112,7 +112,7 @@
       # Limites de filtrage
       upper_limit = local_mean + std_limit * local_sd,
       lower_limit = local_mean - std_limit * local_sd,
-      # Marquer les points à éliminer
+      # Marquer les points a eliminer
       is_outlier = !!rlang::sym(yield_col) > upper_limit |
                    !!rlang::sym(yield_col) < lower_limit
     )
@@ -133,7 +133,7 @@
   rlang::inform(paste(
     "Local STD Filter complete: Swath :", swath_window,
     "STDLimit :", std_limit,
-    "-", n_removed, "points éliminés"
+    "-", n_removed, "points elimines"
   ))
 
   return(data)
@@ -142,8 +142,8 @@
 
 #' Appliquer le filtre a fenetre glissante
 #'
-#' Cette fonction applique un filtre à fenêtre glissante pour éliminer
-#' les valeurs aberrantes basées sur les voisins temporels.
+#' Cette fonction applique un filtre a fenetre glissante pour eliminer
+#' les valeurs aberrantes basees sur les voisins temporels.
 #'
 #' @param data Tibble avec donnees de rendement
 #' @param window_size Taille de la fenetre glissante
@@ -202,8 +202,8 @@
   n_removed <- n_before - nrow(data)
 
   rlang::inform(paste(
-    "Sliding window filter:", window_size, "points de fenêtre,",
-    n_std, "STD -", n_removed, "points éliminés"
+    "Sliding window filter:", window_size, "points de fenetre,",
+    n_std, "STD -", n_removed, "points elimines"
   ))
 
   return(data)

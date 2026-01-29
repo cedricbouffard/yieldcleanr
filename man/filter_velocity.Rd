@@ -17,7 +17,7 @@ filter_velocity(data, min_velocity = 0.5, max_velocity = 10)
 Tibble filtre avec vitesses valides
 }
 \description{
-Cette fonction filtre les points selon la vitesse de déplacement.
-La vélocité est calculée comme la distance euclidienne entre points
-consécutifs divisée par l'intervalle de temps.
+Cette fonction filtre les points selon la vitesse de deplacement.
+La velocite est calculee comme la distance euclidienne entre points
+consecutifs divisee par l'intervalle de temps.
 }

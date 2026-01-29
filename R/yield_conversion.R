@@ -2,7 +2,7 @@
 #'
 #' Convertit le flux brut (LBS/SEC) en rendement (boisseaux/acre)
 #' avec la formule :
-#' Rendement (bu/acre) = (Flow × Interval × 43560) / (lbs_per_bushel × Swath_ft × Distance_ft)
+#' Rendement (bu/acre) = (Flow x Interval x 43560) / (lbs_per_bushel x Swath_ft x Distance_ft)
 #'
 #' Ou :
 #'   - Flow = flux de grain en lbs/sec
@@ -96,7 +96,7 @@
     dplyr::mutate(
       Width_ft = .data$Swath / inches_per_foot,
       Distance_ft = .data$Distance / inches_per_foot,
-      # Rendement = (Flow × Interval × 43560) / (lbs_per_bushel × Width_ft × Distance_ft)
+      # Rendement = (Flow x Interval x 43560) / (lbs_per_bushel x Width_ft x Distance_ft)
       Yield_buacre = (.data$Flow * .data$Interval * sqft_per_acre) /
                      (lbs_per_bushel * .data$Width_ft * .data$Distance_ft)
     )
@@ -109,7 +109,7 @@
   finite_yield <- data$Yield_buacre[is.finite(data$Yield_buacre)]
   mean_yield <- if (length(finite_yield) > 0) mean(finite_yield, na.rm = TRUE) else NA
 
-  rlang::inform(paste("Yield calculé:", round(mean_yield, 1),
+  rlang::inform(paste("Yield calcule:", round(mean_yield, 1),
                       "bu/acre (lbs/bu =", lbs_per_bushel, ")"))
 
   return(data)
@@ -142,24 +142,24 @@ get_lbs_per_bushel <- function(data) {
     }
 
     # Detecter ble/cereales
-    if (any(grepl("blé|wheat|wheat|cereal|avoine|barley|orge", grain))) {
+    if (any(grepl("ble|wheat|wheat|cereal|avoine|barley|orge", grain))) {
       return(60)
     }
 
     # Defaut : mais (56 lbs/bu)
-    rlang::inform(paste("GrainType non reconnu, utilisation 56 lbs/boisseau (maïs par défaut)"))
+    rlang::inform(paste("GrainType non reconnu, utilisation 56 lbs/boisseau (mais par defaut)"))
     return(56)
   }
 
   # Defaut si pas de GrainType
-  rlang::inform("Pas de colonne GrainType, utilisation 56 lbs/boisseau (maïs par défaut)")
+  rlang::inform("Pas de colonne GrainType, utilisation 56 lbs/boisseau (mais par defaut)")
   return(56)
 }
 
 
 #' Alternative : conversion avec formule simplifiee
 #'
-#' Rendement = Flow × 9335 / (Swath × Vitesse)
+#' Rendement = Flow x 9335 / (Swath x Vitesse)
 #' Formule simplifiee quand on utilise la vitesse directement.
 #'
 #' @param data Tibble avec Flow, Swath, Velocity_ft_s
@@ -201,7 +201,7 @@ ayce_with_yield_conversion <- function(file_path, output_file = NULL,
 
   rlang::inform("================================================")
   rlang::inform("   AYCE with Yield Conversion                  ")
-  rlang::inform("   (LBS/SEC → Bushels/acre)                   ")
+  rlang::inform("   (LBS/SEC -> Bushels/acre)                   ")
   rlang::inform("================================================")
 
   # Parametres par defaut
@@ -372,7 +372,7 @@ generate_yield_log <- function(data_clean, data_raw, params, pcdi_result,
     paste0("Removed: ", n_raw - n_clean, " (", round((n_raw - n_clean)/n_raw*100, 1), "%)"),
     "",
     "--- CONVERSION ---",
-    paste0("Formula: Flow_buacre = Flow_lbssec × 43560 / (56 × Swath_ft × Velocity)"),
+    paste0("Formula: Flow_buacre = Flow_lbssec x 43560 / (56 x Swath_ft x Velocity)"),
     paste0("Conversion factor: 1 bushel = 56 lbs (corn)"),
     "",
     "--- PCDI ---",

@@ -57,7 +57,7 @@ jobs:
           pak-version: stable
 
       - name: Run tests
-        run: Rscript -e 'rcmdcheck::rcmdcheck(args = c("--no-vignettes", "--no-examples"), error_on = "warning")'
+        run: Rscript -e 'rcmdcheck::rcmdcheck(args = c("--no-vignettes", "--no-examples", "--no-manual"), error_on = "warning")'
 
       - name: Coverage
         run: Rscript -e 'covr::codecov()'

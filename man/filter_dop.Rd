@@ -15,6 +15,6 @@ filter_dop(data, max_dop = 10)
 Tibble filtre avec DOP valide
 }
 \description{
-Cette fonction élimine les points avec un DOP trop élevé
-(mauvaise précision GPS).
+Cette fonction elimine les points avec un DOP trop eleve
+(mauvaise precision GPS).
 }

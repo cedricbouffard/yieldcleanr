@@ -1,7 +1,7 @@
 #' Convertir Latitude/Longitude en coordonnees UTM
 #'
-#' Cette fonction convertit les coordonnées géographiques (WGS84)
-#' en coordonnées UTM (Eastings/Northings).
+#' Cette fonction convertit les coordonnees geographiques (WGS84)
+#' en coordonnees UTM (Eastings/Northings).
 #'
 #' @param data Tibble avec colonnes Latitude et Longitude
 #' @param zone Zone UTM (auto-detectee si NULL)
@@ -27,7 +27,7 @@
   # Detection automatique de la zone UTM
   if (is.null(zone)) {
     zone <- floor((data$Longitude[1] + 180) / 6) + 1
-    rlang::inform(paste("Zone UTM détectée:", zone))
+    rlang::inform(paste("Zone UTM detectee:", zone))
   }
 
   # Utiliser la conversion directe avec sf
@@ -56,7 +56,7 @@
 
     data
   }, error = function(e) {
-    rlang::warn(paste("Erreur conversion sf, utilisation formule mathématique:", e$message))
+    rlang::warn(paste("Erreur conversion sf, utilisation formule mathematique:", e$message))
 
     # Formule de conversion UTM approximative
     # Source : Army Corps of Engineers - Formules Transverse Mercator
@@ -108,7 +108,7 @@
 
 #' Convertir UTM en Latitude/Longitude
 #'
-#' Cette fonction convertit les coordonnées UTM en Latitude/Longitude (WGS84).
+#' Cette fonction convertit les coordonnees UTM en Latitude/Longitude (WGS84).
 #'
 #' @param data Tibble avec colonnes X et Y
 #' @param zone Numero de zone UTM
@@ -160,7 +160,7 @@ utm_to_latlon <- function(data, zone, hemisphere = "N") {
 
 #' Calculer la distance entre points consecutifs
 #'
-#' Cette fonction calcule la distance euclidienne entre points consécutifs.
+#' Cette fonction calcule la distance euclidienne entre points consecutifs.
 #'
 #' @param data Tibble avec colonnes X, Y
 #' @return Tibble avec colonne distance

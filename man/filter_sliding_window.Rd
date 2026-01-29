@@ -19,6 +19,6 @@ filter_sliding_window(data, window_size = 11, n_std = 3, yield_col = "Flow")
 Tibble filtre
 }
 \description{
-Cette fonction applique un filtre à fenêtre glissante pour éliminer
-les valeurs aberrantes basées sur les voisins temporels.
+Cette fonction applique un filtre a fenetre glissante pour eliminer
+les valeurs aberrantes basees sur les voisins temporels.
 }

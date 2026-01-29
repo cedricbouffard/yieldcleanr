@@ -1,8 +1,8 @@
 #' Appliquer la correction de delai de flux
 #'
-#' Cette fonction compense le délai entre le moment où le grain passe
-#' sous le capteur de flux et le moment où la position GPS est enregistrée.
-#' Le flux de grain est décalé dans le temps pour correspondre à la position.
+#' Cette fonction compense le delai entre le moment ou le grain passe
+#' sous le capteur de flux et le moment ou la position GPS est enregistree.
+#' Le flux de grain est decale dans le temps pour correspondre a la position.
 #'
 #' @param data Tibble avec donnees de rendement
 #' @param delay Nombre d'observations a decaler (positif = vers l'avant)
@@ -24,12 +24,12 @@
   n_before <- nrow(data)
 
   if (delay == 0) {
-    rlang::inform(paste(value_col, "delay = 0, pas de correction appliquée"))
+    rlang::inform(paste(value_col, "delay = 0, pas de correction appliquee"))
     return(data)
   }
 
   if (!value_col %in% names(data)) {
-    rlang::warn(paste("Colonne", value_col, "non trouvée pour correction de délai"))
+    rlang::warn(paste("Colonne", value_col, "non trouvee pour correction de delai"))
     return(data)
   }
 
@@ -64,7 +64,7 @@
 
   rlang::inform(paste(
     value_col, "delay correction:", delay, "seconds,",
-    n_na, "points éliminés (valeurs NA)"
+    n_na, "points elimines (valeurs NA)"
   ))
 
   return(data)
@@ -73,7 +73,7 @@
 
 #' Appliquer la correction de delai d'humidite
 #'
-#' Cette fonction compense le délai entre la mesure d'humidité et la position GPS.
+#' Cette fonction compense le delai entre la mesure d'humidite et la position GPS.
 #'
 #' @param data Tibble avec donnees de rendement
 #' @param delay Nombre d'observations a decaler
@@ -84,7 +84,7 @@
   n_before <- nrow(data)
 
   if (delay == 0) {
-    rlang::inform("Moisture delay = 0, pas de correction appliquée")
+    rlang::inform("Moisture delay = 0, pas de correction appliquee")
     data <- data |> dplyr::mutate(Moisture_raw = Moisture)
     return(data)
   }
@@ -108,8 +108,8 @@
   data <- data |> dplyr::filter(!is.na(Moisture))
 
   rlang::inform(paste(
-    "Moisture delay correction:", delay, "observations décalées,",
-    n_na, "points éliminés"
+    "Moisture delay correction:", delay, "observations decalees,",
+    n_na, "points elimines"
   ))
 
   return(data)
@@ -119,7 +119,7 @@
 #' Calculer les plages automatiques pour le filtrage
 #'
 #' Cette fonction calcule automatiquement les plages de valeurs valides
-#' basées sur les distributions de Yield, Coordinates et Velocity.
+#' basees sur les distributions de Yield, Coordinates et Velocity.
 #'
 #' @param data Tibble avec donnees de rendement
 #' @param yield_quantiles Quantiles pour la plage de rendement (c(bas, haut))

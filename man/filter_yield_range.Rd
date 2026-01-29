@@ -28,7 +28,7 @@ Tibble filtre dans la plage de rendement
 }
 \description{
 Cette fonction filtre les points selon la plage de rendement valide.
-Peut utiliser des valeurs explicites ou l'auto-détection basée sur l'écart-type.
+Peut utiliser des valeurs explicites ou l'auto-detection basee sur l'ecart-type.
 }
 \examples{
 # Creer des donnees d'exemple avec rendements
@@ -40,9 +40,9 @@ data <- tibble::tibble(
 # Valeurs explicites
 data_filtered <- filter_yield_range(data, min_yield = 50, max_yield = 200)
 
-# Auto-detection basee sur l'ecart-type (moyenne ± 3*ET)
+# Auto-detection basee sur l'ecart-type (moyenne +/- 3*ET)
 data_filtered <- filter_yield_range(data)
 
-# Auto-detection avec plage plus large (moyenne ± 4*ET)
+# Auto-detection avec plage plus large (moyenne +/- 4*ET)
 data_filtered <- filter_yield_range(data, n_std = 4)
 }

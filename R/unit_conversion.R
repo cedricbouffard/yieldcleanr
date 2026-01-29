@@ -14,7 +14,7 @@
 #' }
 convert_flow_units <- function(data, density = 56, scale_factor = 1) {
   if (!"Flow" %in% names(data)) {
-    rlang::warn("Colonne Flow non trouvée")
+    rlang::warn("Colonne Flow non trouvee")
     return(data)
   }
 
@@ -23,7 +23,7 @@ convert_flow_units <- function(data, density = 56, scale_factor = 1) {
       Flow = Flow / density * scale_factor
     )
 
-  rlang::inform(paste("Flow converted:", density, "lbs/bu ×", scale_factor, "scale"))
+  rlang::inform(paste("Flow converted:", density, "lbs/bu x", scale_factor, "scale"))
 
   return(data)
 }
@@ -40,7 +40,7 @@ convert_flow_units <- function(data, density = 56, scale_factor = 1) {
 #' @noRd
 convert_to_yield <- function(data, density = 56) {
   if (!"Flow" %in% names(data)) {
-    rlang::warn("Colonne Flow non trouvée")
+    rlang::warn("Colonne Flow non trouvee")
     return(data)
   }
 

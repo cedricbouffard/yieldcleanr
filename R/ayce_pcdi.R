@@ -264,7 +264,7 @@ calculate_rsc <- function(x, y, yield) {
       # Utiliser les valeurs par defaut si donnees insuffisantes
       thresholds$min_yield <- miny_abs
       thresholds$max_yield <- 300  # Reasonable max for corn
-      rlang::warn("Pas assez de données valides pour calculer seuils de rendement - utilisation valeurs par défaut")
+      rlang::warn("Pas assez de donnees valides pour calculer seuils de rendement - utilisation valeurs par defaut")
     }
   }
 
@@ -291,7 +291,7 @@ calculate_rsc <- function(x, y, yield) {
       # Utiliser les valeurs par defaut si donnees insuffisantes
       thresholds$min_velocity <- minv_abs
       thresholds$max_velocity <- 15
-      rlang::warn("Pas assez de données pour calculer seuils de vélocité - utilisation valeurs par défaut")
+      rlang::warn("Pas assez de donnees pour calculer seuils de velocite - utilisation valeurs par defaut")
     }
   } else {
     # Utiliser les valeurs par defaut
@@ -363,7 +363,7 @@ calculate_rsc <- function(x, y, yield) {
 
   n_removed <- n_before - nrow(data)
   if (n_removed > 0) {
-    rlang::inform(paste("Position filter:", n_removed, "points éliminés (flyers GPS)"))
+    rlang::inform(paste("Position filter:", n_removed, "points elimines (flyers GPS)"))
   }
 
   return(data)
