@@ -3,18 +3,9 @@ title: "sample1.txt - Données de Soja"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{sample1.txt - Données de Soja}
-  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEngine{knittr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
-
-```{r, include = FALSE}
-knit_hooks$set(plot = function(x, options) {
-  if (!is.null(options$fig.width)) {
-    par(mfrow = c(1, 2))
-  }
-  plot(x)
-})
-```
 
 ## Introduction
 
@@ -72,17 +63,16 @@ ggplot() +
   labs(title = "Données Nettoyées - sample1.txt", subtitle = "Rendement après AYCE")
 ```
 
-## Comparaison
+## Comparaison Avant/Après
 
 ```{r comparison, fig.width=14, fig.height=7}
 par(mfrow = c(1, 2))
 
-# Before
-data_raw_sf$Yield_buacre <- data_raw_sf$Flow * 67.25 / 1000 * 3600 / 4046 * 0.5
+# Avant
 data_raw_sf$Yield_kg_ha <- data_raw_sf$Flow * 0.453592 * 3600 / 4046 * 1000
 plot(data_raw_sf["Yield_kg_ha"], main = "Avant AYCE", pch = 19, cex = 0.3)
 
-# After
+# Après
 plot(cleaned["Yield"], main = "Après AYCE", pch = 19, cex = 0.3)
 ```
 

@@ -14,7 +14,7 @@ test_that("build_filter_diagnostics construit les diagnostics par filtre", {
     reason = c("Vitesse hors plage", "Vitesse hors plage")
   )
 
-  diagnostics <- build_filter_diagnostics(data_raw, deletions, metrique = TRUE)
+  diagnostics <- yieldcleanr:::build_filter_diagnostics(data_raw, deletions, metrique = TRUE)
 
   expect_true("Filtre vitesse" %in% names(diagnostics))
 
@@ -37,7 +37,7 @@ test_that("build_filter_diagnostics respecte les unites imperiales", {
     reason = "GPSStatus < 4"
   )
 
-  diagnostics <- build_filter_diagnostics(data_raw, deletions, metrique = FALSE)
+  diagnostics <- yieldcleanr:::build_filter_diagnostics(data_raw, deletions, metrique = FALSE)
   diag_data <- diagnostics[["Filtre GPS"]]
 
   expect_equal(unique(diag_data$unite), "lb/s")
