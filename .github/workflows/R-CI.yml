@@ -57,7 +57,7 @@ jobs:
           pak-version: stable
 
       - name: Run tests
-        run: Rscript -e 'testthat::test()'
+        run: R CMD test . --no-manual --no-vignettes
 
       - name: Coverage
         run: Rscript -e 'covr::codecov()'
