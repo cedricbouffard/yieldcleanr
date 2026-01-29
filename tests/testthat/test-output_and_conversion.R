@@ -159,4 +159,78 @@ test_that("convert_flow_simple applies basic conversion", {
 
   expect_true("Yield_buacre" %in% names(result))
   expect_equal(nrow(result), nrow(data))
-})
+ })
+
+ # Additional edge case tests
+ test_that("export_cleaned_data handles empty data", {
+   data <- tibble::tibble(
+     X = numeric(),
+     Y = numeric(),
+     Flow = numeric()
+   )
+
+   temp_file <- tempfile(fileext = ".csv")
+   result <- export_cleaned_data(data, temp_file, format = "csv")
+
+   expect_true(file.exists(temp_file))
+ })
+
+ test_that("generate_cleaning_log handles empty data", {
+   data_raw <- tibble::tibble(Flow = numeric())
+   data_clean <- tibble::tibble(Flow = numeric())
+   params <- list(flow_delay = 5)
+
+   temp_log <- tempfile(fileext = ".txt")
+   result <- generate_cleaning_log(data_clean, data_raw, params, temp_log)
+
+   expect_true(file.exists(temp_log))
+ })
+
+ test_that("add_flags preserves original columns", {
+   data <- tibble::tibble(
+     Flow = c(1.5, 2.5, 3.5),
+     CustomCol = c("a", "b", "c")
+   )
+
+   result <- add_flags(data)
+
+   expect_true("Flow" %in% names(result))
+   expect_true("CustomCol" %in% names(result))
+ })
+
+ test_that("convert_flow_to_yield handles imperial units", {
+   data <- tibble::tibble(
+     Flow = c(5, 10, 15),
+     Interval = c(2, 2, 2),
+     Distance = c(87, 87, 87),  # Inches
+     Swath = c(240, 240, 240)   # Inches
+   )
+
+   result <- convert_flow_to_yield(data)
+
+   expect_true("Yield_buacre" %in% names(result))
+   expect_true(all(result$Yield_buacre > 0))
+ })
+
+ test_that("get_lbs_per_bushel handles French grain names", {
+   expect_equal(get_lbs_per_bushel("Maïs"), 56)
+   expect_equal(get_lbs_per_bushel("Blé"), 60)
+   expect_equal(get_lbs_per_bushel("Avoine"), 32)
+   expect_equal(get_lbs_per_bushel("Orge"), 48)
+   expect_equal(get_lbs_per_bushel("Soja"), 60)
+ })
+
+ test_that("convert_flow_simple calculates correct yield for edge cases", {
+   # Test with very small values
+   data <- tibble::tibble(
+     Flow = c(0.1, 0.2, 0.3),
+     Swath = c(240, 240, 240),
+     Distance = c(87, 87, 87),
+     Interval = c(2, 2, 2)
+   )
+
+   result <- convert_flow_simple(data)
+
+   expect_true("Yield_buacre" %in% names(result))
+   expect_true(all(is.finite(result$Yield_buacre)))
+ })

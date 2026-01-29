@@ -149,4 +149,108 @@ test_that("calculate_auto_thresholds handles edge cases", {
 
   expect_type(thresholds, "list")
   expect_true(thresholds$min_yield <= thresholds$max_yield)
-})
+ })
+
+ # Test calculate_rsc ----
+ test_that("calculate_rsc returns 0 for small datasets", {
+   data <- tibble::tibble(
+     X = c(1, 2, 3),
+     Y = c(1, 2, 3),
+     Flow = c(10, 20, 30)
+   )
+
+   result <- calculate_rsc(data$X, data$Y, data$Flow)
+
+   expect_equal(result, 0)
+ })
+
+ test_that("calculate_rsc calculates coherence correctly", {
+   set.seed(42)
+   n <- 100
+   data <- tibble::tibble(
+     X = rep(seq(0, 100, length.out = 10), each = 10),
+     Y = rep(seq(0, 100, length.out = 10), times = 10),
+     Flow = rep(seq(50, 150, length.out = 10), each = 10) + rnorm(n, 0, 5)
+   )
+
+   result <- calculate_rsc(data$X, data$Y, data$Flow)
+
+   expect_type(result, "double")
+   expect_true(result >= 0 && result <= 1)
+ })
+
+ # Test apply_pcdi ----
+ test_that("apply_pcdi handles missing columns", {
+   data <- tibble::tibble(Flow = 1:10)
+
+   result <- apply_pcdi(data)
+
+   expect_type(result, "list")
+   expect_true("optimal_delay" %in% names(result))
+   expect_equal(result$optimal_delay, 2)
+ })
+
+ test_that("apply_pcdi returns reasonable delay", {
+   data <- create_test_data(100)
+
+   result <- apply_pcdi(data, delay_range = -10:10)
+
+   expect_type(result, "list")
+   expect_true("optimal_delay" %in% names(result))
+   expect_true(result$optimal_delay >= -10 && result$optimal_delay <= 10)
+ })
+
+ test_that("apply_pcdi with different value column", {
+   data <- create_test_data(100) |> mutate(CustomFlow = Flow * 2)
+
+   result <- apply_pcdi(data, value_col = "CustomFlow")
+
+   expect_type(result, "list")
+   expect_true("optimal_delay" %in% names(result))
+ })
+
+ # Test ayce_validate edge cases ----
+ test_that("ayce_validate handles different data types", {
+   data_raw <- create_test_data(50)
+   data_clean <- data_raw
+
+   result <- ayce_validate(data_clean, data_raw)
+
+   expect_type(result, "list")
+   expect_true("retention_rate" %in% names(result))
+ })
+
+ test_that("ayce_validate handles very low retention", {
+   data_raw <- create_test_data(100)
+   data_clean <- create_test_data(1)  # 1% retention
+
+   result <- ayce_validate(data_clean, data_raw)
+
+   expect_true(result$retention_rate < 0.5)
+   expect_false(is.null(result$warning))
+ })
+
+ # Test calculate_filter_counts ----
+ test_that("calculate_filter_counts calculates correctly", {
+   data_raw <- tibble::tibble(Flow = 1:100) |> mutate(.row_id = 1:100)
+   deletions <- tibble::tibble(
+     orig_row_id = 51:60,
+     step = rep("Test Filter", 10)
+   )
+
+   result <- calculate_filter_counts(data_raw, deletions)
+
+   expect_type(result, "list")
+   expect_true("total_removed" %in% names(result))
+   expect_equal(result$total_removed, 10)
+ })
+
+ test_that("calculate_filter_counts handles no deletions", {
+   data_raw <- tibble::tibble(Flow = 1:100) |> mutate(.row_id = 1:100)
+   deletions <- tibble::tibble(orig_row_id = integer(), step = character())
+
+   result <- calculate_filter_counts(data_raw, deletions)
+
+   expect_type(result, "list")
+   expect_equal(result$total_removed, 0)
+ })

@@ -1,0 +1,92 @@
+---
+title: "sample4.txt - Données de Maïs Blanc"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{sample4.txt - Données de Maïs Blanc}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+## Introduction
+
+Ce fichier contient des données de rendement de maïs blanc collectées par une moissonneuse-batteuse.
+
+## Chargement des Données
+
+```{r setup}
+library(yieldcleanr)
+library(ggplot2)
+library(sf)
+```
+
+## Données Brutes
+
+```{r raw-data}
+file_path <- system.file("extdata", "sample4.txt", package = "yieldcleanr")
+data_raw <- read_yield_data(file_path)
+```
+
+```{r raw-stats}
+cat("Données brutes:\n")
+cat("  Lignes:", nrow(data_raw), "\n")
+cat("  Flow moyen:", round(mean(data_raw$Flow, na.rm = TRUE), 2), "lbs/s\n")
+cat("  Grain type:", unique(data_raw$GrainType), "\n")
+```
+
+## Visualisation des Données Brutes
+
+```{r raw-map, fig.width=12, fig.height=6}
+data_raw_sf <- sf::st_as_sf(data_raw, coords = c("Longitude", "Latitude"), crs = 4326)
+
+ggplot() +
+  geom_sf(data = data_raw_sf, aes(color = Flow), size = 0.5, alpha = 0.7) +
+  scale_color_viridis_c(name = "Flow (lbs/s)") +
+  theme_minimal() +
+  labs(title = "Données Brutes - sample4.txt", subtitle = "Maïs blanc - Flow avant nettoyage")
+```
+
+## Nettoyage avec AYCE
+
+```{r cleaned}
+cleaned <- clean_yield(
+  file_path = file_path,
+  metrique = TRUE,
+  polygon = TRUE
+)
+```
+
+## Visualisation des Données Nettoyées
+
+```{r cleaned-map, fig.width=12, fig.height=6}
+ggplot() +
+  geom_sf(data = cleaned, aes(color = Yield), size = 0.5, alpha = 0.7) +
+  scale_color_viridis_c(name = "Yield (kg/ha)") +
+  theme_minimal() +
+  labs(title = "Données Nettoyées - sample4.txt", subtitle = "Maïs blanc - Rendement après AYCE")
+```
+
+## Comparaison Avant/Après
+
+```{r comparison, fig.width=14, fig.height=7}
+par(mfrow = c(1, 2))
+
+# Before
+plot(sf::st_geometry(data_raw_sf), main = "Avant AYCE", border = NA)
+plot(data_raw_sf["Flow"], add = TRUE, pch = 19, cex = 0.3, pal = viridis::viridis)
+
+# After
+plot(sf::st_geometry(cleaned), main = "Après AYCE", border = NA)
+plot(cleaned["Yield"], add = TRUE, pch = 19, cex = 0.3, pal = viridis::viridis)
+```
+
+## Statistiques
+
+```{r stats}
+cat("Données brutes:\n")
+cat("  Lignes:", nrow(data_raw), "\n")
+
+cat("\nDonnées nettoyées:\n")
+cat("  Lignes:", nrow(cleaned), "\n")
+cat("  Rendement moyen:", round(mean(cleaned$Yield, na.rm = TRUE), 1), "kg/ha\n")
+cat("  Taux de rétention:", round(nrow(cleaned) / nrow(data_raw) * 100, 1), "%\n")
+```

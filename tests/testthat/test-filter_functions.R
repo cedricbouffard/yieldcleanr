@@ -190,4 +190,177 @@ test_that("export_cleaned_data exports data", {
 
   data_read <- read.csv(temp_file)
   expect_equal(nrow(data_read), nrow(data))
-})
+ })
+
+ # Test filter_bounds ----
+ test_that("filter_bounds keeps points within lat/lon limits", {
+   data <- tibble(
+     Longitude = c(-70, -69.5, -69, -68.5),
+     Latitude = c(47, 47.5, 48, 48.5),
+     Flow = 1:4
+   )
+   bounds <- list(min_x = -69.5, max_x = -68, min_y = 47, max_y = 48)
+
+   result <- filter_bounds(data, bounds, coord_type = "latlon")
+
+   expect_equal(nrow(result), 2)  # Keeps -69, -68.5 (within bounds)
+   expect_true(all(result$Longitude >= -69.5))
+   expect_true(all(result$Longitude <= -68))
+ })
+
+ test_that("filter_bounds keeps points within UTM limits", {
+   data <- tibble(
+     X = c(435000, 436000, 437000, 438000),
+     Y = c(5262000, 5263000, 5264000, 5265000),
+     Flow = 1:4
+   )
+   bounds <- list(min_x = 435000, max_x = 437000, min_y = 5262000, max_y = 5264000)
+
+   result <- filter_bounds(data, bounds, coord_type = "utm")
+
+   expect_equal(nrow(result), 3)
+ })
+
+ test_that("filter_bounds returns original data when bounds is NULL", {
+   data <- tibble(Flow = 1:5)
+
+   result <- filter_bounds(data, bounds = NULL)
+
+   expect_equal(nrow(result), nrow(data))
+ })
+
+ test_that("filter_bounds removes all points when outside limits", {
+   data <- tibble(
+     Longitude = c(0, 0, 0, 0),
+     Latitude = c(0, 0, 0, 0),
+     Flow = 1:4
+   )
+   bounds <- list(min_x = 10, max_x = 20, min_y = 10, max_y = 20)
+
+   result <- filter_bounds(data, bounds, coord_type = "latlon")
+
+   expect_equal(nrow(result), 0)
+ })
+
+ # Test filter_velocity edge cases ----
+ test_that("filter_velocity returns original when X,Y missing", {
+   data <- tibble(Flow = 1:5, Interval = 2)
+
+   result <- filter_velocity(data)
+
+   expect_equal(nrow(result), nrow(data))
+ })
+
+ test_that("filter_velocity handles NA values", {
+   data <- tibble(
+     X = c(435000, 435010, NA, 435030, 435040),
+     Y = c(5262000, 5262010, NA, 5262030, 5262040),
+     Interval = c(2, 2, 2, 2, 2),
+     .row_id = 1:5
+   )
+
+   result <- filter_velocity(data, min_velocity = 1, max_velocity = 10)
+
+   expect_true(nrow(result) <= 4)  # NA points may be filtered
+ })
+
+ # Test filter_header_status edge cases ----
+ test_that("filter_header_status returns original when HeaderStatus missing", {
+   data <- tibble(Flow = 1:5)
+
+   result <- filter_header_status(data)
+
+   expect_equal(nrow(result), nrow(data))
+ })
+
+ test_that("filter_header_status with custom values", {
+   data <- tibble(
+     HeaderStatus = c(1, 33, 5, 10, 33),
+     Flow = 1:5
+   )
+
+   result <- filter_header_status(data, header_values = c(33))
+
+   expect_equal(nrow(result), 2)  # Only 33 values
+   expect_true(all(result$HeaderStatus == 33))
+ })
+
+ # Test filter_gps_status edge cases ----
+ test_that("filter_gps_status returns original when GPSStatus missing", {
+   data <- tibble(Flow = 1:5)
+
+   result <- filter_gps_status(data)
+
+   expect_equal(nrow(result), nrow(data))
+ })
+
+ test_that("filter_gps_status keeps NA values", {
+   data <- tibble(
+     GPSStatus = c(7, NA, 3, 5, NA),
+     Flow = 1:5
+   )
+
+   result <- filter_gps_status(data, min_gps_status = 5)
+
+   expect_equal(nrow(result), 3)  # Keeps 7, NA, NA
+ })
+
+ # Test filter_dop edge cases ----
+ test_that("filter_dop returns original when DOP missing", {
+   data <- tibble(Flow = 1:5)
+
+   result <- filter_dop(data)
+
+   expect_equal(nrow(result), nrow(data))
+ })
+
+ test_that("filter_dop keeps NA values", {
+   data <- tibble(
+     DOP = c(5, NA, 15, 8, NA),
+     Flow = 1:5
+   )
+
+   result <- filter_dop(data, max_dop = 10)
+
+   expect_equal(nrow(result), 3)  # Keeps 5, NA, 8
+ })
+
+ # Test filter_yield_range edge cases ----
+ test_that("filter_yield_range auto-detects range", {
+   data <- tibble(
+     Yield_buacre = c(100, 120, 140, 160, 180, 500),  # 500 is outlier
+     Flow = 1:6
+   )
+
+   result <- filter_yield_range(data)
+
+   expect_true(nrow(result) < 6)  # Outlier should be removed
+ })
+
+ test_that("filter_yield_range handles missing column", {
+   data <- tibble(Flow = 1:5)
+
+   result <- filter_yield_range(data)
+
+   expect_equal(nrow(result), nrow(data))
+ })
+
+ # Test filter_moisture_range edge cases ----
+ test_that("filter_moisture_range auto-detects range", {
+   data <- tibble(
+     Moisture = c(10, 12, 14, 16, 18, 50),  # 50 is outlier
+     Flow = 1:6
+   )
+
+   result <- filter_moisture_range(data)
+
+   expect_true(nrow(result) < 6)
+ })
+
+ test_that("filter_moisture_range handles missing column", {
+   data <- tibble(Flow = 1:5)
+
+   result <- filter_moisture_range(data)
+
+   expect_equal(nrow(result), nrow(data))
+ })

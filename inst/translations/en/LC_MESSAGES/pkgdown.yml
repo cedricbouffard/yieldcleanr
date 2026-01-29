@@ -1,0 +1,30 @@
+article: Article
+articles: Articles
+authors: Authors
+bug-reports: Report a bug
+citation: Citation
+description: Description
+details: Details
+examples: Examples
+function-reference: Function reference
+functions: Functions
+github: GitHub
+installation: Installation
+license: License
+news: News
+on-this-page: On this page
+overview: Overview
+packages: Packages
+published: Published
+reference: Reference
+references: References
+rendered-from: Rendered from
+see-also: See also
+sections: Sections
+sidebar-title: Contents
+source-code: Source code
+source-repository: Source repository
+title: Title
+usage: Usage
+value: Value
+version: Version

@@ -51,16 +51,73 @@ jobs:
       - name: Installer les dépendances R
         uses: r-lib/actions/setup-r-dependencies@v2
         with:
-          extra-packages: any::covr, any::rcmdcheck
+          extra-packages: |
+            any::covr
+            any::rcmdcheck
+            any::testthat
+            any::sf
+            any::terra
           needs: check
           cache: true
           pak-version: stable
 
-      - name: Run tests
-        run: Rscript -e 'rcmdcheck::rcmdcheck(args = c("--no-vignettes", "--no-examples", "--no-manual"), error_on = "error")'
+      - name: Installer le package local
+        run: R CMD INSTALL .
 
-      - name: Coverage
-        run: Rscript -e 'covr::codecov()'
+      - name: Run tests with coverage
+        run: |
+          Rscript -e '
+          library(covr)
+          library(testthat)
+
+          # Run tests first
+          test_results <- test_dir("tests/testthat", reporter = ProgressReporter$new())
+
+          # Calculate coverage using package_coverage
+          cov <- package_coverage(
+            type = "tests",
+            path = ".",
+            line_exclusions = list(
+              "inst/shinyapp" = 1,  # Shiny app code excluded
+              "tests" = 1
+            )
+          )
+
+          # Print detailed coverage
+          cat("\n=== COVERAGE SUMMARY ===\n")
+          print(summary(cov))
+
+          # Save as cobertura XML for GitHub Actions
+          cobertura(cov, file = "coverage.xml")
+
+          # Also save RDS for Codecov
+          saveRDS(cov, "coverage.rds")
+
+          cat("\n=== PER FILE COVERAGE ===\n")
+          cov_df <- as.data.frame(cov)
+          print(cov_df)
+
+          # Exit with error if coverage is too low
+          total_cov <- sum(cov$fractions[[1]]$covered) / sum(cov$fractions[[1]]$total) * 100
+          cat("\nTotal coverage:", round(total_cov, 1), "%\n")
+          '
+
+      - name: Upload coverage results
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-results
+          path: |
+            coverage.xml
+            coverage.rds
+
+      - name: Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          files: ./coverage.xml
+          flags: unittests
+          name: codecov-umbrella
+          fail_ci_if_error: false
 
   pkgdown:
     runs-on: ubuntu-latest

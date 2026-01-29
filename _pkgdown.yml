@@ -4,7 +4,31 @@ template:
   default_assets: false
   includes:
     in_header: |
-      <meta name="description" content="Outils pour nettoyer les données de rendement agricole">
+      <meta name="description" content="Outils pour nettoyer les données de rendement agricole / Tools for cleaning agricultural yield data">
+      <style>
+      .lang-toggle { cursor: pointer; padding: 8px 12px; }
+      </style>
+      <script>
+      document.addEventListener('DOMContentLoaded', function() {
+        const langToggle = document.getElementById('lang-toggle');
+        if (langToggle) {
+          langToggle.addEventListener('click', function(e) {
+            e.preventDefault();
+            const currentPath = window.location.pathname;
+            const isEn = currentPath.includes('/en/') || currentPath.endsWith('_en.html');
+            let newPath;
+            if (isEn) {
+              newPath = currentPath.replace('/en/', '/fr/').replace('_en.html', '_fr.html');
+            } else {
+              newPath = currentPath.replace('/fr/', '/en/').replace('_fr.html', '_en.html');
+            }
+            if (newPath !== currentPath) {
+              window.location.href = newPath;
+            }
+          });
+        }
+      });
+      </script>
 
 development:
   mode: release
@@ -14,26 +38,44 @@ navbar:
   left:
     - text: "Articles"
       href: articles/index.html
-    - text: "Reference"
+    - text: "Référence"
       href: reference/index.html
-    - text: "News"
+    - text: "Nouveautés"
       href: news/index.html
   right:
     - text: "GitHub"
       href: https://github.com/cedricbouffard/yieldcleanr
+    - text: "FR | EN"
+      href: "#"
+      id: lang-toggle
+      class: "lang-toggle"
 
 articles:
-  - title: "Guides d'Utilisation"
+  - title: "Guides d'Utilisation (Français)"
     contents:
       - nettoyage_donnees_rendement
       - donnees_exemple
       - filtres_nettoyage
+
+  - title: "Exemples par Fichier"
+    contents:
+      - sample1
+      - sample2
+      - sample3
+      - sample4
+      - test1
+      - test2
+      - test3
+      - test4
 
 home:
   title: "yieldcleanr"
   description: |
     Outils R pour nettoyer, filtrer et valider les données de rendement
     collectées par les moissonneuses-batteuses (AYCE - Auto Yield Cleaning Engine).
+
+    R tools for cleaning, filtering and validating yield data
+    collected by combine harvesters (AYCE - Auto Yield Cleaning Engine).
   footer: |
     <p>
     Maintainer: Cedric Bouffard |

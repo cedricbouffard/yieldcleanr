@@ -1,0 +1,146 @@
+---
+title: "Example Data Usage"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Example Data Usage}
+  %\VignetteEngine{knittr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+## Introduction
+
+The `yieldcleanr` package includes example data files to test and demonstrate yield data cleaning functionality.
+
+## Available Files
+
+The package includes the following files in `inst/extdata/`:
+
+| File | Crop | Rows | Description |
+|------|------|------|-------------|
+| `sample1.txt` | Soybeans | 21,917 | Soybean data with variable HeaderStatus |
+| `sample3.txt` | Corn | 31,815 | Corn data with Flow = 0 at start |
+| `sample4.txt` | White Corn | 19,495 | White corn data |
+
+## Loading Data
+
+### Method 1: Via file path
+
+```r
+# Load example data
+file_path <- system.file("extdata", "sample1.txt", package = "yieldcleanr")
+data <- read_yield_data(file_path)
+
+# Display first rows
+head(data)
+```
+
+### Method 2: Via absolute path
+
+```r
+# Use absolute path
+data <- read_yield_data("C:/path/to/sample1.txt")
+```
+
+## Complete Example: Cleaning sample1.txt
+
+Here is a complete example of cleaning soybean data:
+
+```r
+# Load the package
+library(yieldcleanr)
+
+# Read data
+file_path <- system.file("extdata", "sample1.txt", package = "yieldcleanr")
+data <- read_yield_data(file_path)
+
+cat("Raw data:\n")
+cat("  Rows:", nrow(data), "\n")
+cat("  Mean flow:", mean(data$Flow), "lbs/sec\n")
+cat("  Unique HeaderStatus:", unique(data$HeaderStatus), "\n")
+```
+
+## Data Structure
+
+Files have the following structure:
+
+| Column | Description |
+|--------|-------------|
+| Longitude | X coordinate (decimal degrees) |
+| Latitude | Y coordinate (decimal degrees) |
+| Flow | Grain flow rate (lbs/sec) |
+| GPS_Time | GPS timestamp |
+| Interval | Time interval (sec) |
+| Distance | Distance traveled (inches) |
+| Swath | Cutting width (inches) |
+| Moisture | Moisture (%) |
+| HeaderStatus | Header status (33 = active) |
+| Pass | Pass number |
+| Serial | Combine serial number |
+| FieldID | Field identifier |
+| LoadID | Load identifier |
+| GrainType | Grain type |
+| GPSStatus | GPS status |
+| DOP | Dilution of Precision |
+| Altitude | Altitude (feet) |
+
+## File Comparison
+
+Let's compare statistics of different files:
+
+```r
+# Function to get stats
+get_stats <- function(file) {
+  path <- system.file("extdata", file, package = "yieldcleanr")
+  d <- read_yield_data(path)
+  c(
+    file = file,
+    rows = nrow(d),
+    mean_flow = round(mean(d$Flow), 2),
+    min_flow = round(min(d$Flow), 2),
+    max_flow = round(max(d$Flow), 2),
+    crop = unique(d$GrainType)
+  )
+}
+
+# Apply to all files
+files <- c("sample1.txt", "sample2.txt", "sample3.txt", "sample4.txt")
+stats <- do.call(rbind, lapply(files, get_stats))
+print(stats)
+```
+
+## Using AYCE
+
+### Simple AYCE Pipeline
+
+```r
+# Clean with AYCE
+cleaned <- ayce_clean(
+  file_path = system.file("extdata", "sample1.txt", package = "yieldcleanr"),
+  output_file = "sample1_cleaned.csv",
+  log_file = "sample1_log.txt"
+)
+```
+
+### AYCE Pipeline with SF
+
+```r
+# Create SF object with polygons
+sf_data <- ayce_sf(
+  file_path = system.file("extdata", "sample3.txt", package = "yieldcleanr"),
+  geometry_type = "polygon"
+)
+
+# Statistics
+summary(sf_data$Yield_kg_ha)
+
+# Visualize
+plot(sf_data["Yield_kg_ha"], main = "Yield (kg/ha)")
+```
+
+## Notes
+
+- **sample1.txt**: Contains soybean data with HeaderStatus changes
+- **sample3.txt**: Starts with Flow = 0 values (ramp-up)
+- **sample4.txt**: White corn data with variable conditions
+
+For more detailed examples, see the main vignette `nettoyage_donnees_rendement.html`.

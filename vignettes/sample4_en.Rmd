@@ -1,0 +1,78 @@
+---
+title: "sample4.txt - White Corn Data"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{sample4.txt - White Corn Data}
+  %\VignetteEngine{knittr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+## Introduction
+
+This file contains white corn yield data collected by a combine harvester.
+
+## Loading Data
+
+```{r setup}
+library(yieldcleanr)
+library(ggplot2)
+library(sf)
+```
+
+## Raw Data
+
+```{r raw-data}
+file_path <- system.file("extdata", "sample4.txt", package = "yieldcleanr")
+data_raw <- read_yield_data(file_path)
+```
+
+```{r raw-stats}
+cat("Raw data:\n")
+cat("  Rows:", nrow(data_raw), "\n")
+cat("  Mean flow:", round(mean(data_raw$Flow, na.rm = TRUE), 2), "lbs/s\n")
+cat("  Grain type:", unique(data_raw$GrainType), "\n")
+```
+
+## Raw Data Map
+
+```{r raw-map, fig.width=12, fig.height=6}
+data_raw_sf <- sf::st_as_sf(data_raw, coords = c("Longitude", "Latitude"), crs = 4326)
+
+ggplot() +
+  geom_sf(data = data_raw_sf, aes(color = Flow), size = 0.5, alpha = 0.7) +
+  scale_color_viridis_c(name = "Flow (lbs/s)") +
+  theme_minimal() +
+  labs(title = "Raw Data - sample4.txt", subtitle = "White corn - Flow before cleaning")
+```
+
+## AYCE Cleaning
+
+```{r cleaned}
+cleaned <- clean_yield(
+  file_path = file_path,
+  metrique = TRUE,
+  polygon = TRUE
+)
+```
+
+## Cleaned Data Map
+
+```{r cleaned-map, fig.width=12, fig.height=6}
+ggplot() +
+  geom_sf(data = cleaned, aes(color = Yield), size = 0.5, alpha = 0.7) +
+  scale_color_viridis_c(name = "Yield (kg/ha)") +
+  theme_minimal() +
+  labs(title = "Cleaned Data - sample4.txt", subtitle = "White corn - Yield after AYCE")
+```
+
+## Statistics
+
+```{r stats}
+cat("Raw data:\n")
+cat("  Rows:", nrow(data_raw), "\n")
+
+cat("\nCleaned data:\n")
+cat("  Rows:", nrow(cleaned), "\n")
+cat("  Mean yield:", round(mean(cleaned$Yield, na.rm = TRUE), 1), "kg/ha\n")
+cat("  Retention rate:", round(nrow(cleaned) / nrow(data_raw) * 100, 1), "%\n")
+```

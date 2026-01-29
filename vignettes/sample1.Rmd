@@ -1,0 +1,99 @@
+---
+title: "sample1.txt - Données de Soja"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{sample1.txt - Données de Soja}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knit_hooks$set(plot = function(x, options) {
+  if (!is.null(options$fig.width)) {
+    par(mfrow = c(1, 2))
+  }
+  plot(x)
+})
+```
+
+## Introduction
+
+Ce fichier contient des données de rendement de soja collectées par une moissonneuse-batteuse.
+
+## Chargement des Données
+
+```{r setup}
+library(yieldcleanr)
+library(ggplot2)
+library(sf)
+```
+
+## Données Brutes
+
+```{r raw-data}
+file_path <- system.file("extdata", "sample1.txt", package = "yieldcleanr")
+data_raw <- read_yield_data(file_path)
+```
+
+```{r raw-stats}
+nrow(data_raw)
+mean(data_raw$Flow, na.rm = TRUE)
+```
+
+## Visualisation des Données Brutes
+
+```{r raw-map, fig.width=12, fig.height=6}
+data_raw_sf <- sf::st_as_sf(data_raw, coords = c("Longitude", "Latitude"), crs = 4326)
+
+ggplot() +
+  geom_sf(data = data_raw_sf, aes(color = Flow), size = 0.5, alpha = 0.7) +
+  scale_color_viridis_c(name = "Flow (lbs/s)") +
+  theme_minimal() +
+  labs(title = "Données Brutes - sample1.txt", subtitle = "Flow avant nettoyage")
+```
+
+## Nettoyage avec AYCE
+
+```{r cleaned}
+cleaned <- clean_yield(
+  file_path = file_path,
+  metrique = TRUE,
+  polygon = TRUE
+)
+```
+
+## Visualisation des Données Nettoyées
+
+```{r cleaned-map, fig.width=12, fig.height=6}
+ggplot() +
+  geom_sf(data = cleaned, aes(color = Yield), size = 0.5, alpha = 0.7) +
+  scale_color_viridis_c(name = "Yield (kg/ha)") +
+  theme_minimal() +
+  labs(title = "Données Nettoyées - sample1.txt", subtitle = "Rendement après AYCE")
+```
+
+## Comparaison
+
+```{r comparison, fig.width=14, fig.height=7}
+par(mfrow = c(1, 2))
+
+# Before
+data_raw_sf$Yield_buacre <- data_raw_sf$Flow * 67.25 / 1000 * 3600 / 4046 * 0.5
+data_raw_sf$Yield_kg_ha <- data_raw_sf$Flow * 0.453592 * 3600 / 4046 * 1000
+plot(data_raw_sf["Yield_kg_ha"], main = "Avant AYCE", pch = 19, cex = 0.3)
+
+# After
+plot(cleaned["Yield"], main = "Après AYCE", pch = 19, cex = 0.3)
+```
+
+## Statistiques
+
+```{r stats}
+cat("Données brutes:\n")
+cat("  Lignes:", nrow(data_raw), "\n")
+cat("  Flow moyen:", round(mean(data_raw$Flow, na.rm = TRUE), 2), "lbs/s\n")
+
+cat("\nDonnées nettoyées:\n")
+cat("  Lignes:", nrow(cleaned), "\n")
+cat("  Rendement moyen:", round(mean(cleaned$Yield, na.rm = TRUE), 1), "kg/ha\n")
+```
