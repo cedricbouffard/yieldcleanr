@@ -68,6 +68,23 @@ articles:
       - test3
       - test4
 
+  - title: "User Guides (English)"
+    contents:
+      - nettoyage_donnees_rendement_en
+      - donnees_exemple_en
+      - filtres_nettoyage_en
+
+  - title: "Examples by File"
+    contents:
+      - sample1_en
+      - sample2_en
+      - sample3_en
+      - sample4_en
+      - test1_en
+      - test2_en
+      - test3_en
+      - test4_en
+
 home:
   title: "yieldcleanr"
   description: |
