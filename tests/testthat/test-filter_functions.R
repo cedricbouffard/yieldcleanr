@@ -180,17 +180,17 @@ test_that("generate_cleaning_log creates log file", {
   expect_true(any(grepl("points", log_content, ignore.case = TRUE)))
 })
 
-# Test export_cleaned_data ----
-test_that("export_cleaned_data exports data", {
-  data <- yield_test_data
+ # Test export_cleaned_data ----
+ test_that("export_cleaned_data exports data", {
+   data <- yield_test_data
 
-  temp_file <- tempfile(fileext = ".csv")
-  export_cleaned_data(data, temp_file, format = "csv")
+   temp_file <- tempfile(fileext = ".csv")
+   yieldcleanr:::export_cleaned_data(data, temp_file, format = "csv")
 
-  expect_true(file.exists(temp_file))
+   expect_true(file.exists(temp_file))
 
-  data_read <- read.csv(temp_file)
-  expect_equal(nrow(data_read), nrow(data))
+   data_read <- read.csv(temp_file)
+   expect_equal(nrow(data_read), nrow(data))
  })
 
  # Test filter_bounds ----

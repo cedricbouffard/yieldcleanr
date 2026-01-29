@@ -47,7 +47,7 @@ test_that("export_cleaned_data exports CSV correctly", {
   )
 
   temp_file <- tempfile(fileext = ".csv")
-  result <- export_cleaned_data(data, temp_file, format = "csv")
+  result <- yieldcleanr:::export_cleaned_data(data, temp_file, format = "csv")
 
   expect_true(file.exists(temp_file))
   expect_equal(result, invisible(TRUE))
@@ -66,7 +66,7 @@ test_that("export_cleaned_data requires UTM zone for shapefile", {
 
   temp_file <- tempfile(fileext = ".shp")
 
-  expect_error(export_cleaned_data(data, temp_file, format = "shp"))
+  expect_error(yieldcleanr:::export_cleaned_data(data, temp_file, format = "shp"))
 })
 
 test_that("generate_cleaning_log creates log file", {
@@ -100,7 +100,7 @@ test_that("generate_cleaning_log creates log file", {
   )
 
   temp_log <- tempfile(fileext = ".txt")
-  result <- generate_cleaning_log(data_clean, data_raw, params, temp_log)
+  result <- yieldcleanr:::generate_cleaning_log(data_clean, data_raw, params, temp_log)
 
   expect_true(file.exists(temp_log))
 
@@ -170,7 +170,7 @@ test_that("convert_flow_simple applies basic conversion", {
    )
 
    temp_file <- tempfile(fileext = ".csv")
-   result <- export_cleaned_data(data, temp_file, format = "csv")
+   result <- yieldcleanr:::export_cleaned_data(data, temp_file, format = "csv")
 
    expect_true(file.exists(temp_file))
  })
@@ -181,7 +181,7 @@ test_that("convert_flow_simple applies basic conversion", {
    params <- list(flow_delay = 5)
 
    temp_log <- tempfile(fileext = ".txt")
-   result <- generate_cleaning_log(data_clean, data_raw, params, temp_log)
+   result <- yieldcleanr:::generate_cleaning_log(data_clean, data_raw, params, temp_log)
 
    expect_true(file.exists(temp_log))
  })

@@ -81,6 +81,8 @@ test_that("filter_local_std skips when no Pass column", {
 })
 
 test_that("filter_sliding_window removes temporal outliers", {
+  skip_if_not_installed("zoo")
+
   # Create data with an outlier in the middle where rolling mean will be calculated
   # With window_size = 7, indices 1-3 and 8-11 will have NA rolling_mean
   # Only indices 4-7 will have actual rolling mean
@@ -98,6 +100,8 @@ test_that("filter_sliding_window removes temporal outliers", {
 })
 
 test_that("filter_sliding_window handles edge cases", {
+  skip_if_not_installed("zoo")
+
   # Dataset with window larger than data - should still work
   data <- tibble::tibble(
     Flow = c(10, 20, 30),

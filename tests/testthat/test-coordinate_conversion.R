@@ -5,13 +5,13 @@ library(yieldcleanr)
 # Test suite for coordinate_conversion.R ----
 
 test_that("calculate_distances computes inter-point distances", {
-  data <- tibble(
+  data <- tibble::tibble(
     X = c(0, 10, 25),
     Y = c(0, 0, 15),
     .row_id = 1:3
   )
 
-  result <- calculate_distances(data)
+  result <- yieldcleanr:::calculate_distances(data)
 
   expect_true("distance_calc" %in% names(result))
   expect_equal(result$distance_calc[1], 0)  # First point has no previous
@@ -22,7 +22,7 @@ test_that("calculate_distances computes inter-point distances", {
 test_that("calculate_distances requires X and Y columns", {
   data <- tibble(Flow = c(1, 2, 3))
 
-  expect_error(calculate_distances(data))
+  expect_error(yieldcleanr:::calculate_distances(data))
 })
 
 test_that("utm_to_latlon converts to geographic coordinates", {
@@ -34,7 +34,7 @@ test_that("utm_to_latlon converts to geographic coordinates", {
     Y = c(5262000, 5262050)
   )
 
-  result <- utm_to_latlon(data, zone = 19, hemisphere = "N")
+  result <- yieldcleanr:::utm_to_latlon(data, zone = 19, hemisphere = "N")
 
   expect_true("Longitude" %in% names(result))
   expect_true("Latitude" %in% names(result))
@@ -48,7 +48,7 @@ test_that("utm_to_latlon handles southern hemisphere", {
     Y = c(8000000, 8000050)  # Southern hemisphere
   )
 
-  result <- utm_to_latlon(data, zone = 32, hemisphere = "S")
+  result <- yieldcleanr:::utm_to_latlon(data, zone = 32, hemisphere = "S")
 
   expect_true("Longitude" %in% names(result))
   expect_true("Latitude" %in% names(result))
@@ -58,7 +58,7 @@ test_that("utm_to_latlon handles southern hemisphere", {
 test_that("utm_to_latlon requires X and Y columns", {
   data <- data.frame(Flow = c(1, 2))
 
-  expect_error(utm_to_latlon(data, zone = 19))
+  expect_error(yieldcleanr:::utm_to_latlon(data, zone = 19))
 })
 
 test_that("latlon_to_utm converts to UTM coordinates", {

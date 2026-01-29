@@ -29,7 +29,8 @@ Imports:
     terra,
     concaveman,
     scales,
-    fields
+    fields,
+    zoo
 Suggests: 
     covr,
     pkgdown,
