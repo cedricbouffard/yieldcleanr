@@ -1,9 +1,9 @@
 # Appliquer le filtre ET local
 
-Cette fonction identifie et élimine les points anormaux en utilisant un
+Cette fonction identifie et elimine les points anormaux en utilisant un
 voisinage de n swathes autour de chaque point. Les points dont le
-rendement s'écarte de plus de STD_limit écarts-types de la moyenne
-locale sont éliminés.
+rendement s'ecarte de plus de STD_limit ecarts-types de la moyenne
+locale sont elimines.
 
 ## Usage
 

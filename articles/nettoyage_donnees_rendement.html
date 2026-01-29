@@ -243,9 +243,9 @@ le package:</p>
 <span></span>
 <span><span class="co"># Appliquer les étapes de nettoyage manuellement pour l'exemple</span></span>
 <span><span class="va">data_utm</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/latlon_to_utm.html">latlon_to_utm</a></span><span class="op">(</span><span class="va">data_raw</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Zone UTM détectée: 15</span></span>
+<span><span class="co">#&gt; Zone UTM detectee: 15</span></span>
 <span><span class="va">data_utm</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/convert_flow_to_yield.html">convert_flow_to_yield</a></span><span class="op">(</span><span class="va">data_utm</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Yield calculé: 81059 bu/acre (lbs/bu = 60 )</span></span>
+<span><span class="co">#&gt; Yield calcule: 81059 bu/acre (lbs/bu = 60 )</span></span>
 <span></span>
 <span><span class="co"># Appliquer PCDI</span></span>
 <span><span class="va">pcdi_result</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/apply_pcdi.html">apply_pcdi</a></span><span class="op">(</span><span class="va">data_utm</span>, delay_range <span class="op">=</span> <span class="fl">0</span><span class="op">:</span><span class="fl">15</span>, n_iterations <span class="op">=</span> <span class="fl">5</span><span class="op">)</span></span>
@@ -264,12 +264,12 @@ le package:</p>
 <span></span>
 <span><span class="co"># Filtrer par vélocité</span></span>
 <span><span class="va">data_clean</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/filter_velocity.html">filter_velocity</a></span><span class="op">(</span><span class="va">data_utm</span>, <span class="va">thresholds</span><span class="op">$</span><span class="va">min_velocity</span>, <span class="va">thresholds</span><span class="op">$</span><span class="va">max_velocity</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Velocity filter: 29 points éliminés (vitesse hors plage: 0.5 - 2.88864430393987</span></span>
+<span><span class="co">#&gt; Velocity filter: 29 points elimines (vitesse hors plage: 0.5 - 2.88864430393987</span></span>
 <span><span class="co">#&gt; )</span></span>
 <span></span>
 <span><span class="co"># Filtrer par plage de rendement</span></span>
 <span><span class="va">data_clean</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/filter_yield_range.html">filter_yield_range</a></span><span class="op">(</span><span class="va">data_clean</span>, <span class="va">thresholds</span><span class="op">$</span><span class="va">min_yield</span>, <span class="va">thresholds</span><span class="op">$</span><span class="va">max_yield</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Yield range filter: 2 points éliminés (rendement hors plage: 0 - 192321.2 )</span></span>
+<span><span class="co">#&gt; Yield range filter: 2 points elimines (rendement hors plage: 0 - 192321.2 )</span></span>
 <span></span>
 <span><span class="co"># Résultat</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Nettoyage complet:\n"</span><span class="op">)</span></span>

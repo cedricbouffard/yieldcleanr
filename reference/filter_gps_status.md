@@ -1,6 +1,6 @@
 # Filtrer selon le statut GPS
 
-Cette fonction filtre les données selon la qualité du signal GPS.
+Cette fonction filtre les donnees selon la qualite du signal GPS.
 
 ## Usage
 

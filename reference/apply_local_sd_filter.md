@@ -48,7 +48,7 @@ data <- tibble::tibble(
 # Appliquer le filtre ET local
 data_clean <- apply_local_sd_filter(data, n_swaths = 5, lsd_limit = 3)
 #> === Localized SD Filter ===
-#> Local SD filter: 0 points éliminés (0%)
+#> Local SD filter: 0 points elimines (0%)
 print(data_clean)
 #> # A tibble: 12 × 4
 #>         X       Y  Flow Swath

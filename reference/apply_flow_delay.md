@@ -1,8 +1,8 @@
 # Appliquer la correction de delai de flux
 
-Cette fonction compense le délai entre le moment où le grain passe sous
-le capteur de flux et le moment où la position GPS est enregistrée. Le
-flux de grain est décalé dans le temps pour correspondre à la position.
+Cette fonction compense le delai entre le moment ou le grain passe sous
+le capteur de flux et le moment ou la position GPS est enregistree. Le
+flux de grain est decale dans le temps pour correspondre a la position.
 
 ## Usage
 
@@ -40,7 +40,7 @@ data <- tibble::tibble(
 
 # Appliquer la correction de delai de flux
 data_corrected <- apply_flow_delay(data, delay = 1)
-#> Flow delay correction: 1 seconds, 1 points éliminés (valeurs NA)
+#> Flow delay correction: 1 seconds, 1 points elimines (valeurs NA)
 print(data_corrected)
 #> # A tibble: 6 × 4
 #>    Flow Longitude Latitude Flow_raw

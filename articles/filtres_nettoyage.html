@@ -105,7 +105,7 @@ actif - <strong>33</strong> = Header abaissé (actif) -
 <span></span>
 <span><span class="co"># Appliquer le filtre header status</span></span>
 <span><span class="va">data_filtered</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/filter_header_status.html">filter_header_status</a></span><span class="op">(</span><span class="va">data</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Header Status filter: 788 points éliminés (header non actif, valeurs acceptées:</span></span>
+<span><span class="co">#&gt; Header Status filter: 788 points elimines (header non actif, valeurs acceptees:</span></span>
 <span><span class="co">#&gt; 1, 33 )</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Après filtrage:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">data_filtered</span><span class="op">)</span>, <span class="st">"lignes\n"</span><span class="op">)</span></span>
@@ -137,7 +137,7 @@ les relevés les moins fiables.</p>
 <span></span>
 <span><span class="co"># Filtrer avec GPSStatus &gt;= 4</span></span>
 <span><span class="va">data_gps</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/filter_gps_status.html">filter_gps_status</a></span><span class="op">(</span><span class="va">data_test</span>, min_gps_status <span class="op">=</span> <span class="fl">4</span><span class="op">)</span></span>
-<span><span class="co">#&gt; GPS Status filter: 2 points éliminés (GPS status &lt; 4 )</span></span>
+<span><span class="co">#&gt; GPS Status filter: 2 points elimines (GPS status &lt; 4 )</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Après filtrage (GPS &gt;= 4):"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">data_gps</span><span class="op">)</span>, <span class="st">"lignes\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Après filtrage (GPS &gt;= 4): 6 lignes</span></span>
@@ -166,7 +166,7 @@ donc une position imprécise.</p>
 <span></span>
 <span><span class="co"># Filtrer avec DOP &lt;= 10</span></span>
 <span><span class="va">data_dop</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/filter_dop.html">filter_dop</a></span><span class="op">(</span><span class="va">data_test</span>, max_dop <span class="op">=</span> <span class="fl">10</span><span class="op">)</span></span>
-<span><span class="co">#&gt; DOP filter: 2 points éliminés (DOP &gt; 10 )</span></span>
+<span><span class="co">#&gt; DOP filter: 2 points elimines (DOP &gt; 10 )</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Après filtrage (DOP &lt;= 10):"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">data_dop</span><span class="op">)</span>, <span class="st">"lignes\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Après filtrage (DOP &lt;= 10): 6 lignes</span></span></code></pre></div>
@@ -188,7 +188,7 @@ GPS.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Les données doivent d'abord être converties en UTM</span></span>
 <span><span class="va">data_utm</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/latlon_to_utm.html">latlon_to_utm</a></span><span class="op">(</span><span class="va">data</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Zone UTM détectée: 15</span></span>
+<span><span class="co">#&gt; Zone UTM detectee: 15</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Données converties en UTM:\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Données converties en UTM:</span></span>
@@ -199,7 +199,7 @@ GPS.</p>
 <span></span>
 <span><span class="co"># Filtrer par vélocité (0.5 - 10 m/s)</span></span>
 <span><span class="va">data_vel</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/filter_velocity.html">filter_velocity</a></span><span class="op">(</span><span class="va">data_utm</span>, min_velocity <span class="op">=</span> <span class="fl">0.5</span>, max_velocity <span class="op">=</span> <span class="fl">10</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Velocity filter: 26 points éliminés (vitesse hors plage: 0.5 - 10 )</span></span>
+<span><span class="co">#&gt; Velocity filter: 26 points elimines (vitesse hors plage: 0.5 - 10 )</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Points conservés après filtre vélocité:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">data_vel</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Points conservés après filtre vélocité: 21891</span></span></code></pre></div>
@@ -226,7 +226,7 @@ avant/après la récolte.</p>
 <span></span>
 <span><span class="co"># Filtrer</span></span>
 <span><span class="va">data_bounds</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/filter_bounds.html">filter_bounds</a></span><span class="op">(</span><span class="va">data_utm</span>, bounds <span class="op">=</span> <span class="va">bounds</span>, coord_type <span class="op">=</span> <span class="st">"utm"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Bounds filter: 21917 points éliminés (hors limites du champ)</span></span>
+<span><span class="co">#&gt; Bounds filter: 21917 points elimines (hors limites du champ)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Points dans les limites du champ:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">data_bounds</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Points dans les limites du champ: 0</span></span></code></pre></div>
@@ -244,7 +244,7 @@ bu/acre - Soja : 15 - 80 bu/acre</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Les données doivent d'abord avoir une colonne de rendement</span></span>
 <span><span class="va">data_yield</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/convert_flow_to_yield.html">convert_flow_to_yield</a></span><span class="op">(</span><span class="va">data_utm</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Yield calculé: 81059 bu/acre (lbs/bu = 60 )</span></span>
+<span><span class="co">#&gt; Yield calcule: 81059 bu/acre (lbs/bu = 60 )</span></span>
 <span></span>
 <span><span class="co"># Filtrer avec une plage de rendement raisonnable pour le maïs</span></span>
 <span><span class="va">data_yield_filtered</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/filter_yield_range.html">filter_yield_range</a></span><span class="op">(</span></span>
@@ -253,7 +253,7 @@ bu/acre - Soja : 15 - 80 bu/acre</p>
 <span>  max_yield <span class="op">=</span> <span class="fl">350</span>,</span>
 <span>  yield_column <span class="op">=</span> <span class="st">"Yield_buacre"</span></span>
 <span><span class="op">)</span></span>
-<span><span class="co">#&gt; Yield range filter: 21905 points éliminés (rendement hors plage: 50 - 350 )</span></span>
+<span><span class="co">#&gt; Yield range filter: 21905 points elimines (rendement hors plage: 50 - 350 )</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Points après filtre rendement (50-350 bu/acre):"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">data_yield_filtered</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Points après filtre rendement (50-350 bu/acre): 0</span></span>
@@ -283,7 +283,7 @@ Soja : 8 - 20%</p>
 <span></span>
 <span><span class="co"># Filtrer pour le maïs (10-40%)</span></span>
 <span><span class="va">data_moisture</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/filter_moisture_range.html">filter_moisture_range</a></span><span class="op">(</span><span class="va">data_test</span>, min_moisture <span class="op">=</span> <span class="fl">10</span>, max_moisture <span class="op">=</span> <span class="fl">40</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Moisture range filter: 2 points éliminés (humidité hors plage: 10 - 40 )</span></span>
+<span><span class="co">#&gt; Moisture range filter: 2 points elimines (humidite hors plage: 10 - 40 )</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Après filtrage (10-40%):"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">data_moisture</span><span class="op">)</span>, <span class="st">"lignes\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Après filtrage (10-40%): 6 lignes</span></span></code></pre></div>
@@ -306,7 +306,7 @@ identifiées et les points en excès sont éliminés.</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Appliquer le filtre overlap</span></span>
 <span><span class="va">data_overlap</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/remove_overlap.html">remove_overlap</a></span><span class="op">(</span><span class="va">data_utm</span>, cellsize <span class="op">=</span> <span class="fl">0.3</span>, max_pass <span class="op">=</span> <span class="fl">50</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Overlap filter complete: Cellsize: 0.3 Max Pass: 50 - 0 points éliminés</span></span>
+<span><span class="co">#&gt; Overlap filter complete: Cellsize: 0.3 Max Pass: 50 - 0 points elimines</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Points après suppression overlap:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">data_overlap</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Points après suppression overlap: 21917</span></span></code></pre></div>
@@ -353,7 +353,7 @@ variations reelles.</p>
 <span></span>
 <span><span class="co"># Appliquer le filtre</span></span>
 <span><span class="va">data_std</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/filter_local_std.html">filter_local_std</a></span><span class="op">(</span><span class="va">data_test</span>, swath_window <span class="op">=</span> <span class="fl">5</span>, std_limit <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Local STD Filter complete: Swath : 5 STDLimit : 3 - 0 points éliminés</span></span>
+<span><span class="co">#&gt; Local STD Filter complete: Swath : 5 STDLimit : 3 - 0 points elimines</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"\nAprès filtrage STD local:\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
@@ -452,7 +452,7 @@ position.</p>
 <span></span>
 <span><span class="co"># Appliquer une correction de délai de 2 observations</span></span>
 <span><span class="va">data_delay</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/apply_flow_delay.html">apply_flow_delay</a></span><span class="op">(</span><span class="va">data_test</span>, delay <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Flow delay correction: 2 seconds, 2 points éliminés (valeurs NA)</span></span>
+<span><span class="co">#&gt; Flow delay correction: 2 seconds, 2 points elimines (valeurs NA)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Après correction délai (2s):"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">data_delay</span><span class="op">)</span>, <span class="st">"lignes\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Après correction délai (2s): 18 lignes</span></span></code></pre></div>
@@ -492,7 +492,7 @@ calcule le ratio de chevauchement pour chaque point.</p>
 <span><span class="co">#&gt; === Bitmap Overlap Filter ===</span></span>
 <span><span class="co">#&gt; Donnees etendues - utilisation du bitmap sparse</span></span>
 <span><span class="co">#&gt; Overlap ratio: min 0 max 1</span></span>
-<span><span class="co">#&gt; Overlap filter: 3 points éliminés (0%)</span></span>
+<span><span class="co">#&gt; Overlap filter: 3 points elimines (0%)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Points après filtre overlap bitmap:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">data_bitmap</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Points après filtre overlap bitmap: 21914</span></span></code></pre></div>
@@ -512,7 +512,7 @@ grille spatiale plutôt que des passages.</p>
 <code class="sourceCode R"><span><span class="co"># Appliquer le filtre SD localisé</span></span>
 <span><span class="va">data_lsd</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/apply_local_sd_filter.html">apply_local_sd_filter</a></span><span class="op">(</span><span class="va">data_utm</span>, n_swaths <span class="op">=</span> <span class="fl">5</span>, lsd_limit <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span>
 <span><span class="co">#&gt; === Localized SD Filter ===</span></span>
-<span><span class="co">#&gt; Local SD filter: 565 points éliminés (2.6%)</span></span>
+<span><span class="co">#&gt; Local SD filter: 565 points elimines (2.6%)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Points après filtre SD localisé:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">data_lsd</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Points après filtre SD localisé: 21352</span></span></code></pre></div>
@@ -534,11 +534,11 @@ grille spatiale plutôt que des passages.</p>
 <span></span>
 <span><span class="co"># Étape 1: Conversion UTM</span></span>
 <span><span class="va">data</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/latlon_to_utm.html">latlon_to_utm</a></span><span class="op">(</span><span class="va">data_raw</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Zone UTM détectée: 15</span></span>
+<span><span class="co">#&gt; Zone UTM detectee: 15</span></span>
 <span></span>
 <span><span class="co"># Étape 2: Conversion rendement</span></span>
 <span><span class="va">data</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/convert_flow_to_yield.html">convert_flow_to_yield</a></span><span class="op">(</span><span class="va">data</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Yield calculé: 81059 bu/acre (lbs/bu = 60 )</span></span>
+<span><span class="co">#&gt; Yield calcule: 81059 bu/acre (lbs/bu = 60 )</span></span>
 <span></span>
 <span><span class="co"># Étape 3: PCDI</span></span>
 <span><span class="va">pcdi</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/apply_pcdi.html">apply_pcdi</a></span><span class="op">(</span><span class="va">data</span>, delay_range <span class="op">=</span> <span class="fl">0</span><span class="op">:</span><span class="fl">20</span>, n_iterations <span class="op">=</span> <span class="fl">5</span><span class="op">)</span></span>
@@ -564,12 +564,12 @@ grille spatiale plutôt que des passages.</p>
 <span>  <span class="fu"><a href="../reference/apply_local_sd_filter.html">apply_local_sd_filter</a></span><span class="op">(</span>n_swaths <span class="op">=</span> <span class="fl">5</span>, lsd_limit <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span>
 <span><span class="co">#&gt; === Localized SD Filter ===</span></span>
 <span><span class="co">#&gt; === Bitmap Overlap Filter ===</span></span>
-<span><span class="co">#&gt; Velocity filter: 29 points éliminés (vitesse hors plage: 0.5 - 2.88864430393987 )</span></span>
-<span><span class="co">#&gt; Yield range filter: 2 points éliminés (rendement hors plage: 0 - 192321.2 )</span></span>
+<span><span class="co">#&gt; Velocity filter: 29 points elimines (vitesse hors plage: 0.5 - 2.88864430393987 )</span></span>
+<span><span class="co">#&gt; Yield range filter: 2 points elimines (rendement hors plage: 0 - 192321.2 )</span></span>
 <span><span class="co">#&gt; Donnees etendues - utilisation du bitmap sparse</span></span>
 <span><span class="co">#&gt; Overlap ratio: min 0 max 1</span></span>
-<span><span class="co">#&gt; Overlap filter: 1 points éliminés (0%)</span></span>
-<span><span class="co">#&gt; Local SD filter: 560 points éliminés (2.6%)</span></span>
+<span><span class="co">#&gt; Overlap filter: 1 points elimines (0%)</span></span>
+<span><span class="co">#&gt; Local SD filter: 560 points elimines (2.6%)</span></span>
 <span></span>
 <span><span class="co"># Résumé</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"=== RÉSUMÉ DU NETTOYAGE ===\n"</span><span class="op">)</span></span>

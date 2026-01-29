@@ -1,7 +1,7 @@
 # Appliquer le filtre a fenetre glissante
 
-Cette fonction applique un filtre à fenêtre glissante pour éliminer les
-valeurs aberrantes basées sur les voisins temporels.
+Cette fonction applique un filtre a fenetre glissante pour eliminer les
+valeurs aberrantes basees sur les voisins temporels.
 
 ## Usage
 

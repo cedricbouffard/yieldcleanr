@@ -1,6 +1,6 @@
 # Filtrer selon les limites geographiques
 
-Cette fonction filtre les points selon les limites géographiques du
+Cette fonction filtre les points selon les limites geographiques du
 champ (Easting/Northing ou Lat/Lon).
 
 ## Usage

@@ -1,8 +1,8 @@
 # Filtrer selon la plage de rendement
 
 Cette fonction filtre les points selon la plage de rendement valide.
-Peut utiliser des valeurs explicites ou l'auto-détection basée sur
-l'écart-type.
+Peut utiliser des valeurs explicites ou l'auto-detection basee sur
+l'ecart-type.
 
 ## Usage
 
@@ -53,13 +53,13 @@ data <- tibble::tibble(
 
 # Valeurs explicites
 data_filtered <- filter_yield_range(data, min_yield = 50, max_yield = 200)
-#> Yield range filter: 1 points éliminés (rendement hors plage: 50 - 200 )
+#> Yield range filter: 1 points elimines (rendement hors plage: 50 - 200 )
 
-# Auto-detection basee sur l'ecart-type (moyenne ± 3*ET)
+# Auto-detection basee sur l'ecart-type (moyenne +/- 3*ET)
 data_filtered <- filter_yield_range(data)
-#> Yield auto-range: -127.5 - 439.5 (mean ± 3 SD = 156 ± 94.5 )
+#> Yield auto-range: -127.5 - 439.5 (mean +/- 3 SD = 156 +/- 94.5 )
 
-# Auto-detection avec plage plus large (moyenne ± 4*ET)
+# Auto-detection avec plage plus large (moyenne +/- 4*ET)
 data_filtered <- filter_yield_range(data, n_std = 4)
-#> Yield auto-range: -222 - 534 (mean ± 4 SD = 156 ± 94.5 )
+#> Yield auto-range: -222 - 534 (mean +/- 4 SD = 156 +/- 94.5 )
 ```

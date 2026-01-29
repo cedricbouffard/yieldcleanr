@@ -43,7 +43,7 @@ data_clean <- apply_overlap_filter(data, cellsize = 0.3, overlap_threshold = 0.5
 #> === Bitmap Overlap Filter ===
 #> Donnees etendues - utilisation du bitmap sparse
 #> Overlap ratio: min 0 max 0
-#> Overlap filter: 0 points éliminés (0%)
+#> Overlap filter: 0 points elimines (0%)
 print(data_clean)
 #> # A tibble: 5 × 5
 #>        X       Y  Flow Swath overlap_ratio

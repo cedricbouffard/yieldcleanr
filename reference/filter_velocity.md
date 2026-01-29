@@ -1,8 +1,8 @@
 # Filtrer selon la plage de vitesse
 
-Cette fonction filtre les points selon la vitesse de déplacement. La
-vélocité est calculée comme la distance euclidienne entre points
-consécutifs divisée par l'intervalle de temps.
+Cette fonction filtre les points selon la vitesse de deplacement. La
+velocite est calculee comme la distance euclidienne entre points
+consecutifs divisee par l'intervalle de temps.
 
 ## Usage
 

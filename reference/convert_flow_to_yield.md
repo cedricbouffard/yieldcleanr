@@ -1,8 +1,8 @@
 # Convertir le flux de grain en rendement (boisseaux/acre)
 
 Convertit le flux brut (LBS/SEC) en rendement (boisseaux/acre) avec la
-formule : Rendement (bu/acre) = (Flow × Interval × 43560) /
-(lbs_per_bushel × Swath_ft × Distance_ft)
+formule : Rendement (bu/acre) = (Flow x Interval x 43560) /
+(lbs_per_bushel x Swath_ft x Distance_ft)
 
 ## Usage
 

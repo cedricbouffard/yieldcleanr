@@ -1,7 +1,7 @@
 # Filtrer selon le DOP (Dilution of Precision)
 
-Cette fonction élimine les points avec un DOP trop élevé (mauvaise
-précision GPS).
+Cette fonction elimine les points avec un DOP trop eleve (mauvaise
+precision GPS).
 
 ## Usage
 

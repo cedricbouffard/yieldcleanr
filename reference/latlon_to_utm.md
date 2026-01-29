@@ -1,7 +1,7 @@
 # Convertir Latitude/Longitude en coordonnees UTM
 
-Cette fonction convertit les coordonnées géographiques (WGS84) en
-coordonnées UTM (Eastings/Northings).
+Cette fonction convertit les coordonnees geographiques (WGS84) en
+coordonnees UTM (Eastings/Northings).
 
 ## Usage
 
@@ -39,7 +39,7 @@ data <- tibble::tibble(
 
 # Convertir en UTM
 data_utm <- latlon_to_utm(data)
-#> Zone UTM détectée: 19
+#> Zone UTM detectee: 19
 print(data_utm)
 #> # A tibble: 3 × 5
 #>   Latitude Longitude  Flow       X        Y

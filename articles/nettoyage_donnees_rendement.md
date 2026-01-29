@@ -106,9 +106,9 @@ data_raw <- read_yield_data(file_path)
 
 # Appliquer les étapes de nettoyage manuellement pour l'exemple
 data_utm <- latlon_to_utm(data_raw)
-#> Zone UTM détectée: 15
+#> Zone UTM detectee: 15
 data_utm <- convert_flow_to_yield(data_utm)
-#> Yield calculé: 81059 bu/acre (lbs/bu = 60 )
+#> Yield calcule: 81059 bu/acre (lbs/bu = 60 )
 
 # Appliquer PCDI
 pcdi_result <- apply_pcdi(data_utm, delay_range = 0:15, n_iterations = 5)
@@ -127,12 +127,12 @@ thresholds <- calculate_auto_thresholds(data_utm)
 
 # Filtrer par vélocité
 data_clean <- filter_velocity(data_utm, thresholds$min_velocity, thresholds$max_velocity)
-#> Velocity filter: 29 points éliminés (vitesse hors plage: 0.5 - 2.88864430393987
+#> Velocity filter: 29 points elimines (vitesse hors plage: 0.5 - 2.88864430393987
 #> )
 
 # Filtrer par plage de rendement
 data_clean <- filter_yield_range(data_clean, thresholds$min_yield, thresholds$max_yield)
-#> Yield range filter: 2 points éliminés (rendement hors plage: 0 - 192321.2 )
+#> Yield range filter: 2 points elimines (rendement hors plage: 0 - 192321.2 )
 
 # Résultat
 cat("Nettoyage complet:\n")

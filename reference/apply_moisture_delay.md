@@ -1,6 +1,6 @@
 # Appliquer la correction de delai d'humidite
 
-Cette fonction compense le délai entre la mesure d'humidité et la
+Cette fonction compense le delai entre la mesure d'humidite et la
 position GPS.
 
 ## Usage

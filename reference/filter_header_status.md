@@ -1,9 +1,9 @@
 # Filtrer selon le statut du header
 
-Cette fonction filtre les données pour ne garder que les points où la
-moissonneuse est en position de travail (header abaissé ou actif).
-Header Status: 1 = harvesting (actif), 33 = header down (abaissé). Les
-deux valeurs indiquent une récolte active.
+Cette fonction filtre les donnees pour ne garder que les points ou la
+moissonneuse est en position de travail (header abaisse ou actif).
+Header Status: 1 = harvesting (actif), 33 = header down (abaisse). Les
+deux valeurs indiquent une recolte active.
 
 ## Usage
 
@@ -36,7 +36,7 @@ data <- tibble::tibble(
 
 # Filtrer pour ne garder que la recolte active
 data_filtered <- filter_header_status(data)
-#> Header Status filter: 1 points éliminés (header non actif, valeurs acceptées: 1, 33 )
+#> Header Status filter: 1 points elimines (header non actif, valeurs acceptees: 1, 33 )
 print(data_filtered)
 #> # A tibble: 4 × 2
 #>    Flow HeaderStatus

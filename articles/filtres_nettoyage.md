@@ -46,7 +46,7 @@ cat("HeaderStatus avant:", paste(unique(data$HeaderStatus), collapse = ", "), "\
 
 # Appliquer le filtre header status
 data_filtered <- filter_header_status(data)
-#> Header Status filter: 788 points éliminés (header non actif, valeurs acceptées:
+#> Header Status filter: 788 points elimines (header non actif, valeurs acceptees:
 #> 1, 33 )
 
 cat("Après filtrage:", nrow(data_filtered), "lignes\n")
@@ -83,7 +83,7 @@ cat("GPSStatus avant:", paste(data_test$GPSStatus, collapse = ", "), "\n")
 
 # Filtrer avec GPSStatus >= 4
 data_gps <- filter_gps_status(data_test, min_gps_status = 4)
-#> GPS Status filter: 2 points éliminés (GPS status < 4 )
+#> GPS Status filter: 2 points elimines (GPS status < 4 )
 
 cat("Après filtrage (GPS >= 4):", nrow(data_gps), "lignes\n")
 #> Après filtrage (GPS >= 4): 6 lignes
@@ -116,7 +116,7 @@ cat("Avant filtrage:", nrow(data_test), "lignes\n")
 
 # Filtrer avec DOP <= 10
 data_dop <- filter_dop(data_test, max_dop = 10)
-#> DOP filter: 2 points éliminés (DOP > 10 )
+#> DOP filter: 2 points elimines (DOP > 10 )
 
 cat("Après filtrage (DOP <= 10):", nrow(data_dop), "lignes\n")
 #> Après filtrage (DOP <= 10): 6 lignes
@@ -141,7 +141,7 @@ vitesses excessives (\> 10 m/s) peuvent indiquer des erreurs GPS.
 ``` r
 # Les données doivent d'abord être converties en UTM
 data_utm <- latlon_to_utm(data)
-#> Zone UTM détectée: 15
+#> Zone UTM detectee: 15
 
 cat("Données converties en UTM:\n")
 #> Données converties en UTM:
@@ -152,7 +152,7 @@ cat("  Y range:", round(min(data_utm$Y), 0), "-", round(max(data_utm$Y), 0), "\n
 
 # Filtrer par vélocité (0.5 - 10 m/s)
 data_vel <- filter_velocity(data_utm, min_velocity = 0.5, max_velocity = 10)
-#> Velocity filter: 26 points éliminés (vitesse hors plage: 0.5 - 10 )
+#> Velocity filter: 26 points elimines (vitesse hors plage: 0.5 - 10 )
 
 cat("Points conservés après filtre vélocité:", nrow(data_vel), "\n")
 #> Points conservés après filtre vélocité: 21891
@@ -183,7 +183,7 @@ bounds <- list(
 
 # Filtrer
 data_bounds <- filter_bounds(data_utm, bounds = bounds, coord_type = "utm")
-#> Bounds filter: 21917 points éliminés (hors limites du champ)
+#> Bounds filter: 21917 points elimines (hors limites du champ)
 
 cat("Points dans les limites du champ:", nrow(data_bounds), "\n")
 #> Points dans les limites du champ: 0
@@ -205,7 +205,7 @@ automatiquement via l’ecart-type.
 ``` r
 # Les données doivent d'abord avoir une colonne de rendement
 data_yield <- convert_flow_to_yield(data_utm)
-#> Yield calculé: 81059 bu/acre (lbs/bu = 60 )
+#> Yield calcule: 81059 bu/acre (lbs/bu = 60 )
 
 # Filtrer avec une plage de rendement raisonnable pour le maïs
 data_yield_filtered <- filter_yield_range(
@@ -214,7 +214,7 @@ data_yield_filtered <- filter_yield_range(
   max_yield = 350,
   yield_column = "Yield_buacre"
 )
-#> Yield range filter: 21905 points éliminés (rendement hors plage: 50 - 350 )
+#> Yield range filter: 21905 points elimines (rendement hors plage: 50 - 350 )
 
 cat("Points après filtre rendement (50-350 bu/acre):", nrow(data_yield_filtered), "\n")
 #> Points après filtre rendement (50-350 bu/acre): 0
@@ -247,7 +247,7 @@ cat("Humidité avant:", paste(data_test$Moisture, collapse = ", "), "\n")
 
 # Filtrer pour le maïs (10-40%)
 data_moisture <- filter_moisture_range(data_test, min_moisture = 10, max_moisture = 40)
-#> Moisture range filter: 2 points éliminés (humidité hors plage: 10 - 40 )
+#> Moisture range filter: 2 points elimines (humidite hors plage: 10 - 40 )
 
 cat("Après filtrage (10-40%):", nrow(data_moisture), "lignes\n")
 #> Après filtrage (10-40%): 6 lignes
@@ -271,7 +271,7 @@ identifiées et les points en excès sont éliminés.
 ``` r
 # Appliquer le filtre overlap
 data_overlap <- remove_overlap(data_utm, cellsize = 0.3, max_pass = 50)
-#> Overlap filter complete: Cellsize: 0.3 Max Pass: 50 - 0 points éliminés
+#> Overlap filter complete: Cellsize: 0.3 Max Pass: 50 - 0 points elimines
 
 cat("Points après suppression overlap:", nrow(data_overlap), "\n")
 #> Points après suppression overlap: 21917
@@ -322,7 +322,7 @@ print(data_test |> select(.row_id, Flow))
 
 # Appliquer le filtre
 data_std <- filter_local_std(data_test, swath_window = 5, std_limit = 3)
-#> Local STD Filter complete: Swath : 5 STDLimit : 3 - 0 points éliminés
+#> Local STD Filter complete: Swath : 5 STDLimit : 3 - 0 points elimines
 
 cat("\nAprès filtrage STD local:\n")
 #> 
@@ -426,7 +426,7 @@ cat("Avant correction délai:", nrow(data_test), "lignes\n")
 
 # Appliquer une correction de délai de 2 observations
 data_delay <- apply_flow_delay(data_test, delay = 2)
-#> Flow delay correction: 2 seconds, 2 points éliminés (valeurs NA)
+#> Flow delay correction: 2 seconds, 2 points elimines (valeurs NA)
 
 cat("Après correction délai (2s):", nrow(data_delay), "lignes\n")
 #> Après correction délai (2s): 18 lignes
@@ -469,7 +469,7 @@ data_bitmap <- apply_overlap_filter(data_utm, cellsize = 0.3, overlap_threshold 
 #> === Bitmap Overlap Filter ===
 #> Donnees etendues - utilisation du bitmap sparse
 #> Overlap ratio: min 0 max 1
-#> Overlap filter: 3 points éliminés (0%)
+#> Overlap filter: 3 points elimines (0%)
 
 cat("Points après filtre overlap bitmap:", nrow(data_bitmap), "\n")
 #> Points après filtre overlap bitmap: 21914
@@ -493,7 +493,7 @@ spatiale plutôt que des passages.
 # Appliquer le filtre SD localisé
 data_lsd <- apply_local_sd_filter(data_utm, n_swaths = 5, lsd_limit = 3)
 #> === Localized SD Filter ===
-#> Local SD filter: 565 points éliminés (2.6%)
+#> Local SD filter: 565 points elimines (2.6%)
 
 cat("Points après filtre SD localisé:", nrow(data_lsd), "\n")
 #> Points après filtre SD localisé: 21352
@@ -514,11 +514,11 @@ data_raw <- read_yield_data(file_path)
 
 # Étape 1: Conversion UTM
 data <- latlon_to_utm(data_raw)
-#> Zone UTM détectée: 15
+#> Zone UTM detectee: 15
 
 # Étape 2: Conversion rendement
 data <- convert_flow_to_yield(data)
-#> Yield calculé: 81059 bu/acre (lbs/bu = 60 )
+#> Yield calcule: 81059 bu/acre (lbs/bu = 60 )
 
 # Étape 3: PCDI
 pcdi <- apply_pcdi(data, delay_range = 0:20, n_iterations = 5)
@@ -544,12 +544,12 @@ data_clean <- data |>
   apply_local_sd_filter(n_swaths = 5, lsd_limit = 3)
 #> === Localized SD Filter ===
 #> === Bitmap Overlap Filter ===
-#> Velocity filter: 29 points éliminés (vitesse hors plage: 0.5 - 2.88864430393987 )
-#> Yield range filter: 2 points éliminés (rendement hors plage: 0 - 192321.2 )
+#> Velocity filter: 29 points elimines (vitesse hors plage: 0.5 - 2.88864430393987 )
+#> Yield range filter: 2 points elimines (rendement hors plage: 0 - 192321.2 )
 #> Donnees etendues - utilisation du bitmap sparse
 #> Overlap ratio: min 0 max 1
-#> Overlap filter: 1 points éliminés (0%)
-#> Local SD filter: 560 points éliminés (2.6%)
+#> Overlap filter: 1 points elimines (0%)
+#> Local SD filter: 560 points elimines (2.6%)
 
 # Résumé
 cat("=== RÉSUMÉ DU NETTOYAGE ===\n")
