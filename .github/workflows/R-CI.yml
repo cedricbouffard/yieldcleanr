@@ -57,7 +57,7 @@ jobs:
           pak-version: stable
 
       - name: Run tests
-        run: Rscript -e 'devtools::test()'
+        run: Rscript -e 'testthat::test()'
 
       - name: Coverage
         run: Rscript -e 'covr::codecov()'
