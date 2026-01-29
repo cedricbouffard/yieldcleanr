@@ -17,7 +17,7 @@ This file contains test data for yield cleaning.
 
 ## Loading Data
 
-```{r setup}
+```{r load-libraries}
 library(yieldcleanr)
 library(ggplot2)
 library(sf)
