@@ -67,48 +67,6 @@ jobs:
       - name: Run tests
         run: Rscript -e 'testthat::test_dir("tests/testthat", reporter = testthat::ProgressReporter$new())'
 
-      - name: Calculate code coverage
-        run: |
-          Rscript -e '
-          library(covr)
-
-          # Calculate coverage
-          cov <- package_coverage(path = ".", type = "tests")
-
-          # Print coverage summary
-          cat("\n=== COVERAGE SUMMARY ===\n")
-          print(summary(cov))
-
-          # Save as cobertura XML
-          cobertura(cov, file = "coverage.xml")
-
-          # Print per-file coverage
-          cat("\n=== PER FILE COVERAGE ===\n")
-          cov_df <- as.data.frame(cov)
-          print(cov_df[, c("filename", "coverage", "covered", "total")])
-
-          # Calculate total coverage
-          total <- sum(cov_df$total)
-          covered <- sum(cov_df$covered)
-          pct <- round(covered / total * 100, 1)
-          cat("\nTotal coverage:", pct, "%\n")
-          '
-
-      - name: Upload coverage results
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-results
-          path: coverage.xml
-
-      - name: Codecov
-        uses: codecov/codecov-action@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          files: ./coverage.xml
-          flags: unittests
-          name: codecov-umbrella
-          fail_ci_if_error: false
-
   pkgdown:
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
