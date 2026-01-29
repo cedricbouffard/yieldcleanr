@@ -6,20 +6,20 @@
 #' @param data Tibble avec colonnes Latitude et Longitude
 #' @param zone Zone UTM (auto-detectee si NULL)
 #' @param datum Datum a utiliser (defaut "WGS84")
-#' @return Tibble avec colonnes X (Easting) et Y (Northing)
-#' @noRd
-#' @examples
-#' # Creer des donnees d'exemple
-#' data <- tibble::tibble(
-#'   Latitude = c(47.506122, 47.506136, 47.506152),
-#'   Longitude = c(-69.856661, -69.856681, -69.856701),
-#'   Flow = c(1.53, 3.7, 7.56)
-#' )
-#'
-#' # Convertir en UTM
-#' data_utm <- latlon_to_utm(data)
-#' print(data_utm)
-latlon_to_utm <- function(data, zone = NULL, datum = "WGS84") {
+ #' @return Tibble avec colonnes X (Easting) et Y (Northing)
+ #' @export
+ #' @examples
+ #' # Creer des donnees d'exemple
+ #' data <- tibble::tibble(
+ #'   Latitude = c(47.506122, 47.506136, 47.506152),
+ #'   Longitude = c(-69.856661, -69.856681, -69.856701),
+ #'   Flow = c(1.53, 3.7, 7.56)
+ #' )
+ #'
+ #' # Convertir en UTM
+ #' data_utm <- latlon_to_utm(data)
+ #' print(data_utm)
+ latlon_to_utm <- function(data, zone = NULL, datum = "WGS84") {
   if (!all(c("Latitude", "Longitude") %in% names(data))) {
     rlang::abort("Les colonnes Latitude et Longitude sont requises")
   }

@@ -396,54 +396,63 @@ export_raster <- function(data, cell_size = 1, column_colonne = "Yield_kg_ha",
   )
   message(paste("  -> Template cree:", terra::ncell(r_template), "cellules"))
 
-  # Interpolation avec interpNear - utiliser radius uniquement (pas k, pas maxdist)
-  message("Etape 4: Interpolation IDW avec plus proche voisin...")
+  # Interpolation avec splines (Thin Plate Spline)
+  message("Etape 4: Interpolation par splines (Thin Plate Spline)...")
   message(paste("  - Nombre de points:", terra::nrow(vect_data)))
   message(paste("  - Resolution cellule:", cell_size, "m"))
   message(paste("  - Colonne utilisee:", column_colonne))
 
-  r <- tryCatch({
-    terra::interpNear(
-      x = r_template,
-      y = vect_data,
-      field = column_colonne,
-      radius = cell_size * 10  # Distance de recherche (pas maxdist)
-    )
-  }, error = function(e) {
-    stop(paste("Erreur lors de l'interpolation:", e$message))
-  })
-
-  # Verifier le resultat
-  na_count <- sum(is.na(terra::values(r)))
-  total_count <- length(terra::values(r))
-  message(paste("  - Cellules raster:", total_count))
-  message(paste("  - Cellules avec NA:", na_count))
-
-  # Si interpNear ne fonctionne pas bien, essayer avec rasterize + focal
-  if (na_count > total_count * 0.9) {
-    message("Interpolation IDW a trop de trous, utilisation de rasterize + lissage...")
-
+  # Verifier que fields est disponible pour les splines
+  if (!requireNamespace("fields", quietly = TRUE)) {
+    message("Package 'fields' non disponible, utilisation de l'interpolation IDW...")
     r <- tryCatch({
-      terra::rasterize(
-        x = vect_data,
-        y = r_template,
+      terra::interpNear(
+        x = r_template,
+        y = vect_data,
         field = column_colonne,
-        fun = fun
+        radius = cell_size * 20
       )
     }, error = function(e) {
-      stop(paste("Erreur lors de la rasterization:", e$message))
+      message(paste("  -> ERREUR interpNear:", e$message))
+      NULL
     })
-
-    # Remplir les trous avec focal (moyenne des voisins)
+  } else {
+    # Utiliser Thin Plate Spline pour l'interpolation
     r <- tryCatch({
-      terra::focal(r, w = 3, fun = mean, na.rm = TRUE, na.policy = "only")
+      # Extraire les coordonnees et valeurs
+      coords <- terra::geom(vect_data)[, c("x", "y")]
+      values <- terra::values(vect_data)[[column_colonne]]
+      
+      # Creer le modele TPS
+      message("  -> Creation du modele TPS...")
+      tps_model <- fields::Tps(coords, values)
+      
+      # Interpoler sur le raster
+      message("  -> Interpolation sur la grille...")
+      r_interpolated <- terra::interpolate(r_template, tps_model)
+      
+      message(paste("  -> Interpolation par splines reussie"))
+      r_interpolated
     }, error = function(e) {
-      message(paste("Avertissement lors du lissage:", e$message))
-      r  # Retourner le raster non lisse si le lissage echoue
+      message(paste("  -> ERREUR interpolation splines:", e$message))
+      message("  -> Fallback vers IDW...")
+      NULL
     })
-
-    na_count_after <- sum(is.na(terra::values(r)))
-    message(paste("  - Cellules avec NA apres lissage:", na_count_after))
+  }
+  
+  # Fallback: si l'interpolation echoue, utiliser IDW
+  if (is.null(r)) {
+    message("Etape 4b: Fallback - Interpolation IDW...")
+    r <- tryCatch({
+      terra::interpNear(
+        x = r_template,
+        y = vect_data,
+        field = column_colonne,
+        radius = cell_size * 10
+      )
+    }, error = function(e) {
+      stop(paste("Erreur lors de l'interpolation:", e$message))
+    })
   }
 
   # Creer un polygone de masque en utilisant terra directement
@@ -453,7 +462,7 @@ export_raster <- function(data, cell_size = 1, column_colonne = "Yield_kg_ha",
   buffer_dist <- cell_size * 3
   
   mask_vect <- tryCatch({
-    terra::buffer(vect_data, width = buffer_dist)
+    terra::vect(concaveman::concaveman(vect_data |> sf::st_as_sf() |> sf::st_centroid()))
   }, error = function(e) {
     message(paste("Avertissement lors du buffer:", e$message))
     # Si le buffer echoue, utiliser les points directement

@@ -3,7 +3,7 @@ title: "Filtres de Nettoyage des Données de Rendement"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{Filtres de Nettoyage}
-  %\VignetteEngine{rmarkdown::render}
+  %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
 
@@ -410,7 +410,7 @@ cat("Points après filtre SD localisé:", nrow(data_lsd), "\n")
 
 ```{r, eval=TRUE, warning=FALSE, fig.width=10, fig.height=6}
 # Pipeline de nettoyage complet
-file_path <- system.file("extdata", "original.txt", package = "yieldcleanr")
+file_path <- system.file("extdata", "sample1.txt", package = "yieldcleanr")
 data_raw <- read_yield_data(file_path)
 
 # Étape 1: Conversion UTM

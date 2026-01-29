@@ -326,16 +326,6 @@ ui <- fluidPage(
           )
         ),
         
-        # Info de debug
-        conditionalPanel(
-           condition = "output.has_data == true",
-          div(class = "debug-info",
-              tags$strong("Info donnees:"),
-              tags$br(),
-              textOutput("debug_info")
-          )
-        ),
-        
         div(class = "section-title", "2. Parametres d'affichage"),
         selectInput("display_var", "Variable a afficher :",
                    choices = c(
@@ -343,17 +333,12 @@ ui <- fluidPage(
                      "Rendement humide" = "wet_yield",
                      "Humidite" = "moisture"
                    ),
-                   selected = "dry_yield"),
-        checkboxInput("polygon", "Creer des polygones", value = TRUE),
+                    selected = "dry_yield"),
 
         # Section Filtres avec checkboxes statiques
         div(class = "section-title", "3. Filtres a appliquer"),
-        
-        div(class = "section-title", "PCDI"),
         checkboxInput("apply_pcdi_flow", "PCDI flux", value = TRUE),
         checkboxInput("apply_pcdi_moisture", "PCDI humidite", value = TRUE),
-        
-        div(class = "section-title", "Filtres de base"),
         checkboxInput("apply_header", "Filtre header", value = TRUE),
         checkboxInput("apply_gps", "Filtre GPS", value = TRUE),
         checkboxInput("apply_velocity", "Filtre vitesse", value = TRUE),
@@ -403,8 +388,7 @@ ui <- fluidPage(
                     c("GeoJSON" = "geojson",
                       "CSV" = "csv",
                       "Raster (1m)" = "raster")),
-        downloadButton("download_data", "Telecharger les donnees", class = "btn-success btn-block"),
-        downloadButton("download_log", "Telecharger le journal", class = "btn-info btn-block")
+        downloadButton("download_data", "Telecharger les donnees", class = "btn-success btn-block")
       )
     ),
     
@@ -453,6 +437,15 @@ ui <- fluidPage(
 )
 
 server <- function(input, output, session) {
+  # Nettoyer les callbacks later lors de la fermeture de la session
+  session$onEnded(function() {
+    tryCatch({
+      if (requireNamespace("later", quietly = TRUE)) {
+        later::later(function() NULL, 0)
+      }
+    }, error = function(e) NULL)
+  })
+
   # Operateur pour valeurs par defaut si NULL
   `%||%` <- function(x, y) if (is.null(x)) y else x
   
@@ -1007,13 +1000,7 @@ server <- function(input, output, session) {
       unit_label <- "%"
     }
     
-    map_data <- if (input$polygon) {
-      rv$result$data_clean
-    } else {
-      sf::st_as_sf(rv$result$data_clean,
-                   coords = c("Longitude", "Latitude"),
-                   crs = 4326)
-    }
+    map_data <- rv$result$data_clean
     
     if (nrow(map_data) == 0) return()
     
@@ -1242,9 +1229,9 @@ server <- function(input, output, session) {
         return()
       }
       
-      # Projeter le raster en WGS84 pour leaflet
-      message("Projection du raster en WGS84 pour l'affichage...")
-      raster_wgs84 <- terra::project(raster_data, "EPSG:4326")
+      # Projeter le raster en 3857 pour leaflet
+      message("Projection du raster en 3857 pour l'affichage...")
+      raster_wgs84 <- terra::project(raster_data, "EPSG:3857")
       
       # Convertir en format pour leaflet
       raster_df <- terra::as.data.frame(raster_wgs84, xy = TRUE)
@@ -1392,7 +1379,7 @@ server <- function(input, output, session) {
         result <- yieldcleanr::clean_yield_with_tracking(
           data = data_df,
           metrique = TRUE,  # Toujours métrique
-          polygon = input$polygon,
+          polygon = TRUE,
           params = params
         )
         
@@ -1466,8 +1453,7 @@ server <- function(input, output, session) {
 
   params_trigger <- reactive({
     list(
-      params = get_params(),
-      polygon = input$polygon
+      params = get_params()
     )
   })
 
@@ -1766,15 +1752,6 @@ server <- function(input, output, session) {
         }
         write.csv(data, file, row.names = FALSE)
       }
-    }
-  )
-  
-  output$download_log <- downloadHandler(
-    filename = function() {
-      paste0("journal_nettoyage_", Sys.Date(), ".csv")
-    },
-    content = function(file) {
-      write.csv(rv$result$stats$deletions_by_step, file, row.names = FALSE)
     }
   )
 }

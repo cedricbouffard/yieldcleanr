@@ -22,20 +22,20 @@
 #'   Defaut 56 pour le mais. Utiliser 60 pour soja et cereales.
 #' @param sqft_per_acre Pieds carres par acre (defaut 43560)
 #' @param inches_per_foot Pouces par pied (defaut 12)
-#' @return Donnees avec colonne Yield_buacre
-#' @noRd
-#' @examples
-#' \dontrun{
-#' # Auto-detection selon la culture
-#' data <- convert_flow_to_yield(data)
-#'
-#' # Explicite pour le mais
-#' data <- convert_flow_to_yield(data, lbs_per_bushel = 56)
-#'
-#' # Pour soja/cereales
-#' data <- convert_flow_to_yield(data, lbs_per_bushel = 60)
-#' }
-convert_flow_to_yield <- function(data, lbs_per_bushel = NULL,
+ #' @return Donnees avec colonne Yield_buacre
+ #' @export
+ #' @examples
+ #' \dontrun{
+ #' # Auto-detection selon la culture
+ #' data <- convert_flow_to_yield(data)
+ #'
+ #' # Explicite pour le mais
+ #' data <- convert_flow_to_yield(data, lbs_per_bushel = 56)
+ #'
+ #' # Pour soja/cereales
+ #' data <- convert_flow_to_yield(data, lbs_per_bushel = 60)
+ #' }
+ convert_flow_to_yield <- function(data, lbs_per_bushel = NULL,
                                    sqft_per_acre = 43560,
                                    inches_per_foot = 12) {
 

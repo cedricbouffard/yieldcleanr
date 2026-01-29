@@ -8,13 +8,13 @@
 #' @param output_file Chemin du fichier CSV de sortie
 #' @param log_file Chemin du journal de sortie
 #' @param params Liste des parametres AYCE
-#' @return Tibble nettoye en unites imperiales
-#' @noRd
-#' @examples
-#' \dontrun{
-#' cleaned <- ayce_clean("data/original.txt")
-#' }
-ayce_clean <- function(file_path, output_file = NULL, log_file = NULL,
+ #' @return Tibble nettoye en unites imperiales
+ #' @export
+ #' @examples
+ #' \dontrun{
+ #' cleaned <- ayce_clean("data/original.txt")
+ #' }
+ ayce_clean <- function(file_path, output_file = NULL, log_file = NULL,
                        params = NULL) {
   clean_yield(file_path = file_path,
               metrique = FALSE,

@@ -76,13 +76,13 @@ calculate_rsc <- function(x, y, yield) {
 #' @param delay_range Plage de delais a tester (defaut 0:20 secondes)
 #' @param n_iterations Nombre d'iterations avec bruit aleatoire (defaut 10)
 #' @param noise_level Niveau de bruit gaussien en proportion de la plage
-#' @return Liste avec optimal_delay, rsc_values et stability_metrics
-#' @noRd
-#' @examples
-#' \dontrun{
-#' result <- apply_pcdi(data, delay_range = 0:20)
-#' }
-apply_pcdi <- function(data, delay_range = 0:20, n_iterations = 10,
+ #' @return Liste avec optimal_delay, rsc_values et stability_metrics
+ #' @export
+ #' @examples
+ #' \dontrun{
+ #' result <- apply_pcdi(data, delay_range = 0:20)
+ #' }
+ apply_pcdi <- function(data, delay_range = 0:20, n_iterations = 10,
                        noise_level = 0.05, value_col = "Flow") {
 
   rlang::inform(paste("=== PCDI: Phase Correlation Delay Identification (", value_col, ") ==="))
@@ -220,13 +220,13 @@ apply_pcdi <- function(data, delay_range = 0:20, n_iterations = 10,
 #' @param minv_abs Seuil minimal absolu de vitesse (defaut 0.5 m/s)
 #' @param miny_abs Seuil minimal absolu de rendement (defaut 0)
 #' @param gbuffer Marge pour le filtre de position en metres (defaut 100)
-#' @return Liste avec tous les seuils calcules
-#' @noRd
-#' @examples
-#' \dontrun{
-#' thresholds <- calculate_auto_thresholds(data)
-#' }
-calculate_auto_thresholds <- function(data,
+ #' @return Liste avec tous les seuils calcules
+ #' @export
+ #' @examples
+ #' \dontrun{
+ #' thresholds <- calculate_auto_thresholds(data)
+ #' }
+ calculate_auto_thresholds <- function(data,
                                        yllim = 0.05, yulim = 0.95, yscale = 1.5,
                                        vllim = 0.02, vulim = 0.98, vscale = 1.5,
                                        minv_abs = 0.5, miny_abs = 0,
@@ -343,9 +343,9 @@ calculate_auto_thresholds <- function(data,
 #'
 #' @param data Tibble avec coordonnees X, Y
 #' @param thresholds Liste des seuils de position
-#' @return Tibble filtre
-#' @noRd
-apply_position_filter <- function(data, thresholds) {
+ #' @return Tibble filtre
+ #' @export
+ apply_position_filter <- function(data, thresholds) {
   if (!all(c("X", "Y") %in% names(data))) {
     rlang::warn("Colonnes X, Y requises pour filtre de position")
     return(data)

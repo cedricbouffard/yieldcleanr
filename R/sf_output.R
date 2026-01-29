@@ -9,17 +9,17 @@
 #' @param log_file Chemin optionnel pour le journal
 #' @param geometry_type "polygon" ou "point" (compatibilite)
 #' @param params Liste des parametres AYCE
-#' @return Objet SF avec donnees nettoyees
-#' @noRd
-#' @examples
-#' \dontrun{
-#' sf_result <- ayce_sf(
-#'   file_path = "data.txt",
-#'   geometry_type = "polygon"
-#' )
-#' plot(sf_result["Yield"])
-#' }
-ayce_sf <- function(file_path, output_file = NULL, log_file = NULL,
+ #' @return Objet SF avec donnees nettoyees
+ #' @export
+ #' @examples
+ #' \dontrun{
+ #' sf_result <- ayce_sf(
+ #'   file_path = "data.txt",
+ #'   geometry_type = "polygon"
+ #' )
+ #' plot(sf_result["Yield"])
+ #' }
+ ayce_sf <- function(file_path, output_file = NULL, log_file = NULL,
                     geometry_type = c("polygon", "point"),
                     params = NULL) {
 
