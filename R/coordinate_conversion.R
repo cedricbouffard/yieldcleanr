@@ -24,6 +24,13 @@
     rlang::abort("Les colonnes Latitude et Longitude sont requises")
   }
 
+  # Gestion des donnees vides
+  if (nrow(data) == 0) {
+    data$X <- numeric(0)
+    data$Y <- numeric(0)
+    return(data)
+  }
+
   # Detection automatique de la zone UTM
   if (is.null(zone)) {
     zone <- floor((data$Longitude[1] + 180) / 6) + 1

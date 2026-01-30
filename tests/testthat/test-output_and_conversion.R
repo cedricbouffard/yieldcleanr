@@ -26,15 +26,15 @@ test_that("add_flags initializes all flag columns", {
 test_that("add_flags applies header flags from log", {
   data <- tibble::tibble(
     Flow = c(1.5, 2.5, 3.5),
-    HeaderStatus = c(33, 0, 33)  # Second point has header up
+    HeaderStatus = c(33, 99, 33)  # Second point has invalid header status
   )
 
   cleaning_log <- list(header_filtered = TRUE)
   result <- yieldcleanr:::add_flags(data, cleaning_log)
 
-  expect_equal(result$flag_header[1], 0)
-  expect_equal(result$flag_header[2], 1)
-  expect_equal(result$flag_header[3], 0)
+  expect_equal(result$flag_header[1], 0)  # 33 is valid
+  expect_equal(result$flag_header[2], 1)  # 99 is invalid
+  expect_equal(result$flag_header[3], 0)  # 33 is valid
 })
 
 test_that("export_cleaned_data exports CSV correctly", {
@@ -118,11 +118,11 @@ test_that("convert_flow_to_yield calculates yield correctly", {
 
   result <- convert_flow_to_yield(data)
 
-  expect_true("Yield_buacre" %in% names(result))
+  expect_true("Yield_kg_ha" %in% names(result))
   expect_equal(nrow(result), nrow(data))
 
   # Verify calculation is reasonable
-  expect_true(all(result$Yield_buacre > 0))
+  expect_true(all(result$Yield_kg_ha > 0))
 })
 
 test_that("convert_flow_units handles conversions", {
@@ -206,8 +206,8 @@ test_that("add_flags preserves original columns", {
 
    result <- convert_flow_to_yield(data)
 
-   expect_true("Yield_buacre" %in% names(result))
-   expect_true(all(result$Yield_buacre > 0))
+   expect_true("Yield_kg_ha" %in% names(result))
+   expect_true(all(result$Yield_kg_ha > 0))
  })
 
 test_that("get_lbs_per_bushel handles French grain names", {

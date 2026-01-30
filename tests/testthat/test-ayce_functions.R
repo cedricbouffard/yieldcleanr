@@ -108,11 +108,13 @@ test_that("apply_pcdi handles missing columns", {
 
   expect_type(result, "list")
   expect_true("optimal_delay" %in% names(result))
-  expect_equal(result$optimal_delay, 2)
+  expect_equal(result$optimal_delay, 0)
+  expect_false(is.null(result$warning))
 })
 
 test_that("apply_pcdi returns reasonable delay", {
-  data <- create_test_data(100)
+  data <- create_test_data(100) |>
+    latlon_to_utm()
 
   result <- apply_pcdi(data, delay_range = -10:10)
 
@@ -122,7 +124,9 @@ test_that("apply_pcdi returns reasonable delay", {
 })
 
 test_that("apply_pcdi with different value column", {
-  data <- create_test_data(100) |> mutate(CustomFlow = Flow * 2)
+  data <- create_test_data(100) |>
+    mutate(CustomFlow = Flow * 2) |>
+    latlon_to_utm()
 
   result <- apply_pcdi(data, value_col = "CustomFlow")
 

@@ -105,9 +105,9 @@ test_that("convert_flow_to_yield calculates yield", {
 
   result <- convert_flow_to_yield(data)
 
-  expect_true("Yield_buacre" %in% names(result))
+  expect_true("Yield_kg_ha" %in% names(result))
   expect_equal(nrow(result), nrow(data))
-  expect_true(all(result$Yield_buacre >= 0))
+  expect_true(all(result$Yield_kg_ha >= 0))
 })
 
 test_that("convert_flow_to_yield handles missing columns gracefully", {
@@ -228,23 +228,23 @@ test_that("filter_velocity handles missing X/Y", {
 # Test filter_yield_range ----
 test_that("filter_yield_range filters by range", {
   data <- tibble::tibble(
-    Yield_buacre = c(100, 150, 50, 300, 180),
+    Yield_kg_ha = c(6270, 9405, 3135, 18810, 11286),
     Flow = 1:5
   )
 
-  result <- filter_yield_range(data, min_yield = 50, max_yield = 200)
+  result <- filter_yield_range(data, min_yield = 3135, max_yield = 11286, yield_column = "Yield_kg_ha")
 
   expect_equal(nrow(result), 4)
-  expect_true(all(result$Yield_buacre >= 50 & result$Yield_buacre <= 200))
+  expect_true(all(result$Yield_kg_ha >= 3135 & result$Yield_kg_ha <= 11286))
 })
 
 test_that("filter_yield_range handles empty result", {
   data <- tibble::tibble(
-    Yield_buacre = c(600, 700, 800),
+    Yield_kg_ha = c(37620, 43900, 50160),
     Flow = 1:3
   )
 
-  result <- filter_yield_range(data, min_yield = 50, max_yield = 200)
+  result <- filter_yield_range(data, min_yield = 3135, max_yield = 11286, yield_column = "Yield_kg_ha")
 
   expect_equal(nrow(result), 0)
 })
@@ -286,7 +286,8 @@ test_that("apply_flow_delay shifts values", {
 
   result <- apply_flow_delay(data, delay = 1)
 
-  expect_equal(nrow(result), nrow(data) - 1)
+  expect_equal(nrow(result), nrow(data))
+  expect_equal(sum(is.na(result$Flow)), 1)
 })
 
 test_that("apply_flow_delay handles negative delay", {
@@ -297,7 +298,8 @@ test_that("apply_flow_delay handles negative delay", {
 
   result <- apply_flow_delay(data, delay = -1)
 
-  expect_equal(nrow(result), nrow(data) - 1)
+  expect_equal(nrow(result), nrow(data))
+  expect_equal(sum(is.na(result$Flow)), 1)
 })
 
 # Test apply_moisture_delay ----
@@ -376,7 +378,10 @@ test_that("filter_bounds with NULL bounds returns all", {
 test_that("apply_pcdi finds optimal delay", {
   data <- tibble::tibble(
     Flow = c(10, 15, 12, 18, 14, 16, 13, 17, 11, 19),
-    GPS_Time = 1:10
+    GPS_Time = 1:10,
+    X = 435000 + 1:10,
+    Y = 5262000 + 1:10,
+    Interval = rep(2L, 10)
   )
 
   result <- apply_pcdi(data, delay_range = -3:3, n_iterations = 2)
@@ -388,7 +393,7 @@ test_that("apply_pcdi finds optimal delay", {
 # Test calculate_auto_thresholds ----
 test_that("calculate_auto_thresholds computes thresholds", {
   data <- tibble::tibble(
-    Yield_buacre = c(100, 120, 140, 160, 180, 110, 130, 150),
+    Yield_kg_ha = c(6270, 7524, 8778, 10032, 11286, 6897, 8142, 9405),
     Flow = 1:8
   )
 

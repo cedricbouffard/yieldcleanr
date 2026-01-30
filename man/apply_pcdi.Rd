@@ -2,34 +2,43 @@
 % Please edit documentation in R/ayce_pcdi.R
 \name{apply_pcdi}
 \alias{apply_pcdi}
-\title{PCDI : Phase Correlation Delay Identification}
+\title{PCDI : Phase Correlation Delay Identification (Version Rapide)}
 \usage{
 apply_pcdi(
   data,
-  delay_range = 0:20,
-  n_iterations = 10,
-  noise_level = 0.05,
-  value_col = "Flow"
+  delay_range = -25:25,
+  n_iterations = 5,
+  noise_level = NULL,
+  value_col = "Flow",
+  sample_fraction = NULL,
+  method = NULL,
+  coarse_step = 2,
+  max_points = 10000,
+  bandwidth = 30
 )
 }
 \arguments{
 \item{data}{Tibble avec donnees de rendement (X, Y, Flow, GPS_Time, Interval)}
 
-\item{delay_range}{Plage de delais a tester (defaut 0:20 secondes)}
+\item{delay_range}{Plage de delais a tester (defaut -25:25 secondes)}
 
-\item{n_iterations}{Nombre d'iterations avec bruit aleatoire (defaut 10)}
+\item{value_col}{Nom de la colonne de valeurs a analyser}
 
-\item{noise_level}{Niveau de bruit gaussien en proportion de la plage}
+\item{coarse_step}{Pas pour la recherche grossiere (defaut 2)}
+
+\item{max_points}{Nombre maximum de points pour l'analyse}
+
+\item{bandwidth}{Distance de bande passante pour Moran (defaut 30m)}
 }
 \value{
-Liste avec optimal_delay, rsc_values et stability_metrics
+Liste avec optimal_delay, score_values et stability_metrics
 }
 \description{
 Determine automatiquement le delai optimal entre le flux et la position GPS
-en utilisant la methode de correlation de phase.
+en utilisant une recherche en deux etapes (grossiere + fine) avec rgeoda.
 }
 \examples{
 \dontrun{
-result <- apply_pcdi(data, delay_range = 0:20)
+result <- apply_pcdi(data, delay_range = -25:25)
 }
 }

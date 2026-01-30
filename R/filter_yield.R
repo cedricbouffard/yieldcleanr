@@ -20,52 +20,103 @@
  #' # Appliquer la correction de delai de flux
  #' data_corrected <- apply_flow_delay(data, delay = 1)
  #' print(data_corrected)
- apply_flow_delay <- function(data, delay = 2, direction = "forward", value_col = "Flow") {
-  n_before <- nrow(data)
+  apply_flow_delay <- function(data, delay = 2, direction = "forward", value_col = "Flow") {
+   n_before <- nrow(data)
 
-  if (delay == 0) {
-    rlang::inform(paste(value_col, "delay = 0, pas de correction appliquee"))
-    return(data)
-  }
+   if (delay == 0) {
+     rlang::inform(paste(value_col, "delay = 0, pas de correction appliquee"))
+     return(data)
+   }
 
+   if (!value_col %in% names(data)) {
+     rlang::warn(paste("Colonne", value_col, "non trouvee pour correction de delai"))
+     return(data)
+   }
+
+   # Sauvegarde de la valeur originale
+   raw_col <- paste0(value_col, "_raw")
+   data[[raw_col]] <- data[[value_col]]
+
+   if (delay >= 0) {
+     # Delai positif : Flow mesuree APRES la position GPS
+     # Flow doit shifter en AVANT pour aligner avec position ulterieure
+     # lead() deplace valeurs vers indices superieurs = apparait plus tard
+     data[[value_col]] <- dplyr::lead(data[[value_col]], n = delay, default = NA_real_)
+   } else {
+     # Delai negatif : Flow mesuree AVANT la position GPS
+     # Flow doit shifter en ARRIERE pour aligner avec position anterieure
+     # lag() deplace valeurs vers indices inferieurs = apparait plus tot
+     abs_delay <- abs(delay)
+     data[[value_col]] <- dplyr::lag(data[[value_col]], n = abs_delay, default = NA_real_)
+   }
+
+   # Compter les NA crees
+   n_na <- sum(is.na(data[[value_col]]))
+   # NE PLUS SUPPRIMER les points - conserver toutes les lignes
+   # Les NA sont conserves (pour interpolation ulterieure si necessaire)
+   
+   rlang::inform(paste(
+     value_col, "delay correction:", delay, "secondes,", n_na, "valeurs NA creees (points conserves)"
+   ))
+
+   return(data)
+ }
+
+
+#' Interpoler les valeurs NA apres decalage de delai
+#'
+#' Remplit les valeurs NA creees par le decalage avec une interpolation lineaire
+#'
+#' @param data Tibble avec donnees de rendement
+#' @param value_col Colonne a interpoler
+#' @return Donnees avec valeurs interpolees
+#' @noRd
+interpolate_na <- function(data, value_col = "Flow") {
   if (!value_col %in% names(data)) {
-    rlang::warn(paste("Colonne", value_col, "non trouvee pour correction de delai"))
+    rlang::warn(paste("Colonne", value_col, "non trouvee pour interpolation"))
     return(data)
   }
 
-  # Sauvegarde de la valeur originale
-  raw_col <- paste0(value_col, "_raw")
-  data[[raw_col]] <- data[[value_col]]
+  n_na_before <- sum(is.na(data[[value_col]]))
+  if (n_na_before == 0) {
+    return(data)
+  }
 
-  if (delay >= 0) {
-    if (direction == "forward") {
-      # Delai positif : valeur mesuree APRES la position
-      # Deplacer la valeur vers l'arriere pour aligner la position
-      data[[value_col]] <- dplyr::lead(data[[value_col]], n = delay, default = NA_real_)
-    } else {
-      # Decaler la valeur vers l'arriere (delai positif en backward)
-      data[[value_col]] <- dplyr::lag(data[[value_col]], n = delay, default = NA_real_)
-    }
-  } else {
-    # Delai negatif : valeur mesuree AVANT la position
-    abs_delay <- abs(delay)
-    if (direction == "forward") {
-      # Delai negatif : decaler la valeur vers l'avant
-      data[[value_col]] <- dplyr::lag(data[[value_col]], n = abs_delay, default = NA_real_)
-    } else {
-      # Delai negatif en backward = decaler vers l'avant
-      data[[value_col]] <- dplyr::lag(data[[value_col]], n = abs_delay, default = NA_real_)
+  # Trouver les indices non-NA
+  valid_idx <- which(!is.na(data[[value_col]]))
+  if (length(valid_idx) < 2) {
+    rlang::warn("Pas assez de valeurs valides pour interpolation")
+    return(data)
+  }
+
+  # Interpolation lineaire simple - utiliser approx
+  # Creer un vecteur pour les resultats
+  result <- rep(NA_real_, nrow(data))
+  valid_vals <- data[[value_col]][valid_idx]
+
+  # Interpolation seulement pour les NA entre des valeurs valides
+  na_idx <- which(is.na(data[[value_col]]))
+
+  for (i in na_idx) {
+    # Trouver les valeurs valides avant et apres
+    before <- valid_idx[valid_idx < i]
+    after <- valid_idx[valid_idx > i]
+
+    if (length(before) > 0 && length(after) > 0) {
+      idx_before <- max(before)
+      idx_after <- min(after)
+      val_before <- data[[value_col]][idx_before]
+      val_after <- data[[value_col]][idx_after]
+
+      # Interpolation lineaire
+      result[i] <- val_before + (val_after - val_before) * (i - idx_before) / (idx_after - idx_before)
     }
   }
 
-  # Compter les NA crees
-  n_na <- sum(is.na(data[[value_col]]))
-  data <- data |> dplyr::filter(!is.na(!!dplyr::sym(value_col)))
+  data[[value_col]] <- ifelse(is.na(data[[value_col]]), result, data[[value_col]])
 
-  rlang::inform(paste(
-    value_col, "delay correction:", delay, "seconds,",
-    n_na, "points elimines (valeurs NA)"
-  ))
+  n_na_after <- sum(is.na(data[[value_col]]))
+  rlang::inform(paste("  Interpolation:", n_na_before, "->", n_na_after, "NA pour", value_col))
 
   return(data)
 }

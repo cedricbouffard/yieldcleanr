@@ -238,18 +238,29 @@ create_diagnostic_plot <- function(diag_data, step_name, base_size = 11) {
 
 #' Exporter les donnees nettoyees en raster
 #'
-#' Convertit les donnees de rendement nettoyees en raster avec une resolution
-#' specifique et decoupe selon un polygone concave.
-#'
-#' @param data Donnees nettoyees (objet sf avec geometrie points ou polygones)
-#' @param cell_size Taille des cellules en metres (defaut: 1)
-#' @param column_colonne Nom de la colonne contenant les valeurs a rasteriser
-#' @param fun Fonction d'agregation (defaut: mean)
-#' @param crs_code Code EPSG du systeme de coordonnees (defaut: NULL, auto-detecte)
-#' @return Objet SpatRaster
-#' @export
+ #' Convertit les donnees de rendement nettoyees en raster avec une resolution
+ #' specifique et decoupe selon un polygone concave.
+ #'
+ #' @param data Donnees nettoyees (objet sf avec geometrie points ou polygones)
+ #' @param cell_size Taille des cellules en metres (defaut: 1)
+ #' @param column_colonne Nom de la colonne contenant les valeurs a rasteriser
+ #' @param fun Fonction d'agregation (defaut: mean)
+ #' @param crs_code Code EPSG du systeme de coordonnees (defaut: NULL, auto-detecte)
+ #' @param method Methode d'interpolation: "auto" (defaut), "tps", "idw", ou "nearest"
+ #'   - "auto": Choisit automatiquement selon le nombre de points
+ #'   - "tps": Thin Plate Spline (lent mais precis, max 5000 points)
+ #'   - "idw": Inverse Distance Weighting (rapide, recommande)
+ #'   - "nearest": Plus proche voisin (tres rapide)
+ #' @param max_points_tps Nombre maximum de points pour TPS (defaut: 5000)
+ #'   Si plus de points, echantillonnage aleatoire ou switch vers IDW
+ #' @return Objet SpatRaster
+ #' @export
 export_raster <- function(data, cell_size = 1, column_colonne = "Yield_kg_ha",
-                            fun = mean, crs_code = NULL) {
+                            fun = mean, crs_code = NULL, 
+                            method = c("auto", "tps", "idw", "nearest"),
+                            max_points_tps = 5000) {
+  
+  method <- match.arg(method)
   # Charger les packages necessaires
   if (!requireNamespace("terra", quietly = TRUE)) {
     stop("Le package 'terra' est requis pour cette fonction. Installez-le avec: install.packages('terra')")
@@ -396,59 +407,97 @@ export_raster <- function(data, cell_size = 1, column_colonne = "Yield_kg_ha",
   )
   message(paste("  -> Template cree:", terra::ncell(r_template), "cellules"))
 
-  # Interpolation avec splines (Thin Plate Spline)
-  message("Etape 4: Interpolation par splines (Thin Plate Spline)...")
-  message(paste("  - Nombre de points:", terra::nrow(vect_data)))
+  # Interpolation
+  n_points <- terra::nrow(vect_data)
+  message(paste("Etape 4: Interpolation (", n_points, "points )..."))
   message(paste("  - Resolution cellule:", cell_size, "m"))
   message(paste("  - Colonne utilisee:", column_colonne))
-
-  # Verifier que fields est disponible pour les splines
-  if (!requireNamespace("fields", quietly = TRUE)) {
-    message("Package 'fields' non disponible, utilisation de l'interpolation IDW...")
+  
+  # Determiner la methode d'interpolation
+  use_tps <- FALSE
+  if (method == "tps") {
+    use_tps <- TRUE
+  } else if (method == "auto") {
+    # TPS uniquement si peu de points et package fields disponible
+    use_tps <- (n_points <= max_points_tps) && requireNamespace("fields", quietly = TRUE)
+    if (n_points > max_points_tps) {
+      message(paste("  -> TPS desactive:", n_points, ">", max_points_tps, "points"))
+    }
+  }
+  
+  # Echantillonnage si trop de points pour TPS
+  vect_data_interp <- vect_data
+  if (use_tps && n_points > max_points_tps) {
+    message(paste("  -> Echantillonnage:", max_points_tps, "sur", n_points, "points"))
+    sample_idx <- sample(n_points, max_points_tps)
+    vect_data_interp <- vect_data[sample_idx]
+  }
+  
+  r <- NULL
+  
+  # Essayer TPS si approprie
+  if (use_tps && requireNamespace("fields", quietly = TRUE)) {
+    message("  -> Methode: Thin Plate Spline")
+    r <- tryCatch({
+      coords <- terra::geom(vect_data_interp)[, c("x", "y")]
+      values <- terra::values(vect_data_interp)[[column_colonne]]
+      
+      message("     Creation du modele TPS...")
+      tps_model <- fields::Tps(coords, values)
+      
+      message("     Interpolation sur la grille...")
+      r_interpolated <- terra::interpolate(r_template, tps_model)
+      
+      message("     OK - TPS reussie")
+      r_interpolated
+    }, error = function(e) {
+      message(paste("     ERREUR TPS:", e$message))
+      NULL
+    })
+  }
+  
+  # Si TPS echoue ou non disponible, utiliser IDW
+  if (is.null(r)) {
+    if (method == "nearest") {
+      message("  -> Methode: Nearest Neighbor (rapide)")
+      r <- tryCatch({
+        terra::interpNear(
+          x = r_template,
+          y = vect_data,
+          field = column_colonne,
+          radius = cell_size * 10
+        )
+      }, error = function(e) {
+        message(paste("     ERREUR:", e$message))
+        NULL
+      })
+    } else {
+      message("  -> Methode: IDW (Inverse Distance Weighting)")
+      r <- tryCatch({
+        terra::interpIDW(
+          x = r_template,
+          y = vect_data,
+          field = column_colonne,
+          radius = cell_size * 15,
+          power = 2
+        )
+      }, error = function(e) {
+        message(paste("     ERREUR IDW:", e$message))
+        message("  -> Fallback vers Nearest Neighbor...")
+        NULL
+      })
+    }
+  }
+  
+  # Fallback final: si tout echoue, utiliser Nearest Neighbor
+  if (is.null(r)) {
+    message("Etape 4b: Fallback final - Nearest Neighbor...")
     r <- tryCatch({
       terra::interpNear(
         x = r_template,
         y = vect_data,
         field = column_colonne,
         radius = cell_size * 20
-      )
-    }, error = function(e) {
-      message(paste("  -> ERREUR interpNear:", e$message))
-      NULL
-    })
-  } else {
-    # Utiliser Thin Plate Spline pour l'interpolation
-    r <- tryCatch({
-      # Extraire les coordonnees et valeurs
-      coords <- terra::geom(vect_data)[, c("x", "y")]
-      values <- terra::values(vect_data)[[column_colonne]]
-      
-      # Creer le modele TPS
-      message("  -> Creation du modele TPS...")
-      tps_model <- fields::Tps(coords, values)
-      
-      # Interpoler sur le raster
-      message("  -> Interpolation sur la grille...")
-      r_interpolated <- terra::interpolate(r_template, tps_model)
-      
-      message(paste("  -> Interpolation par splines reussie"))
-      r_interpolated
-    }, error = function(e) {
-      message(paste("  -> ERREUR interpolation splines:", e$message))
-      message("  -> Fallback vers IDW...")
-      NULL
-    })
-  }
-  
-  # Fallback: si l'interpolation echoue, utiliser IDW
-  if (is.null(r)) {
-    message("Etape 4b: Fallback - Interpolation IDW...")
-    r <- tryCatch({
-      terra::interpNear(
-        x = r_template,
-        y = vect_data,
-        field = column_colonne,
-        radius = cell_size * 10
       )
     }, error = function(e) {
       stop(paste("Erreur lors de l'interpolation:", e$message))

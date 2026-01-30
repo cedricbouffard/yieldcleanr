@@ -45,9 +45,9 @@
   # ----- Parametres AYCE par defaut -----
   default_params <- list(
     # Parametres PCDI
-    delay_range = -25:10,
-    n_iterations = 5,
-    noise_level = 0.05,
+    delay_range = -25:25,   # Plage de delai a tester (secondes) - plus large pour sample2
+    n_iterations = 10,      # Plus d'iterations pour stabilite
+    noise_level = 0.03,     # Moins de bruit pour plus de precision
 
     # Parametres de seuil (equilibres)
     yllim = 0.10,      # Limite quantile bas rendement
@@ -62,7 +62,7 @@
 
     # Parametres de chevauchement
     cellsize_overlap = 0.3,    # Taille de cellule (metres) - standard USDA
-    overlap_threshold = 0.5,   # Ratio max de chevauchement
+    overlap_threshold = 0.4,   # Ratio max de chevauchement (40% au lieu de 50%)
 
     # Parametres ecart-type local
     n_swaths = 5,              # Taille de cellule en largeurs de passage
@@ -93,38 +93,80 @@
   rlang::inform("")
 
   rlang::inform("Etape 1 : chargement des donnees...")
-  if (!is.null(data)) {
-    data <- data
-  } else {
-    data <- read_yield_data(file_path)
-  }
-  data_raw <- data
-  rlang::inform(paste("  -", nrow(data), "raw observations loaded"))
-  
-  # Creer Yield_kg_ha_wet si Flow_Wet existe (pour fichiers non-ZIP)
-  if ("Flow_Wet" %in% names(data) && !all(is.na(data$Flow_Wet))) {
-    if (!"Yield_kg_ha_wet" %in% names(data)) {
-      rlang::inform("Creation de Yield_kg_ha_wet a partir de Flow_Wet...")
-      data$Yield_kg_ha_wet <- data$Flow_Wet
+   if (!is.null(data)) {
+     data <- data
+   } else {
+     data <- read_yield_data(file_path)
+   }
+   data_raw <- data
+   rlang::inform(paste("  -", nrow(data), "raw observations loaded"))
+   
+    # Detection: Flow contient-il des valeurs de rendement (kg/ha) ou de flux (lbs/s) ?
+    # - Valeurs > 100 : probablement rendement en kg/ha (John Deere)
+    # - Valeurs < 50 : probablement flux en lbs/s (fichiers texte standards)
+    mean_flow_val <- mean(data$Flow, na.rm = TRUE)
+    
+    if (mean_flow_val > 100) {
+      # Flow contient le rendement HUMIDE en kg/ha (John Deere)
+      rlang::inform(paste("Flow detecte comme rendement humide (", round(mean_flow_val, 1), " kg/ha)..."))
+      if (!"Yield_kg_ha_wet" %in% names(data)) {
+        data$Yield_kg_ha_wet <- data$Flow
+      }
+    } else {
+      # Flow contient le flux brut (lbs/s) - calculer le rendement
+      rlang::inform(paste("Flow detecte comme flux brut (", round(mean_flow_val, 2), " lbs/s) - calcul du rendement..."))
+      data <- convert_flow_to_yield(data)
+      # Apres conversion, Yield_kg_ha contient le rendement HUMIDE
+      if ("Yield_kg_ha" %in% names(data)) {
+        data$Yield_kg_ha_wet <- data$Yield_kg_ha
+        rlang::inform(paste("Rendement humide calcule:", round(mean(data$Yield_kg_ha_wet, na.rm = TRUE), 1), "kg/ha"))
+      }
     }
-  }
-  
-  # Calculer le rendement sec a partir du rendement humide et de l'humidite
-  # Formule: Rendement sec = Rendement humide × (100 - Humidite%) / (100 - 14.5%)
-  if ("Moisture" %in% names(data) && !all(is.na(data$Moisture))) {
-    if ("Yield_kg_ha_wet" %in% names(data) && !all(is.na(data$Yield_kg_ha_wet))) {
-      rlang::inform("Calcul du rendement sec a partir du rendement humide...")
-      data$Yield_kg_ha <- data$Yield_kg_ha_wet * (100 - data$Moisture) / 85.5
-      rlang::inform(paste("Rendement sec calcule:", round(mean(data$Yield_kg_ha, na.rm = TRUE), 1), "kg/ha"))
-    }
+    
+    # Creer Yield_kg_ha_wet si Flow_Wet existe egalement (donnees avec rendement humide explicite)
     if ("Flow_Wet" %in% names(data) && !all(is.na(data$Flow_Wet))) {
-      data$Flow <- data$Flow_Wet * (100 - data$Moisture) / 85.5
+      if (!"Yield_kg_ha_wet" %in% names(data)) {
+        rlang::inform("Creation de Yield_kg_ha_wet a partir de Flow_Wet...")
+        data$Yield_kg_ha_wet <- data$Flow_Wet
+      }
     }
-  }
+    
+    # Calculer le rendement sec a partir du rendement humide et de l'humidite
+    # Formule: Rendement sec = Rendement humide × (100 - Humidite%) / (100 - Humidite_standard%)
+    if ("Moisture" %in% names(data) && !all(is.na(data$Moisture))) {
+      # Obtenir l'humidite standard selon la culture
+      moisture_std <- get_standard_moisture(data)
+      moisture_factor <- 100 - moisture_std
+      
+      if ("Yield_kg_ha_wet" %in% names(data) && !all(is.na(data$Yield_kg_ha_wet))) {
+        rlang::inform(paste("Calcul du rendement sec (humidite standard:", moisture_std, "%)..."))
+        data$Yield_kg_ha <- data$Yield_kg_ha_wet * (100 - data$Moisture) / moisture_factor
+        rlang::inform(paste("Rendement sec calcule:", round(mean(data$Yield_kg_ha, na.rm = TRUE), 1), "kg/ha"))
+      }
+      # Convertir Flow (humide) en Flow sec pour les filtres si c'est du rendement
+      if ("Flow" %in% names(data) && !all(is.na(data$Flow)) && mean_flow_val > 100) {
+        data$Flow <- data$Flow * (100 - data$Moisture) / moisture_factor
+      }
+    } else {
+      # Pas d'humidite - Yield_kg_ha est le meme que Yield_kg_ha_wet
+      if ("Yield_kg_ha_wet" %in% names(data) && !"Yield_kg_ha" %in% names(data)) {
+        data$Yield_kg_ha <- data$Yield_kg_ha_wet
+        rlang::inform(paste("Pas d'humidite - Yield_kg_ha = Yield_kg_ha_wet (moyenne:", round(mean(data$Yield_kg_ha, na.rm = TRUE), 1), "kg/ha)"))
+      }
+    }
 
   # ----- Etape 2 : conversion UTM -----
   rlang::inform("Etape 2 : conversion en coordonnees UTM...")
   data <- latlon_to_utm(data)
+
+  # ----- Etape 2b : filtre position -----
+  if (isTRUE(params$apply_position)) {
+    rlang::inform("Etape 2b : filtre position...")
+    data <- filter_position_outliers(data)
+    rlang::inform(paste("  Rows:", nrow(data)))
+  } else {
+    rlang::inform("Etape 2b : filtre position saute")
+  }
 
   # ----- Etape 3 : PCDI sur le flux -----
   rlang::inform("Etape 3 : PCDI - optimisation du delai de flux...")
@@ -132,7 +174,8 @@
     delay_range = params$delay_range,
     n_iterations = params$n_iterations,
     noise_level = params$noise_level,
-    value_col = "Flow"
+    value_col = "Flow",
+    sample_fraction = params$sample_fraction %||% 1
   )
   flow_delay <- pcdi_result$optimal_delay
   rlang::inform(paste("  Delai optimal flux:", flow_delay, "secondes"))
@@ -145,7 +188,8 @@
       delay_range = params$delay_range,
       n_iterations = params$n_iterations,
       noise_level = params$noise_level,
-      value_col = "Moisture"
+      value_col = "Moisture",
+      sample_fraction = params$sample_fraction %||% 1
     )
     moisture_delay <- pcdi_moisture$optimal_delay
     rlang::inform(paste("  Delai optimal humidite:", moisture_delay, "secondes"))
@@ -164,10 +208,10 @@
     gbuffer = params$gbuffer
   )
 
-  # ----- Etape 5 : filtre header -----
+  # ----- Etape 5 : filtre header (deplace apres flow delay) -----
   rlang::inform("Etape 5 : filtre header...")
-  data <- data |> dplyr::filter(HeaderStatus %in% c(1, 33) | is.na(HeaderStatus))
-  rlang::inform(paste("  Rows:", nrow(data)))
+  rlang::inform("  Filtre header deplace apres correction du delai pour preserver la continuite temporelle")
+  # Le filtre header sera applique a l'etape 9f pour ne pas perturber le flow delay
 
   # ----- Etape 6 : filtre GPS -----
   rlang::inform("Etape 6 : filtre GPS...")
@@ -196,24 +240,35 @@
     dplyr::filter(velocity >= thresholds$min_velocity & velocity <= thresholds$max_velocity)
   rlang::inform(paste("  Rows:", nrow(data)))
 
-  # ----- Etape 9 : correction du delai de flux -----
-  rlang::inform(paste("Etape 9 : correction du delai de flux (", flow_delay, "s)..."))
-  data <- apply_flow_delay(data, delay = -flow_delay, value_col = "Flow")
-  rlang::inform(paste("  Rows:", nrow(data)))
-  
-  # ----- Etape 9a : correction du delai d'humidite -----
-  if (moisture_delay != 0 && "Moisture" %in% names(data)) {
-    rlang::inform(paste("Etape 9a : correction du delai d'humidite (", moisture_delay, "s)..."))
-    data <- apply_flow_delay(data, delay = -moisture_delay, value_col = "Moisture")
-    rlang::inform(paste("  Rows:", nrow(data)))
+   # ----- Etape 9 : correction du delai de flux -----
+   rlang::inform(paste("Etape 9 : correction du delai de flux (", flow_delay, "s)..."))
+   # Si flow_delay positif (+15s): Flow est en retard, decaler avec lead()
+   data <- apply_flow_delay(data, delay = flow_delay, value_col = "Flow")
+   
+   # Interpoler les NA crees par le decalage
+   if (sum(is.na(data$Flow)) > 0) {
+     data <- interpolate_na(data, value_col = "Flow")
+   }
+   rlang::inform(paste("  Rows:", nrow(data)))
+   
+    # ----- Etape 10 : correction du delai d'humidite -----
+   if (moisture_delay != 0 && "Moisture" %in% names(data)) {
+      rlang::inform(paste("Etape 10 : correction du delai d'humidite (", moisture_delay, "s)..."))
+     data <- apply_flow_delay(data, delay = moisture_delay, value_col = "Moisture")
+     
+     # Interpoler les NA crees par le decalage
+     if (sum(is.na(data$Moisture)) > 0) {
+       data <- interpolate_na(data, value_col = "Moisture")
+     }
+     rlang::inform(paste("  Rows:", nrow(data)))
   }
 
-  # ----- Etape 9b : calcul du rendement apres delai -----
-  rlang::inform("Etape 9b : calcul du rendement apres delai...")
-  data <- convert_flow_to_yield(data)
+    # ----- Etape 11 : calcul du rendement apres delai -----
+    rlang::inform("Etape 11 : calcul du rendement apres delai...")
+   data <- convert_flow_to_yield(data, force_recalculate = TRUE)
 
-  # ----- Etape 9c : recalcul des seuils apres delai -----
-  rlang::inform("Etape 9c : recalcul des seuils apres delai...")
+   # ----- Etape 12 : recalcul des seuils apres delai -----
+   rlang::inform("Etape 12 : recalcul des seuils apres delai...")
   thresholds <- calculate_auto_thresholds(data,
     yllim = params$yllim, yulim = params$yulim, yscale = params$yscale,
     vllim = params$v_lim, vulim = params$v_ulim, vscale = params$v_scale,
@@ -221,8 +276,8 @@
     gbuffer = params$gbuffer
   )
 
-  # ----- Etape 9d : validation de Pass via analyse de direction -----
-  rlang::inform("Etape 9d : validation de Pass via analyse de direction...")
+  # ----- Etape 13 : validation de Pass via analyse de direction -----
+  rlang::inform("Etape 13 : validation de Pass via analyse de direction...")
   if (all(c("X", "Y") %in% names(data))) {
     n <- nrow(data)
 
@@ -243,9 +298,9 @@
     }
   }
 
-  # ----- Etape 9e : suppression des points de bordure -----
-  rlang::inform("Etape 9e : suppression des points de bordure lies au delai...")
-  if ("Pass" %in% names(data) && "Yield_buacre" %in% names(data) && !all(is.na(data$Pass)) && "Interval" %in% names(data)) {
+  # ----- Etape 14 : suppression des points de bordure -----
+  rlang::inform("Etape 14 : suppression des points de bordure lies au delai...")
+  if ("Pass" %in% names(data) && "Yield_kg_ha" %in% names(data) && !all(is.na(data$Pass)) && "Interval" %in% names(data)) {
     n_before <- nrow(data)
     abs_delay <- abs(flow_delay)
 
@@ -300,39 +355,53 @@
     data <- data
   }
 
-  # ----- Etape 10 : suppression des rendements nuls -----
-  rlang::inform("Etape 10 : suppression des rendements nuls...")
+  # ----- Etape 15 : filtre header (applique apres flow delay) -----
+  rlang::inform("Etape 15 : filtre header (applique apres correction du delai)...")
+  if ("HeaderStatus" %in% names(data)) {
+    n_before <- nrow(data)
+    data <- data |> dplyr::filter(HeaderStatus %in% c(0, 1, 33) | is.na(HeaderStatus))
+    n_removed <- n_before - nrow(data)
+    if (n_removed > 0) {
+      rlang::inform(paste("  ", n_removed, "points avec header inactif elimines"))
+    }
+  } else {
+    rlang::inform("  HeaderStatus non present, saut du filtre")
+  }
+  rlang::inform(paste("  Rows:", nrow(data)))
+
+  # ----- Etape 16 : suppression des rendements nuls -----
+  rlang::inform("Etape 16 : suppression des rendements nuls...")
   n_before <- nrow(data)
-  data <- data |> dplyr::filter(Yield_buacre > 0)
+  data <- data |> dplyr::filter(Yield_kg_ha > 0)
   n_removed <- n_before - nrow(data)
   if (n_removed > 0) {
     rlang::inform(paste("  ", n_removed, "zero yield points removed"))
   }
   rlang::inform(paste("  Rows:", nrow(data)))
 
-  # ----- Etape 11 : filtre plage de rendement -----
-  rlang::inform("Etape 11 : filtre plage de rendement...")
+  # ----- Etape 17 : filtre plage de rendement -----
+  rlang::inform("Etape 17 : filtre plage de rendement...")
   data <- filter_yield_range(data,
     min_yield = thresholds$min_yield,
     max_yield = thresholds$max_yield
   )
   rlang::inform(paste("  Rows:", nrow(data)))
 
-  # ----- Etape 12 : filtre humidite -----
-  rlang::inform("Etape 12 : filtre humidite (auto-detection)...")
+  # ----- Etape 18 : filtre humidite -----
+  rlang::inform("Etape 18 : filtre humidite (auto-detection)...")
   data <- filter_moisture_range(data, n_std = params$n_std)
   rlang::inform(paste("  Rows:", nrow(data)))
 
-  # ----- Etape 13 : filtre de chevauchement -----
-  rlang::inform("Etape 13 : filtre de chevauchement bitmap...")
+  # ----- Etape 19 : filtre de chevauchement -----
+  rlang::inform("Etape 19 : filtre de chevauchement bitmap...")
   data <- apply_overlap_filter(data,
     cellsize = params$cellsize_overlap,
     overlap_threshold = params$overlap_threshold
   )
   rlang::inform(paste("  Rows:", nrow(data)))
 
-  # ----- Etape 14 : filtre ecart-type local -----
-  rlang::inform("Etape 14 : filtre ecart-type localise...")
+  # ----- Etape 20 : filtre ecart-type local -----
+  rlang::inform("Etape 20 : filtre ecart-type localise...")
   data <- apply_local_sd_filter(data,
     n_swaths = params$n_swaths,
     lsd_limit = params$lsd_limit,
@@ -340,43 +409,53 @@
   )
   rlang::inform(paste("  Rows:", nrow(data)))
 
-  # ----- Etape 15 : validation -----
-  rlang::inform("Etape 15 : validation et controle qualite...")
+  # ----- Etape 21 : validation -----
+  rlang::inform("Etape 21 : validation et controle qualite...")
   validation <- ayce_validate(data, data_raw, pcdi_result, thresholds)
   rlang::inform(paste("  Retention rate:", round(validation$retention_rate * 100, 1), "%"))
 
-  # ----- Etape 16 : formatage de la sortie -----
-  rlang::inform("Etape 16 : formatage de la sortie...")
+  # ----- Etape 22 : formatage de la sortie -----
+  rlang::inform("Etape 22 : formatage de la sortie...")
 
-   # Calcul des conversions d'unites
-   if (metrique) {
-     data$Yield_kg_ha <- data$Yield_buacre * 67.25  # kg/ha
-     data$Flow_kg_s <- data$Flow * 0.453592         # kg/s
-     data$Yield_final <- data$Yield_kg_ha
-     data$Flow_final <- data$Flow_kg_s
-     yield_label <- "Yield_kg_ha"
-     flow_label <- "Flow_kg_s"
-     unit_label <- "kg/ha"
-     # Calculer aussi le rendement humide en kg/ha si disponible
-     if ("Yield_buacre_wet" %in% names(data)) {
-       data$Yield_kg_ha_wet <- data$Yield_buacre_wet * 67.25
+   # Toujours utiliser kg/ha - pas de conversion bu/acre
+   if (!"Yield_kg_ha" %in% names(data)) {
+     # Si Yield_kg_ha n'existe pas, essayer de le creer a partir d'autres colonnes
+     if ("Yield" %in% names(data)) {
+       data$Yield_kg_ha <- data$Yield
+     } else if ("Flow" %in% names(data) && mean(data$Flow, na.rm = TRUE) > 100) {
+       # Flow contient probablement deja le rendement en kg/ha
+       data$Yield_kg_ha <- data$Flow
      }
-   } else {
-     data$Yield_final <- data$Yield_buacre
-     data$Flow_final <- data$Flow
-     yield_label <- "Yield_bu_ac"
-     flow_label <- "Flow_lbs_s"
-     unit_label <- "bu/acre"
    }
+   
+   # Creer Yield_kg_ha_wet s'il n'existe pas
+   if (!"Yield_kg_ha_wet" %in% names(data) && "Yield_kg_ha" %in% names(data)) {
+     data$Yield_kg_ha_wet <- data$Yield_kg_ha
+   }
+   
+   # Conversion Flow en kg/s pour reference
+   if ("Flow" %in% names(data)) {
+     data$Flow_kg_s <- data$Flow * 0.453592
+   }
+   
+   # Colonnes finales
+   if ("Yield_kg_ha" %in% names(data)) {
+     data$Yield_final <- data$Yield_kg_ha
+     rlang::inform(paste("Rendement final (sec):", round(mean(data$Yield_kg_ha, na.rm = TRUE), 0), "kg/ha"))
+   }
+   if ("Yield_kg_ha_wet" %in% names(data)) {
+     rlang::inform(paste("Rendement final (humide):", round(mean(data$Yield_kg_ha_wet, na.rm = TRUE), 0), "kg/ha"))
+   }
+   
+   yield_label <- "Yield_kg_ha"
+   flow_label <- "Flow_kg_s"
+   unit_label <- "kg/ha"
 
     # Pour une sortie tibble, supprimer les colonnes intermediaires
    if (!polygon) {
-     data$Yield_buacre <- NULL
-     data$Flow <- NULL
-     if (metrique) {
-       data$Yield_kg_ha <- NULL
-       data$Flow_kg_s <- NULL
-     }
+      # Nettoyer les colonnes intermediaires
+      data$Flow <- NULL
+      data$Flow_kg_s <- NULL
    }
 
      if (polygon) {
@@ -620,16 +699,16 @@ generate_clean_yield_log <- function(data_clean, data_raw, params, pcdi_result,
   # Calcul des statistiques
   stats_raw <- data_raw |>
     dplyr::summarise(
-      mean_yield = mean(Yield_buacre, na.rm = TRUE),
-      sd_yield = stats::sd(Yield_buacre, na.rm = TRUE),
+      mean_yield = mean(Yield_kg_ha, na.rm = TRUE),
+      sd_yield = stats::sd(Yield_kg_ha, na.rm = TRUE),
       cv = sd_yield / mean_yield * 100,
       n = dplyr::n()
     )
 
   stats_clean <- data_clean |>
     dplyr::summarise(
-      mean_yield = mean(Yield, na.rm = TRUE),
-      sd_yield = stats::sd(Yield, na.rm = TRUE),
+      mean_yield = mean(Yield_kg_ha, na.rm = TRUE),
+      sd_yield = stats::sd(Yield_kg_ha, na.rm = TRUE),
       cv = sd_yield / mean_yield * 100,
       n = dplyr::n()
     )

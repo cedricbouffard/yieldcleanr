@@ -23,9 +23,19 @@
 #' head(result$deletions)
 #' }
 clean_yield_with_tracking <- function(file_path = NULL, data = NULL, metrique = TRUE, polygon = TRUE,
-                                    params = NULL) {
-  
-  # Check that either file_path or data is provided
+                                    params = NULL, progress_callback = NULL) {
+
+   # Progress helper function
+   report_progress <- function(step, detail = NULL, progress = NULL) {
+     if (!is.null(progress_callback)) {
+       progress_callback(list(step = step, detail = detail, progress = progress))
+     }
+     if (!is.null(detail)) {
+       rlang::inform(paste(">>> PROGRESS:", step, "-", detail))
+     }
+   }
+
+   # Check that either file_path or data is provided
   if (is.null(file_path) && is.null(data)) {
     rlang::abort("Either 'file_path' or 'data' must be provided")
   }
@@ -48,46 +58,88 @@ clean_yield_with_tracking <- function(file_path = NULL, data = NULL, metrique = 
     step = character(0),
     reason = character(0),
     stringsAsFactors = FALSE
-  )
-  
-  data <- data_raw |> dplyr::mutate(orig_row_id = dplyr::row_number())
-  
-  # Creer Yield_kg_ha_wet si Flow_Wet existe (pour fichiers non-ZIP)
-  if ("Flow_Wet" %in% names(data) && !all(is.na(data$Flow_Wet))) {
-    if (!"Yield_kg_ha_wet" %in% names(data)) {
-      rlang::inform("Creation de Yield_kg_ha_wet a partir de Flow_Wet...")
-      data$Yield_kg_ha_wet <- data$Flow_Wet
+   )
+   
+   data <- data_raw |> dplyr::mutate(orig_row_id = dplyr::row_number())
+   
+   # Flow est humide par defaut - creer Yield_kg_ha_wet a partir de Flow
+   if ("Flow" %in% names(data) && !all(is.na(data$Flow))) {
+     if (!"Yield_kg_ha_wet" %in% names(data)) {
+       rlang::inform("Flow detecte - creation de Yield_kg_ha_wet a partir du flux humide...")
+       data$Yield_kg_ha_wet <- data$Flow
+     }
+   }
+   
+   # Creer Yield_kg_ha_wet si Flow_Wet existe egalement
+   if ("Flow_Wet" %in% names(data) && !all(is.na(data$Flow_Wet))) {
+     if (!"Yield_kg_ha_wet" %in% names(data)) {
+       rlang::inform("Creation de Yield_kg_ha_wet a partir de Flow_Wet...")
+       data$Yield_kg_ha_wet <- data$Flow_Wet
+     }
+   }
+   
+     # Calculer le rendement sec a partir du rendement humide et de l'humidite
+     # Formule: Rendement sec = Rendement humide × (100 - Humidite%) / (100 - Humidite_standard%)
+     if ("Moisture" %in% names(data) && !all(is.na(data$Moisture))) {
+       # Obtenir l'humidite standard selon la culture
+       moisture_std <- get_standard_moisture(data)
+       moisture_factor <- 100 - moisture_std
+       
+       if ("Yield_kg_ha_wet" %in% names(data) && !all(is.na(data$Yield_kg_ha_wet))) {
+         rlang::inform(paste("Calcul du rendement sec (humidite standard:", moisture_std, "%)..."))
+         data$Yield_kg_ha <- data$Yield_kg_ha_wet * (100 - data$Moisture) / moisture_factor
+         rlang::inform(paste("Rendement sec calcule:", round(mean(data$Yield_kg_ha, na.rm = TRUE), 1), "kg/ha"))
+       }
+       # Convertir Flow (humide) en Flow sec pour les filtres
+       if ("Flow" %in% names(data) && !all(is.na(data$Flow))) {
+         data$Flow <- data$Flow * (100 - data$Moisture) / moisture_factor
+       }
+    } else {
+      # Pas d'humidite - Yield_kg_ha est le meme que Yield_kg_ha_wet
+      if ("Yield_kg_ha_wet" %in% names(data) && !"Yield_kg_ha" %in% names(data)) {
+        data$Yield_kg_ha <- data$Yield_kg_ha_wet
+        rlang::inform(paste("Pas d'humidite - Yield_kg_ha = Yield_kg_ha_wet (moyenne:", round(mean(data$Yield_kg_ha, na.rm = TRUE), 1), "kg/ha)"))
+      }
     }
-  }
   
-  # Calculer le rendement sec a partir du rendement humide et de l'humidite
-  # Formule: Rendement sec = Rendement humide × (100 - Humidite%) / (100 - 14.5%)
-  if ("Moisture" %in% names(data) && !all(is.na(data$Moisture))) {
-    if ("Yield_kg_ha_wet" %in% names(data) && !all(is.na(data$Yield_kg_ha_wet))) {
-      rlang::inform("Calcul du rendement sec a partir du rendement humide...")
-      data$Yield_kg_ha <- data$Yield_kg_ha_wet * (100 - data$Moisture) / 85.5
-      rlang::inform(paste("Rendement sec calcule:", round(mean(data$Yield_kg_ha, na.rm = TRUE), 1), "kg/ha"))
-    }
-    if ("Flow_Wet" %in% names(data) && !all(is.na(data$Flow_Wet))) {
-      data$Flow <- data$Flow_Wet * (100 - data$Moisture) / 85.5
-    }
-  }
-  
-  # Etape 2 : conversion UTM
-  rlang::inform("Etape 2 : conversion en coordonnees UTM...")
-  data <- latlon_to_utm(data)
-  
-  # Etape 3 : PCDI - optimisation du delai de flux
-  # Verifier si les donnees contiennent deja des colonnes de rendement (sans Flow)
-  has_yield_cols <- any(c("Yield_kg_ha", "Yield_buacre") %in% names(data))
+    # Etape 2 : conversion UTM
+    report_progress("Conversion", "conversion en coordonnees UTM...", 0.05)
+    rlang::inform("Etape 2 : conversion en coordonnees UTM...")
+   data <- latlon_to_utm(data)
+
+   # Etape 2b : filtre position (optionnel)
+   if (isTRUE(params$apply_position)) {
+     report_progress("Filtres", "filtre position...", 0.06)
+     rlang::inform("Etape 2b : filtre position...")
+     n_before <- nrow(data)
+     data <- filter_position_outliers(data)
+     n_removed <- n_before - nrow(data)
+     if (n_removed > 0) {
+       removed_ids <- setdiff(data_raw$orig_row_id[1:n_before], data$orig_row_id)
+       new_deletions <- tibble::tibble(
+         orig_row_id = head(removed_ids, min(length(removed_ids), n_removed)),
+         step = "Filtre position",
+         reason = "Position aberrante"
+       )
+       deletions <- dplyr::bind_rows(deletions, new_deletions)
+     }
+     rlang::inform(paste("  Supprimes :", n_removed, "points"))
+   } else {
+     rlang::inform("Etape 2b : filtre position saute")
+   }
+   
+   # Etape 3 : PCDI - optimisation du delai de flux
+   # Verifier si les donnees contiennent deja des colonnes de rendement (sans Flow)
+   has_yield_cols <- "Yield_kg_ha" %in% names(data)
   has_flow_col <- "Flow" %in% names(data) && !all(is.na(data$Flow))
   
   # PCDI flux - optionnel
   flow_delay <- 0
-  if (isTRUE(params$apply_pcdi_flow)) {
-    if (has_yield_cols && !has_flow_col) {
-      # Donnees John Deere : calculer Flow a partir de Yield pour PCDI
-      rlang::inform("Etape 3 : calcul du flux a partir du rendement (John Deere)...")
+   if (isTRUE(params$apply_pcdi_flow)) {
+     if (has_yield_cols && !has_flow_col) {
+       # Donnees John Deere : calculer Flow a partir de Yield pour PCDI
+       report_progress("PCDI", "calcul du flux a partir du rendement...", 0.08)
+       rlang::inform("Etape 3 : calcul du flux a partir du rendement (John Deere)...")
       
       # Verifier les colonnes necessaires
       required_for_flow <- c("Swath", "Distance", "Interval")
@@ -103,57 +155,50 @@ clean_yield_with_tracking <- function(file_path = NULL, data = NULL, metrique = 
         if (!"Interval" %in% names(data)) data$Interval <- 1  # 1 seconde
       }
       
-      # Determiner quelle colonne de rendement utiliser
-      if ("Yield_kg_ha" %in% names(data)) {
-        yield_col <- "Yield_kg_ha"
-        # Conversion kg/ha -> kg/s approximatif
-        # Flow (kg/s) = Yield (kg/ha) * Swath (m) * Distance (m) / (Interval (s) * 10000 m2/ha)
-        data <- data |>
-          dplyr::mutate(
-            Flow = .data$Yield_kg_ha * .data$Swath * .data$Distance / 
-                   (.data$Interval * 10000)
-          )
-      } else if ("Yield_buacre" %in% names(data)) {
-        yield_col <- "Yield_buacre"
-        # Conversion bu/acre -> lbs/s approximatif (utiliser 56 lbs/bu par defaut pour mais)
-        lbs_per_bu <- 56
-        sqft_per_acre <- 43560
-        # Flow (lbs/s) = Yield (bu/acre) * lbs_per_bu * Distance (ft) * Swath (ft) / (Interval (s) * sqft_per_acre)
-        # Convertir Swath et Distance de metres en pieds
-        data <- data |>
-          dplyr::mutate(
-            Flow = .data$Yield_buacre * lbs_per_bu * (.data$Distance * 3.28084) * (.data$Swath * 3.28084) / 
-                   (.data$Interval * sqft_per_acre)
-          )
-      }
+       # Utiliser Yield_kg_ha pour calculer Flow si disponible
+       if ("Yield_kg_ha" %in% names(data)) {
+         # Conversion kg/ha -> kg/s approximatif
+         # Flow (kg/s) = Yield (kg/ha) * Swath (m) * Distance (m) / (Interval (s) * 10000 m2/ha)
+         data <- data |>
+           dplyr::mutate(
+             Flow = .data$Yield_kg_ha * .data$Swath * .data$Distance / 
+                    (.data$Interval * 10000)
+           )
+       }
       
       valid_flow <- sum(!is.na(data$Flow) & data$Flow > 0)
       rlang::inform(paste("  Flux calcule:", valid_flow, "valeurs valides"))
       
       # Si aucun flux valide, on ne peut pas faire PCDI
-      if (valid_flow == 0) {
-        rlang::warn("Aucun flux valide calcule - PCDI saute")
-        flow_delay <- 0
-      } else {
-        # Etape 3 : PCDI
-        rlang::inform("Etape 3 : PCDI - optimisation du delai de flux...")
-        pcdi_result <- apply_pcdi(data,
-          delay_range = params$delay_range %||% -25:10,
-          n_iterations = params$n_iterations %||% 5,
-          noise_level = params$noise_level %||% 0.05
-        )
+       if (valid_flow == 0) {
+         rlang::warn("Aucun flux valide calcule - PCDI saute")
+         flow_delay <- 0
+       } else {
+         # Etape 3 : PCDI
+         report_progress("PCDI", "optimisation du delai de flux...", 0.10)
+         rlang::inform("Etape 3 : PCDI - optimisation du delai de flux...")
+         pcdi_result <- apply_pcdi(data,
+           delay_range = params$delay_range %||% -25:25,
+           n_iterations = params$n_iterations %||% 10,
+           noise_level = params$noise_level %||% 0.03,
+           sample_fraction = params$sample_fraction %||% 1,
+           method = "Moran"
+         )
         flow_delay <- pcdi_result$optimal_delay
         rlang::inform(paste("  Delai optimal :", flow_delay, "secondes"))
       }
-    } else {
-      # Donnees avec Flow existant : PCDI normal
-      rlang::inform("Etape 3 : PCDI - optimisation du delai de flux...")
-      pcdi_result <- apply_pcdi(data,
-        delay_range = params$delay_range %||% -25:10,
-        n_iterations = params$n_iterations %||% 5,
-        noise_level = params$noise_level %||% 0.05,
-        value_col = "Flow"
-      )
+     } else {
+       # Donnees avec Flow existant : PCDI normal
+       report_progress("PCDI", "optimisation du delai de flux...", 0.10)
+       rlang::inform("Etape 3 : PCDI - optimisation du delai de flux...")
+       pcdi_result <- apply_pcdi(data,
+         delay_range = params$delay_range %||% -25:25,
+         n_iterations = params$n_iterations %||% 10,
+         noise_level = params$noise_level %||% 0.03,
+         value_col = "Flow",
+         sample_fraction = params$sample_fraction %||% 1,
+         method = "Moran"
+       )
       flow_delay <- pcdi_result$optimal_delay
       rlang::inform(paste("  Delai optimal flux:", flow_delay, "secondes"))
     }
@@ -161,27 +206,41 @@ clean_yield_with_tracking <- function(file_path = NULL, data = NULL, metrique = 
     rlang::inform("Etape 3 : PCDI flux saute (desactive)")
   }
   
-  # Etape 3b : PCDI sur l'humidite si disponible - optionnel
-  moisture_delay <- 0
-  if (isTRUE(params$apply_pcdi_moisture) && "Moisture" %in% names(data) && !all(is.na(data$Moisture))) {
-    rlang::inform("Etape 3b : PCDI - optimisation du delai d'humidite...")
-    pcdi_moisture <- apply_pcdi(data,
-      delay_range = params$delay_range %||% -25:10,
-      n_iterations = params$n_iterations %||% 5,
-      noise_level = params$noise_level %||% 0.05,
-      value_col = "Moisture"
-    )
+   # Etape 3b : PCDI sur l'humidite si disponible - optionnel
+   moisture_delay <- 0
+   if (isTRUE(params$apply_pcdi_moisture) && "Moisture" %in% names(data) && !all(is.na(data$Moisture))) {
+     report_progress("PCDI", "optimisation du delai d'humidite...", 0.12)
+     rlang::inform("Etape 3b : PCDI - optimisation du delai d'humidite...")
+     pcdi_moisture <- apply_pcdi(data,
+       delay_range = params$delay_range %||% -25:25,
+       n_iterations = params$n_iterations %||% 10,
+       noise_level = params$noise_level %||% 0.03,
+       value_col = "Moisture",
+       sample_fraction = params$sample_fraction %||% 1,
+       method = "Moran"
+     )
     moisture_delay <- pcdi_moisture$optimal_delay
     rlang::inform(paste("  Delai optimal humidite:", moisture_delay, "secondes"))
   } else {
     rlang::inform("Etape 3b : PCDI humidite saute (desactive ou donnees non disponibles)")
   }
 
-  # Etape 3c : calcul du rendement initial
-  data <- convert_flow_to_yield(data)
-  
-  # Etape 4 : seuils automatiques
-  rlang::inform("Etape 4 : calcul des seuils automatiques...")
+    # Etape 3c : calcul du rendement initial
+    report_progress("Preparation", "calcul du rendement...", 0.14)
+    data <- convert_flow_to_yield(data)
+    
+    # Debug: afficher le rendement initial
+    if ("Yield_kg_ha" %in% names(data)) {
+      mean_yield_init <- mean(data$Yield_kg_ha, na.rm = TRUE)
+      rlang::inform(paste("  Rendement initial (apres convert_flow_to_yield):", round(mean_yield_init, 1), "kg/ha"))
+      rlang::inform(paste("  Flow min/max:", round(min(data$Flow, na.rm = TRUE), 3), "/", round(max(data$Flow, na.rm = TRUE), 3)))
+      rlang::inform(paste("  Swath min/max:", round(min(data$Swath, na.rm = TRUE), 2), "/", round(max(data$Swath, na.rm = TRUE), 2)))
+      rlang::inform(paste("  Distance min/max:", round(min(data$Distance, na.rm = TRUE), 2), "/", round(max(data$Distance, na.rm = TRUE), 2)))
+    }
+
+   # Etape 4 : seuils automatiques
+   report_progress("Seuils", "calcul des seuils automatiques...", 0.16)
+   rlang::inform("Etape 4 : calcul des seuils automatiques...")
   thresholds <- calculate_auto_thresholds(data,
     yllim = params$yllim %||% 0.10,
     yulim = params$yulim %||% 0.90,
@@ -194,22 +253,27 @@ clean_yield_with_tracking <- function(file_path = NULL, data = NULL, metrique = 
     gbuffer = params$gbuffer %||% 100
   )
   
-  # Etape 5 : filtre header (optionnel)
-  if (isTRUE(params$apply_header) && "HeaderStatus" %in% names(data)) {
-    rlang::inform("Etape 5 : filtre header...")
-    to_keep <- dplyr::filter(data, HeaderStatus %in% c(1, 33) | is.na(HeaderStatus))
-    new_deletions <- dplyr::setdiff(data, to_keep) |>
-      dplyr::mutate(step = "Filtre header", reason = "HeaderStatus inactif")
-    deletions <- dplyr::bind_rows(deletions, new_deletions |> dplyr::select(orig_row_id, step, reason))
-    data <- to_keep
-    rlang::inform(paste("  Supprimes :", nrow(new_deletions), "points"))
-  } else {
-    rlang::inform("Etape 5 : filtre header saute")
-  }
+   # Etape 5 : filtre header (optionnel) - DEPLACE APRES LE DELAI DE FLUX (Etape 9f)
+   # Note: Le filtre header est maintenant applique apres le delai de flux pour eviter
+   # de supprimer des points qui pourraient devenir valides apres correction du delai
+   rlang::inform("Etape 5 : filtre header deplace apres le delai de flux (Etape 12)")
+   # if (isTRUE(params$apply_header) && "HeaderStatus" %in% names(data)) {
+   #   report_progress("Filtres", "filtre header...", 0.18)
+   #   rlang::inform("Etape 5 : filtre header...")
+   #  to_keep <- dplyr::filter(data, HeaderStatus %in% c(0, 1, 33) | is.na(HeaderStatus))
+   #  new_deletions <- dplyr::setdiff(data, to_keep) |>
+   #    dplyr::mutate(step = "Filtre header", reason = "HeaderStatus inactif")
+   #  deletions <- dplyr::bind_rows(deletions, new_deletions |> dplyr::select(orig_row_id, step, reason))
+   #  data <- to_keep
+   #  rlang::inform(paste("  Supprimes :", nrow(new_deletions), "points"))
+   # } else {
+   #   rlang::inform("Etape 5 : filtre header saute")
+   # }
 
-  # Etape 6 : filtre GPS (optionnel)
-  if (isTRUE(params$apply_gps) && "GPSStatus" %in% names(data)) {
-    rlang::inform("Etape 6 : filtre GPS...")
+   # Etape 6 : filtre GPS (optionnel)
+   if (isTRUE(params$apply_gps) && all(c("Latitude", "Longitude") %in% names(data))) {
+     report_progress("Filtres", "filtre GPS...", 0.20)
+     rlang::inform("Etape 6 : filtre GPS...")
     data$GPSStatus <- suppressWarnings(as.numeric(data$GPSStatus))
     to_keep <- dplyr::filter(data, is.na(GPSStatus) | GPSStatus >= 4)
     new_deletions <- dplyr::setdiff(data, to_keep) |>
@@ -221,8 +285,9 @@ clean_yield_with_tracking <- function(file_path = NULL, data = NULL, metrique = 
     rlang::inform("Etape 6 : filtre GPS saute")
   }
 
-  # Etape 7 : calcul de la vitesse (toujours fait, necessaire pour les filtres suivants)
-  rlang::inform("Etape 7 : calcul de la vitesse...")
+   # Etape 7 : calcul de la vitesse (toujours fait, necessaire pour les filtres suivants)
+   report_progress("Preparation", "calcul de la vitesse...", 0.22)
+   rlang::inform("Etape 7 : calcul de la vitesse...")
   data <- data |>
     dplyr::mutate(
       velocity = sqrt((X - dplyr::lag(X))^2 + (Y - dplyr::lag(Y))^2) /
@@ -230,9 +295,10 @@ clean_yield_with_tracking <- function(file_path = NULL, data = NULL, metrique = 
     )
   data$velocity[is.na(data$velocity) | !is.finite(data$velocity)] <- 0
 
-  # Etape 8 : filtre vitesse (optionnel)
-  if (isTRUE(params$apply_velocity)) {
-    rlang::inform("Etape 8 : filtre vitesse...")
+   # Etape 8 : filtre vitesse (optionnel)
+   if (isTRUE(params$apply_velocity)) {
+     report_progress("Filtres", "filtre vitesse...", 0.24)
+     rlang::inform("Etape 8 : filtre vitesse...")
     to_keep <- dplyr::filter(data, velocity >= thresholds$min_velocity & velocity <= thresholds$max_velocity)
     new_deletions <- dplyr::setdiff(data, to_keep) |>
       dplyr::mutate(
@@ -246,9 +312,10 @@ clean_yield_with_tracking <- function(file_path = NULL, data = NULL, metrique = 
     rlang::inform("Etape 8 : filtre vitesse saute")
   }
 
-  # Etape 8b : filtre changements brusques de vitesse
-  if (isTRUE(params$apply_velocity_jump)) {
-    rlang::inform("Etape 8b : filtre changements brusques de vitesse...")
+   # Etape 8b : filtre changements brusques de vitesse
+   if (isTRUE(params$apply_velocity_jump)) {
+     report_progress("Filtres", "filtre changements de vitesse...", 0.26)
+     rlang::inform("Etape 8b : filtre changements brusques de vitesse...")
     result <- filter_velocity_jumps(
       data,
       max_acceleration = params$max_acceleration %||% 3,
@@ -264,12 +331,13 @@ clean_yield_with_tracking <- function(file_path = NULL, data = NULL, metrique = 
     rlang::inform(paste("  Supprimes :", nrow(new_deletions), "points"))
   }
 
-  # Etape 8c : filtre anomalies de direction
-  if (isTRUE(params$apply_heading_anomaly)) {
-    rlang::inform("Etape 8c : filtre anomalies de direction...")
+   # Etape 8c : filtre anomalies de direction
+   if (isTRUE(params$apply_heading_anomaly)) {
+     report_progress("Filtres", "filtre anomalies de direction...", 0.28)
+     rlang::inform("Etape 8c : filtre anomalies de direction...")
     result <- filter_heading_anomalies(
       data,
-      max_heading_change = params$max_heading_change %||% 15
+      max_heading_change = params$max_heading_change %||% 60
     )
     new_deletions <- result$removed |>
       dplyr::mutate(
@@ -281,27 +349,46 @@ clean_yield_with_tracking <- function(file_path = NULL, data = NULL, metrique = 
     rlang::inform(paste("  Supprimes :", nrow(new_deletions), "points"))
   }
 
-  # Etape 9 : correction du delai de flux (si necessaire)
-  if (flow_delay != 0) {
-    rlang::inform(paste("Etape 9 : correction du delai de flux (", flow_delay, "s)..."))
-    data <- apply_flow_delay(data, delay = -flow_delay, value_col = "Flow")
+   # Etape 9 : correction du delai de flux (si necessaire)
+   if (flow_delay != 0) {
+     report_progress("Correction", paste0("correction du delai de flux (", flow_delay, "s)..."), 0.30)
+     rlang::inform(paste("Etape 9 : correction du delai de flux (", flow_delay, "s)..."))
+     # Si flow_delay positif (+15s), Flow est en retard, donc appliquer +15s pour decaler Flow vers l'avant
+     # lead() decale les valeurs vers l'arriere, lag() vers l'avant
+     data <- apply_flow_delay(data, delay = flow_delay, value_col = "Flow")
+     
+     # Interpoler les NA crees par le decalage
+     if (sum(is.na(data$Flow)) > 0) {
+       data <- interpolate_na(data, value_col = "Flow")
+     }
 
-    # Etape 9b : recalcul du rendement apres correction du delai
-    data <- convert_flow_to_yield(data)
-  } else {
-    rlang::inform("Etape 9 : pas de correction de delai de flux necessaire (delai = 0)")
-  }
+       # Recalcul du rendement apres correction du delai
+      data <- convert_flow_to_yield(data, force_recalculate = TRUE)
+      
+      # Debug: afficher le rendement apres correction du delai
+      if ("Yield_kg_ha" %in% names(data)) {
+        mean_yield_corrected <- mean(data$Yield_kg_ha, na.rm = TRUE)
+        rlang::inform(paste("  Rendement apres correction delai:", round(mean_yield_corrected, 1), "kg/ha"))
+      }
+   } else {
+     rlang::inform("Etape 9 : pas de correction de delai de flux necessaire (delai = 0)")
+   }
   
-  # Etape 9c : correction du delai d'humidite (si necessaire)
-  if (moisture_delay != 0 && "Moisture" %in% names(data)) {
-    rlang::inform(paste("Etape 9c : correction du delai d'humidite (", moisture_delay, "s)..."))
-    data <- apply_flow_delay(data, delay = -moisture_delay, value_col = "Moisture")
-  } else {
-    rlang::inform("Etape 9c : pas de correction de delai d'humidite necessaire (delai = 0)")
-  }
+    # Etape 10 : correction du delai d'humidite (si necessaire)
+    if (moisture_delay != 0 && "Moisture" %in% names(data)) {
+      rlang::inform(paste("Etape 10 : correction du delai d'humidite (", moisture_delay, "s)..."))
+     data <- apply_flow_delay(data, delay = moisture_delay, value_col = "Moisture")
+     
+     # Interpoler les NA crees par le decalage
+     if (sum(is.na(data$Moisture)) > 0) {
+       data <- interpolate_na(data, value_col = "Moisture")
+     }
+    } else {
+      rlang::inform("Etape 10 : pas de correction de delai d'humidite necessaire (delai = 0)")
+    }
   
-  # Etape 9c : recalcul des seuils
-  thresholds <- calculate_auto_thresholds(data,
+   # Etape 11 : recalcul des seuils
+   thresholds <- calculate_auto_thresholds(data,
     yllim = params$yllim %||% 0.10,
     yulim = params$yulim %||% 0.90,
     yscale = params$yscale %||% 1.1,
@@ -311,76 +398,65 @@ clean_yield_with_tracking <- function(file_path = NULL, data = NULL, metrique = 
     minv_abs = params$minv_abs %||% 0.5,
     miny_abs = params$miny_abs %||% 0,
     gbuffer = params$gbuffer %||% 100
-  )
-  
-  # Etape 9e : suppression des points de bordure
-  rlang::inform("Etape 9e : suppression des points de bordure...")
-  if ("Pass" %in% names(data) && "Interval" %in% names(data) && !all(is.na(data$Pass))) {
-    if (flow_delay == 0) {
-      # Pas de delai de flux (donnees John Deere) - pas de suppression de bordure liee au flux
-      rlang::inform("  Ignore - pas de delai de flux a corriger (donnees avec rendement direct)")
-    } else {
-      n_before <- nrow(data)
-      abs_delay <- abs(flow_delay)
-
-      data <- data |>
-        dplyr::arrange(GPS_Time) |>
-        dplyr::group_by(Pass) |>
-        dplyr::mutate(
-          interval_cumsum = cumsum(Interval),
-          total_interval = sum(Interval, na.rm = TRUE),
-          interval_from_end = total_interval - interval_cumsum
-        ) |>
-        dplyr::ungroup()
-
-      if (flow_delay < 0) {
-        to_keep <- dplyr::filter(data, interval_from_end > abs_delay | is.na(interval_from_end))
-      } else {
-        to_keep <- dplyr::filter(data, interval_cumsum > abs_delay | is.na(interval_cumsum))
-      }
-
+   )
+   
+     # NOTE - Le delai de flux DECALE les valeurs, il ne supprime pas de points
+    # Les valeurs NA crees sont interpolees
+    rlang::inform("  (Delai de flux: les valeurs sont decalees et interpolees, tous les points sont conserves)")
+    
+     # Etape 12 : filtre header (optionnel) - DEPLACE ICI APRES LE DELAI DE FLUX
+     # Le filtre header est applique apres le delai de flux pour eviter de supprimer
+     # des points qui pourraient devenir valides apres correction du delai
+     if (isTRUE(params$apply_header) && "HeaderStatus" %in% names(data)) {
+       report_progress("Filtres", "filtre header (apres delai)...", 0.32)
+       rlang::inform("Etape 12 : filtre header (apres delai de flux)...")
+      to_keep <- dplyr::filter(data, HeaderStatus %in% c(0, 1, 33) | is.na(HeaderStatus))
       new_deletions <- dplyr::setdiff(data, to_keep) |>
-        dplyr::mutate(step = "Suppression bordure", reason = paste0("Bordure delai flux (", flow_delay, "s)"))
+        dplyr::mutate(step = "Filtre header", reason = "HeaderStatus inactif")
       deletions <- dplyr::bind_rows(deletions, new_deletions |> dplyr::select(orig_row_id, step, reason))
       data <- to_keep
       rlang::inform(paste("  Supprimes :", nrow(new_deletions), "points"))
+    } else {
+      rlang::inform("Etape 12 : filtre header saute")
     }
-  }
-  
-  # Etape 10 : suppression des rendements nuls (optionnel)
-  if (isTRUE(params$apply_null_yield) && "Yield_buacre" %in% names(data)) {
-    rlang::inform("Etape 10 : suppression des rendements nuls...")
-    to_keep <- dplyr::filter(data, Yield_buacre > 0)
-    new_deletions <- dplyr::setdiff(data, to_keep) |>
-      dplyr::mutate(step = "Rendement nul", reason = "Rendement = 0")
-    deletions <- dplyr::bind_rows(deletions, new_deletions |> dplyr::select(orig_row_id, step, reason))
-    data <- to_keep
-    rlang::inform(paste("  Supprimes :", nrow(new_deletions), "points"))
-  } else {
-    rlang::inform("Etape 10 : suppression des rendements nuls saute")
-  }
+    
+     # Etape 13 : suppression des rendements nuls (optionnel)
+     if (isTRUE(params$apply_null_yield) && "Yield_kg_ha" %in% names(data)) {
+       report_progress("Filtres", "suppression des rendements nuls...", 0.34)
+       rlang::inform("Etape 13 : suppression des rendements nuls...")
+     to_keep <- dplyr::filter(data, Yield_kg_ha > 0)
+     new_deletions <- dplyr::setdiff(data, to_keep) |>
+       dplyr::mutate(step = "Rendement nul", reason = "Rendement = 0")
+     deletions <- dplyr::bind_rows(deletions, new_deletions |> dplyr::select(orig_row_id, step, reason))
+     data <- to_keep
+     rlang::inform(paste("  Supprimes :", nrow(new_deletions), "points"))
+    } else {
+      rlang::inform("Etape 13 : suppression des rendements nuls saute")
+    }
 
-  # Etape 11 : filtre plage de rendement (optionnel)
-  if (isTRUE(params$apply_yield_range) && "Yield_buacre" %in% names(data)) {
-    rlang::inform("Etape 11 : filtre plage de rendement...")
-    to_keep <- dplyr::filter(data,
-      Yield_buacre >= thresholds$min_yield &
-      Yield_buacre <= thresholds$max_yield)
-    new_deletions <- dplyr::setdiff(data, to_keep) |>
-      dplyr::mutate(
-        step = "Filtre plage rendement",
-        reason = paste0("Rendement hors plage [", round(thresholds$min_yield, 2), ", ", round(thresholds$max_yield, 2), "] bu/acre")
-      )
-    deletions <- dplyr::bind_rows(deletions, new_deletions |> dplyr::select(orig_row_id, step, reason))
-    data <- to_keep
-    rlang::inform(paste("  Supprimes :", nrow(new_deletions), "points"))
-  } else {
-    rlang::inform("Etape 11 : filtre plage de rendement saute")
-  }
+     # Etape 14 : filtre plage de rendement (optionnel)
+     if (isTRUE(params$apply_yield_range) && "Yield_kg_ha" %in% names(data)) {
+       report_progress("Filtres", "filtre plage de rendement...", 0.36)
+       rlang::inform("Etape 14 : filtre plage de rendement...")
+     to_keep <- dplyr::filter(data,
+       Yield_kg_ha >= thresholds$min_yield &
+       Yield_kg_ha <= thresholds$max_yield)
+     new_deletions <- dplyr::setdiff(data, to_keep) |>
+       dplyr::mutate(
+         step = "Filtre plage rendement",
+         reason = paste0("Rendement hors plage [", round(thresholds$min_yield, 2), ", ", round(thresholds$max_yield, 2), "] kg/ha")
+       )
+     deletions <- dplyr::bind_rows(deletions, new_deletions |> dplyr::select(orig_row_id, step, reason))
+     data <- to_keep
+     rlang::inform(paste("  Supprimes :", nrow(new_deletions), "points"))
+    } else {
+      rlang::inform("Etape 14 : filtre plage de rendement saute")
+    }
 
-  # Etape 12 : filtre humidite (optionnel)
-  if (isTRUE(params$apply_moisture) && "Moisture" %in% names(data) && !all(is.na(data$Moisture))) {
-    rlang::inform("Etape 12 : filtre humidite (auto-detection)...")
+    # Etape 15 : filtre humidite (optionnel)
+    if (isTRUE(params$apply_moisture) && "Moisture" %in% names(data) && !all(is.na(data$Moisture))) {
+      report_progress("Filtres", "filtre humidite...", 0.38)
+      rlang::inform("Etape 15 : filtre humidite (auto-detection)...")
     moisture_mean <- mean(data$Moisture, na.rm = TRUE)
     moisture_sd <- stats::sd(data$Moisture, na.rm = TRUE)
     n_std <- params$n_std %||% 3
@@ -397,12 +473,13 @@ clean_yield_with_tracking <- function(file_path = NULL, data = NULL, metrique = 
     deletions <- dplyr::bind_rows(deletions, new_deletions |> dplyr::select(orig_row_id, step, reason))
     data <- to_keep
     rlang::inform(paste("  Supprimes :", nrow(new_deletions), "points"))
-  } else {
-    rlang::inform("Etape 12 : filtre humidite saute")
-  }
+   } else {
+     rlang::inform("Etape 15 : filtre humidite saute")
+   }
    
-    # Etape 12b : lissage du cap pour les polygones
-    rlang::inform("Etape 12b : lissage du cap pour les polygones...")
+     # Etape 12b : lissage du cap pour les polygones
+     report_progress("Preparation", "lissage du cap pour les polygones...", 0.40)
+     rlang::inform("Etape 12b : lissage du cap pour les polygones...")
     data <- data |> dplyr::arrange(GPS_Time)
     n <- nrow(data)
     
@@ -485,15 +562,16 @@ clean_yield_with_tracking <- function(file_path = NULL, data = NULL, metrique = 
     rlang::inform(paste("  Cap lisse pour", nrow(data), "points"))
     }
    
-   # Etape 13 : filtre de chevauchement (optionnel)
-   if (isTRUE(params$apply_overlap) && "Swath" %in% names(data) && !all(is.na(data$Swath))) {
-     rlang::inform("Etape 13 : filtre de chevauchement bitmap...")
+     # Etape 16 : filtre de chevauchement (optionnel)
+     if (isTRUE(params$apply_overlap) && "Swath" %in% names(data) && !all(is.na(data$Swath))) {
+       report_progress("Filtres", "filtre de chevauchement...", 0.45)
+       rlang::inform("Etape 16 : filtre de chevauchement bitmap...")
      n_before <- nrow(data)
      current_orig_ids <- data$orig_row_id
-     data <- apply_overlap_filter(data,
-       cellsize = params$cellsize_overlap %||% 0.3,
-       overlap_threshold = params$overlap_threshold %||% 0.5
-     )
+      data <- apply_overlap_filter(data,
+        cellsize = params$cellsize_overlap %||% 0.3,
+        overlap_threshold = params$overlap_threshold %||% 0.4  # 40% au lieu de 50%
+      )
      n_removed <- n_before - nrow(data)
      if (n_removed > 0) {
        kept_ids <- data$orig_row_id
@@ -508,115 +586,19 @@ clean_yield_with_tracking <- function(file_path = NULL, data = NULL, metrique = 
        }
      }
      rlang::inform(paste("  Supprimes :", n_removed, "points"))
-   } else {
-     rlang::inform("Etape 13 : filtre de chevauchement saute")
-   }
+     } else {
+       rlang::inform("Etape 16 : filtre de chevauchement saute")
+     }
 
-   # Etape 13b : suppression precoce des polygones chevauchants
-  if (polygon && nrow(data) > 100 && "Pass" %in% names(data)) {
-    rlang::inform("Etape 13b : suppression des polygones chevauchants (precoce)...")
-    n_before_poly <- nrow(data)
+    # NOTE: L'etape 13b precedente (filtre polygones chevauchants) a ete retiree
+    # car trop lente pour grandes donnees. Le filtre bitmap (etape 13) est maintenant
+    # plus strict pour compenser.
+    rlang::inform("  (Filtre polygones chevauchants desactive pour performance)")
 
-    tryCatch({
-      sf_use_s2(FALSE)
-
-      sf_result <- data_to_sf(data, crs = 4326)
-      
-      if (is.null(sf_result)) {
-        rlang::warn("Impossible de creer les polygones - etape de chevauchement saute")
-        return(data)
-      }
-
-      median_lon <- stats::median(sf_result$Longitude, na.rm = TRUE)
-      median_lat <- stats::median(sf_result$Latitude, na.rm = TRUE)
-      utm_zone <- floor((median_lon + 180) / 6) + 1
-      utm_epsg <- ifelse(median_lat < 0, 32700 + utm_zone, 32600 + utm_zone)
-      utm_crs <- sf::st_crs(paste0("EPSG:", utm_epsg))
-      sf_proj <- sf::st_transform(sf_result, utm_crs)
-
-      # Calculate polygon areas in projected CRS
-      sf_proj$poly_area <- as.numeric(sf::st_area(sf_proj))
-
-      # Get unique passes sorted
-      passes <- sort(unique(sf_proj$Pass))
-      pass_window <- params$overlap_pass_window %||% 2
-      max_candidates <- params$overlap_max_candidates %||% 150
-      overlap_area_threshold <- params$overlap_area_threshold %||% 0.08
-
-      # Track rows to remove
-      rows_to_remove <- integer(0)
-
-      for (p in passes[-1]) {
-        current_mask <- sf_proj$Pass == p
-        previous_mask <- sf_proj$Pass < p & sf_proj$Pass >= (p - pass_window)
-
-        if (!any(current_mask) || !any(previous_mask)) next
-
-        current_polys <- sf_proj[current_mask, ]
-        previous_polys <- sf_proj[previous_mask, ]
-
-        if (nrow(current_polys) == 0 || nrow(previous_polys) == 0) next
-
-        # Find previous polygons within 10m
-        nearby_idx <- sf::st_is_within_distance(
-          current_polys,
-          previous_polys,
-          dist = 10,
-          sparse = TRUE
-        )
-
-        if (length(nearby_idx) == 0) next
-
-        current_geom <- sf::st_geometry(current_polys)
-        previous_geom <- sf::st_geometry(previous_polys)
-
-        for (i in seq_len(nrow(current_polys))) {
-          idx <- nearby_idx[[i]]
-          if (length(idx) == 0) next
-          if (length(idx) > max_candidates) {
-            idx <- idx[seq_len(max_candidates)]
-          }
-
-          cur_area <- current_polys$poly_area[i]
-          if (is.na(cur_area) || cur_area == 0) next
-
-          inter <- tryCatch({
-            sf::st_intersection(previous_geom[idx], current_geom[i])
-          }, error = function(e) NULL)
-
-          if (is.null(inter) || length(inter) == 0 || inherits(inter, "sfc_EMPTY")) next
-
-          total_inter <- sum(as.numeric(sf::st_area(inter)))
-
-          if (total_inter > overlap_area_threshold * cur_area) {
-            rows_to_remove <- c(rows_to_remove, current_polys$orig_row_id[i])
-          }
-        }
-      }
-
-      # Remove overlapping polygons from data
-      if (length(rows_to_remove) > 0) {
-        data <- data[!(data$orig_row_id %in% rows_to_remove), ]
-      }
-
-      n_removed_poly <- n_before_poly - nrow(data)
-      if (n_removed_poly > 0) {
-        rlang::inform(paste("  Supprimes :", n_removed_poly, "polygones chevauchants"))
-      } else {
-        rlang::inform("  Aucun chevauchement significatif")
-      }
-
-      sf_use_s2(FALSE)
-
-    }, error = function(e) {
-      rlang::warn(paste("Impossible de supprimer les chevauchements :", e$message))
-      sf_use_s2(FALSE)
-    })
-  }
-
-  # Etape 14 : filtre ecart-type localise (optionnel)
-  if (isTRUE(params$apply_local_sd) && "Swath" %in% names(data) && !all(is.na(data$Swath))) {
-    rlang::inform("Etape 14 : filtre ecart-type localise...")
+     # Etape 17 : filtre ecart-type localise (optionnel)
+    if (isTRUE(params$apply_local_sd) && "Swath" %in% names(data) && !all(is.na(data$Swath))) {
+      report_progress("Filtres", "filtre ecart-type localise...", 0.65)
+      rlang::inform("Etape 17 : filtre ecart-type localise...")
     n_before <- nrow(data)
     current_orig_ids <- data$orig_row_id
     data <- apply_local_sd_filter(data,
@@ -638,22 +620,23 @@ clean_yield_with_tracking <- function(file_path = NULL, data = NULL, metrique = 
       }
     }
     rlang::inform(paste("  Supprimes :", n_removed, "points"))
-   } else {
-     rlang::inform("Etape 14 : filtre ecart-type localise saute")
-   }
+    } else {
+      rlang::inform("Etape 17 : filtre ecart-type localise saute")
+    }
 
-   # Etape 15 : filtre par passage
-  rlang::inform("Etape 15 : filtre par passage...")
+     # Etape 18 : filtre par passage
+    report_progress("Filtres", "filtre par passage...", 0.70)
+    rlang::inform("Etape 18 : filtre par passage...")
   if ("Pass" %in% names(data) && !all(is.na(data$Pass))) {
-    pass_stats <- data |>
-      sf::st_drop_geometry() |>
-      dplyr::group_by(Pass) |>
-      dplyr::summarise(
-        mean_yield = mean(Yield_buacre, na.rm = TRUE),
-        median_yield = median(Yield_buacre, na.rm = TRUE),
-        n_points = dplyr::n(),
-        .groups = "drop"
-      )
+     pass_stats <- data |>
+       sf::st_drop_geometry() |>
+       dplyr::group_by(Pass) |>
+       dplyr::summarise(
+         mean_yield = mean(Yield_kg_ha, na.rm = TRUE),
+         median_yield = median(Yield_kg_ha, na.rm = TRUE),
+         n_points = dplyr::n(),
+         .groups = "drop"
+       )
     
     overall_median <- median(pass_stats$median_yield, na.rm = TRUE)
     pass_sd <- sd(pass_stats$median_yield, na.rm = TRUE)
@@ -690,37 +673,70 @@ clean_yield_with_tracking <- function(file_path = NULL, data = NULL, metrique = 
   # Preparer la sortie finale
   data$orig_row_id <- NULL
   
-  if (metrique) {
-    data$Yield_kg_ha <- data$Yield_buacre * 67.25
-    data$Flow_kg_s <- data$Flow * 0.453592
-    yield_col <- "Yield_kg_ha"
-    # Calculer aussi le rendement humide en kg/ha si disponible
-    if ("Yield_buacre_wet" %in% names(data)) {
-      data$Yield_kg_ha_wet <- data$Yield_buacre_wet * 67.25
-    }
-  } else {
-    yield_col <- "Yield_buacre"
-  }
+    # Creer Yield_kg_ha si n'existe pas
+     if (!"Yield_kg_ha" %in% names(data)) {
+       if ("Flow" %in% names(data) && mean(data$Flow, na.rm = TRUE) > 100) {
+         # Flow existe avec valeurs > 100, utiliser comme rendement humide (kg/ha)
+         data$Yield_kg_ha <- data$Flow
+         rlang::inform(paste("Yield_kg_ha cree a partir de Flow (moyenne:", round(mean(data$Yield_kg_ha, na.rm = TRUE), 0), "kg/ha)"))
+       }
+     }
+     # Creer Yield_kg_ha_wet si n'existe pas
+     if (!"Yield_kg_ha_wet" %in% names(data) && "Yield_kg_ha" %in% names(data)) {
+       data$Yield_kg_ha_wet <- data$Yield_kg_ha
+     }
+     if ("Flow" %in% names(data)) {
+       data$Flow_kg_s <- data$Flow * 0.453592
+     }
+     yield_col <- "Yield_kg_ha"
   
-    if (polygon) {
-      # Create SF output
-      # Detection automatique des unites pour Swath et Distance
-      if (!"Swath_m" %in% names(data)) {
-        mean_swath <- mean(data$Swath, na.rm = TRUE)
-        if (mean_swath > 5) {
-          data$Swath_m <- data$Swath  # Deja en metres
-        } else {
-          data$Swath_m <- data$Swath * 0.0254  # Conversion pouces -> metres
+     if (polygon) {
+       report_progress("Polygones", "creation des polygones...", 0.80)
+       # Create SF output
+       # Detection automatique des unites pour Swath et Distance
+        if (!"Swath_m" %in% names(data)) {
+          mean_swath <- mean(data$Swath, na.rm = TRUE)
+          # Headers typiques: 6-15m (20-50 pieds)
+          # En pouces: 240-600 pouces (6-15m)
+          # Un swath reel ne peut pas etre < 3m
+          
+          if (mean_swath > 100) {
+            # > 100: probablement pieds ou valeur aberrante
+            if (mean_swath > 200) {
+              rlang::warn(paste("Swath moyen tres eleve (", round(mean_swath, 1), ") - verifiez les unites. Traitement avec 8m par defaut."))
+              data$Swath_m <- 8
+            } else {
+              # 100-200: probablement pieds
+              rlang::inform(paste("Swath detecte en pieds (moyenne:", round(mean_swath, 1), "ft) - conversion en metres"))
+              data$Swath_m <- data$Swath * 0.3048
+            }
+          } else if (mean_swath >= 3 && mean_swath <= 50) {
+            # 3-50m: plage normale pour un swath en metres
+            rlang::inform(paste("Swath detecte en metres (moyenne:", round(mean_swath, 2), "m)"))
+            data$Swath_m <- data$Swath
+          } else if (mean_swath < 3) {
+            # < 3m: probablement pouces (un swath reel ne peut pas etre < 3m)
+            rlang::inform(paste("Swath detecte en pouces (moyenne:", round(mean_swath, 1), "in) - conversion en metres"))
+            data$Swath_m <- data$Swath * 0.0254
+          } else {
+            # Cas non prevu
+            rlang::warn(paste("Swath de", round(mean_swath, 1), "m - unite incertaine, utilisee telle quelle"))
+            data$Swath_m <- data$Swath
+          }
         }
-      }
-      if (!"Distance_m" %in% names(data)) {
-        mean_dist <- mean(data$Distance, na.rm = TRUE)
-        if (mean_dist > 0.5) {
-          data$Distance_m <- data$Distance  # Deja en metres
-        } else {
-          data$Distance_m <- data$Distance * 0.0254  # Conversion pouces -> metres
-        }
-      }
+       if (!"Distance_m" %in% names(data)) {
+         mean_dist <- mean(data$Distance, na.rm = TRUE)
+         if (mean_dist > 30) {
+           rlang::inform(paste("Distance detectee en pieds (moyenne:", round(mean_dist, 1), "ft) - conversion en metres"))
+           data$Distance_m <- data$Distance * 0.3048
+         } else if (mean_dist > 0.5) {
+           rlang::inform(paste("Distance detectee en metres (moyenne:", round(mean_dist, 2), "m)"))
+           data$Distance_m <- data$Distance
+         } else {
+           rlang::inform(paste("Distance detectee en pouces (moyenne:", round(mean_dist, 1), "in) - conversion en metres"))
+           data$Distance_m <- data$Distance * 0.0254
+         }
+       }
       if (!"Altitude_m" %in% names(data)) {
         data$Altitude_m <- data$Altitude * 0.3048
       }

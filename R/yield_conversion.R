@@ -22,7 +22,7 @@
 #'   Defaut 56 pour le mais. Utiliser 60 pour soja et cereales.
 #' @param sqft_per_acre Pieds carres par acre (defaut 43560)
 #' @param inches_per_foot Pouces par pied (defaut 12)
- #' @return Donnees avec colonne Yield_buacre
+ #' @return Donnees avec colonne Yield_kg_ha
  #' @export
  #' @examples
  #' \dontrun{
@@ -35,56 +35,46 @@
  #' # Pour soja/cereales
  #' data <- convert_flow_to_yield(data, lbs_per_bushel = 60)
  #' }
- convert_flow_to_yield <- function(data, lbs_per_bushel = NULL,
-                                   sqft_per_acre = 43560,
-                                   inches_per_foot = 12) {
+  convert_flow_to_yield <- function(data, lbs_per_bushel = NULL,
+                                    sqft_per_acre = 43560,
+                                    inches_per_foot = 12,
+                                    force_recalculate = FALSE) {
 
-  # Auto-detecter lbs_per_bushel via GrainType si absent
-  if (is.null(lbs_per_bushel)) {
-    lbs_per_bushel <- get_lbs_per_bushel(data)
-  }
-  
-  # Si Yield_kg_ha existe deja (donnees metriques John Deere), 
-  # convertir directement en bu/acre au lieu de calculer a partir du flux
-  if ("Yield_kg_ha" %in% names(data) && !all(is.na(data$Yield_kg_ha))) {
-    # Conversion kg/ha -> bu/acre
-    # 1 bu/acre = 62.77 kg/ha pour mais (56 lbs/bu)
-    # 1 bu/acre = 67.25 kg/ha pour soja/cereales (60 lbs/bu)
-    # Formule generale: bu/acre = kg/ha / (lbs_per_bu * 0.453592 / 0.404686)
-    # = kg/ha / (lbs_per_bu * 1.12085)
-    kg_per_buacre <- lbs_per_bushel * 1.12085
-    
-    data <- data |>
-      dplyr::mutate(
-        Yield_buacre = .data$Yield_kg_ha / kg_per_buacre
-      )
-    
-    # Calculer aussi le rendement humide si disponible
-    if ("Yield_kg_ha_wet" %in% names(data) && !all(is.na(data$Yield_kg_ha_wet))) {
-      data$Yield_buacre_wet <- data$Yield_kg_ha_wet / kg_per_buacre
-      rlang::inform(paste("Yield wet converti de kg/ha:", 
-                          round(mean(data$Yield_buacre_wet, na.rm = TRUE), 1),
-                          "bu/acre"))
+   # Auto-detecter lbs_per_bushel via GrainType si absent
+   if (is.null(lbs_per_bushel)) {
+     lbs_per_bushel <- get_lbs_per_bushel(data)
+   }
+   
+    # Si Yield_kg_ha existe deja et on ne force pas le recalcul
+    if ("Yield_kg_ha" %in% names(data) && !all(is.na(data$Yield_kg_ha)) && !force_recalculate) {
+      return(data)
     }
-    
-    # Calculer la moyenne en excluant les Inf et NA
-    finite_yield <- data$Yield_buacre[is.finite(data$Yield_buacre) & !is.na(data$Yield_buacre)]
-    mean_yield <- if (length(finite_yield) > 0) mean(finite_yield, na.rm = TRUE) else NA
-    
-    rlang::inform(paste("Yield converti de kg/ha:", round(mean_yield, 1),
-                        "bu/acre (lbs/bu =", lbs_per_bushel, ")"))
-    
-    return(data)
-  }
 
-  # Sinon, calculer a partir du flux (methode originale pour donnees imperiales)
-  if (!all(c("Flow", "Interval", "Swath", "Distance") %in% names(data))) {
-    rlang::warn("Colonnes Flow, Interval, Swath, Distance requises pour calculer le rendement")
-    return(data)
-  }
-
-  # Calculer Width_ft et Distance_ft
-  # Swath_ft = Swath / 12 (pouces -> pieds)
+   # Detection: Flow contient-il deja des valeurs de rendement (kg/ha) ?
+   # Les fichiers John Deere ont deja le rendement dans Flow (typiquement 1000-15000 kg/ha)
+   # Alors que les fichiers AgLeader ont le flux brut (typiquement 2-20 lbs/s)
+   mean_flow_check <- mean(data$Flow, na.rm = TRUE)
+   
+   if (mean_flow_check > 100 && mean_flow_check < 50000) {
+     # Flow contient probablement deja le rendement en kg/ha
+     rlang::inform(paste("  Flow detecte comme rendement deja en kg/ha (valeur:", round(mean_flow_check, 1), ")"))
+      data <- data |>
+        dplyr::mutate(
+          Yield_kg_ha = .data$Flow
+        )
+      
+      rlang::inform(paste("Yield utilise directement:", round(mean_flow_check, 1), "kg/ha"))
+     return(data)
+   }
+   
+   # Sinon, calculer a partir du flux (methode originale pour donnees imperiales)
+   if (!all(c("Flow", "Interval", "Swath", "Distance") %in% names(data))) {
+     rlang::warn("Colonnes Flow, Interval, Swath, Distance requises pour calculer le rendement")
+     return(data)
+   }
+ 
+   # Calculer Width_ft et Distance_ft
+   # Swath_ft = Swath / 12 (pouces -> pieds)
   # Distance_ft = Distance / 12 (pouces -> pieds)
   # Distance est la distance parcourue durant l'intervalle
 
@@ -92,27 +82,52 @@
   data <- data |>
     dplyr::filter(.data$Distance > 0, .data$Swath > 0, .data$Flow > 0)
 
-  data <- data |>
-    dplyr::mutate(
-      Width_ft = .data$Swath / inches_per_foot,
-      Distance_ft = .data$Distance / inches_per_foot,
-      # Rendement = (Flow x Interval x 43560) / (lbs_per_bushel x Width_ft x Distance_ft)
-      Yield_buacre = (.data$Flow * .data$Interval * sqft_per_acre) /
-                     (lbs_per_bushel * .data$Width_ft * .data$Distance_ft)
-    )
+  # Conversion directe en kg/ha (metrique)
+  # Formule: Yield_kg_ha = (Flow_kg_s * Interval_s) / (Area_m2) * 10000
+  # Flow_kg_s = Flow_lbs_s * 0.453592
+  # Area_m2 = (Swath_m * Distance_m)
+  # NOTE: Swath et Distance sont DEJA en metres (convertis par detect_and_convert_imperial_units)
+  # Ne PAS diviser par 39.37 encore une fois!
 
-  # Supprimer les colonnes temporaires
-  data <- data |>
-    dplyr::select(-Width_ft, -Distance_ft)
+  # Detection automatique des unites de Flow
+  # Si Flow < 0.5, c'est probablement deja en kg/s (valeurs typiques 0.1-5 kg/s)
+  # Si Flow > 2, c'est probablement en lbs/s (valeurs typiques 2-20 lbs/s)
+  mean_flow <- mean(data$Flow, na.rm = TRUE)
 
-  # Calculer la moyenne en excluant les Inf
-  finite_yield <- data$Yield_buacre[is.finite(data$Yield_buacre)]
+  if (mean_flow < 0.5) {
+    # Probablement deja en kg/s
+    rlang::inform(paste("  Flow detecte en kg/s (valeur moyenne:", round(mean_flow, 4), ")"))
+    data <- data |>
+      dplyr::mutate(
+        Flow_kg_s = .data$Flow,  # Pas de conversion necessaire
+        Yield_kg_ha = (Flow_kg_s * .data$Interval) / (.data$Swath * .data$Distance) * 10000
+      )
+  } else {
+    # Probablement en lbs/s
+    rlang::inform(paste("  Flow detecte en lbs/s (valeur moyenne:", round(mean_flow, 4), ")"))
+    data <- data |>
+      dplyr::mutate(
+        Flow_kg_s = .data$Flow * 0.453592,  # Conversion lbs -> kg
+        Yield_kg_ha = (Flow_kg_s * .data$Interval) / (.data$Swath * .data$Distance) * 10000
+      )
+  }
+
+   # Supprimer la colonne temporaire
+   data <- data |>
+     dplyr::select(-Flow_kg_s)
+
+   # Debug: afficher les valeurs utilisees
+   rlang::inform(paste("  Debug Yield - Flow (valeur brute):", round(mean(data$Flow, na.rm = TRUE), 4)))
+   rlang::inform(paste("  Debug Yield - Interval:", round(mean(data$Interval, na.rm = TRUE), 4), "s"))
+   rlang::inform(paste("  Debug Yield - Yield_kg_ha:", round(mean(data$Yield_kg_ha, na.rm = TRUE), 1), "kg/ha"))
+
+   # Calculer la moyenne en excluant les Inf
+  finite_yield <- data$Yield_kg_ha[is.finite(data$Yield_kg_ha)]
   mean_yield <- if (length(finite_yield) > 0) mean(finite_yield, na.rm = TRUE) else NA
 
-  rlang::inform(paste("Yield calcule:", round(mean_yield, 1),
-                      "bu/acre (lbs/bu =", lbs_per_bushel, ")"))
+   rlang::inform(paste("Yield calcule:", round(mean_yield, 1), "kg/ha"))
 
-  return(data)
+   return(data)
 }
 
 
@@ -206,7 +221,7 @@ ayce_with_yield_conversion <- function(file_path, output_file = NULL,
 
   # Parametres par defaut
   default_params <- list(
-    delay_range = 0:20,
+    delay_range = -25:25,
     n_iterations = 10,
     noise_level = 0.05,
     yscale = 1.5,
@@ -214,7 +229,7 @@ ayce_with_yield_conversion <- function(file_path, output_file = NULL,
     minv_abs = 0.5,
     miny_abs = 0,
     cellsize_overlap = 0.3,       # Cellule 30cm (standard USDA)
-    overlap_threshold = 0.5,      # 50% max chevauchement
+    overlap_threshold = 0.4,      # 40% max chevauchement
     n_swaths = 5,
     lsd_limit = 3,
     lbs_per_bushel = 56,          # Mais
@@ -243,7 +258,12 @@ ayce_with_yield_conversion <- function(file_path, output_file = NULL,
 
   # Etape 4 : PCDI
   rlang::inform("Step 4: PCDI - Flow Delay Optimization...")
-  pcdi_result <- apply_pcdi(data, params$delay_range, params$n_iterations, params$noise_level)
+   pcdi_result <- apply_pcdi(data,
+     delay_range = params$delay_range,
+     n_iterations = params$n_iterations,
+     noise_level = params$noise_level,
+     sample_fraction = params$sample_fraction %||% 1
+   )
   rlang::inform(paste("  Optimal delay:", pcdi_result$optimal_delay, "seconds"))
 
   # Etape 5 : seuils automatiques
@@ -261,13 +281,13 @@ ayce_with_yield_conversion <- function(file_path, output_file = NULL,
   rlang::inform("Step 6: Velocity filter...")
   data <- filter_velocity(data, thresholds$min_velocity, thresholds$max_velocity)
   rlang::inform(paste("  Rows:", nrow(data)))
-
-  # Etape 7 : correction du delai de flux
-  if (pcdi_result$optimal_delay > 0) {
-    rlang::inform(paste("Step 7: Flow delay correction (", pcdi_result$optimal_delay, "s)..."))
-    data <- apply_flow_delay(data, delay = pcdi_result$optimal_delay)
-    rlang::inform(paste("  Rows:", nrow(data)))
-  }
+   
+   # Etape 7 : correction du delai de flux
+   if (pcdi_result$optimal_delay != 0) {
+     rlang::inform(paste("Step 7: Flow delay correction (", pcdi_result$optimal_delay, "s)..."))
+     data <- apply_flow_delay(data, delay = pcdi_result$optimal_delay)
+     rlang::inform(paste("  Rows:", nrow(data)))
+   }
 
   # Etape 8 : filtre plage de rendement
   rlang::inform("Step 8: Yield range filter...")

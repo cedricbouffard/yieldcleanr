@@ -109,10 +109,10 @@ add_flags <- function(data, cleaning_log = NULL) {
   if (!is.null(cleaning_log) && is.list(cleaning_log)) {
     # Appliquer les drapeaux selon les operations effectuees
     if (!is.null(cleaning_log$header_filtered)) {
-      # HeaderStatus : 1 = actif, 33 = header bas (actif)
-      # Drapeau si header inactif (ni 1 ni 33)
+      # HeaderStatus : 0 = header haut mais actif, 1 = harvesting, 33 = header bas (actif)
+      # Drapeau si header inactif (ni 0 ni 1 ni 33)
       data <- data |>
-        dplyr::mutate(flag_header = dplyr::if_else(!HeaderStatus %in% c(1, 33), 1, 0))
+        dplyr::mutate(flag_header = dplyr::if_else(!HeaderStatus %in% c(0, 1, 33), 1, 0))
     }
     # Ajouter d'autres drapeaux selon les besoins
   }

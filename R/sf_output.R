@@ -77,6 +77,10 @@ data_to_sf <- function(data, crs = 4326) {
 
   # Fonction helper pour creer un rectangle oriente - bien ferme
   create_rectangle <- function(lon, lat, heading_deg, width_m, length_m) {
+    # Valeurs minimales pour eviter les polygones degeneres
+    width_m <- max(width_m, 0.1)  # Minimum 10 cm
+    length_m <- max(length_m, 0.1)  # Minimum 10 cm
+    
     lat_rad <- lat * pi / 180
     lon_per_m <- 1 / (111320 * cos(lat_rad))
     lat_per_m <- 1 / 110540
@@ -108,7 +112,17 @@ data_to_sf <- function(data, crs = 4326) {
     )
 
     # Retourner une matrice 5x2 (polygone ferme)
-    matrix(c(x, y), nrow = 5, ncol = 2, byrow = FALSE)
+    coords <- matrix(c(x, y), nrow = 5, ncol = 2, byrow = FALSE)
+    
+    # Verifier qu'il n'y a pas de points dupliques consecutifs
+    # Si deux points sont identiques, deplacer legerement le deuxieme
+    for (i in 2:5) {
+      if (all(abs(coords[i, ] - coords[i-1, ]) < 1e-10)) {
+        coords[i, ] <- coords[i, ] + c(1e-8, 1e-8)  # Deplacement minuscule
+      }
+    }
+    
+    return(coords)
   }
 
   # Calculer le cap si absent
@@ -123,40 +137,73 @@ data_to_sf <- function(data, crs = 4326) {
     data$heading[is.na(data$heading)] <- 0
   }
 
-  # S'assurer que les colonnes metriques existent
-  # Detection automatique des unites pour Swath et Distance
-  if (!"Swath_m" %in% names(data)) {
-    mean_swath <- mean(data$Swath, na.rm = TRUE)
-    # Si Swath > 5, c'est probablement deja en metres (headers standards: 7.5-12m)
-    # Si Swath < 5, c'est probablement en pouces (295-472 pouces pour headers 30-40 pieds)
-    if (mean_swath > 5) {
-      rlang::inform(paste("Swath detecte en metres (moyenne:", round(mean_swath, 2), "m)"))
-      data$Swath_m <- data$Swath
-    } else {
-      rlang::inform(paste("Swath detecte en pouces (moyenne:", round(mean_swath, 2), "in) - conversion en metres"))
-      data$Swath_m <- data$Swath * 0.0254
+   # S'assurer que les colonnes metriques existent
+   # Detection automatique des unites pour Swath et Distance
+   if (!"Swath_m" %in% names(data)) {
+     mean_swath <- mean(data$Swath, na.rm = TRUE)
+     # Detection plus robuste avec verifications de realisme
+     # Headers typiques: 6-15m (20-50 pieds)
+      # Detection des unites Swath:
+      # En pouces: 240-600 pouces (6-15m) - mais un swath < 3m est impossible
+      # En pieds: 20-50 pieds (6-15m)
+      # En metres: 6-12m typiquement
+      # Valeurs aberrantes: < 3m (trop petit) ou > 50m (trop grand)
+      
+      if (mean_swath > 100) {
+        # > 100: probablement pieds (100 pieds = 30m, trop grand) ou pouces mal detectes
+        if (mean_swath > 200) {
+          rlang::warn(paste("Swath moyen tres eleve (", round(mean_swath, 1), ") - verifiez les unites. Traitement avec 8m par defaut."))
+          data$Swath_m <- 8
+        } else {
+          # 100-200: probablement pieds
+          rlang::inform(paste("Swath detecte en pieds (moyenne:", round(mean_swath, 1), "ft) - conversion en metres"))
+          data$Swath_m <- data$Swath * 0.3048
+        }
+      } else if (mean_swath >= 3 && mean_swath <= 50) {
+        # 3-50m: plage normale pour un swath en metres
+        rlang::inform(paste("Swath detecte en metres (moyenne:", round(mean_swath, 2), "m)"))
+        data$Swath_m <- data$Swath
+      } else if (mean_swath < 3) {
+        # < 3m: probablement pouces (car un swath reel ne peut pas etre < 3m)
+        rlang::inform(paste("Swath detecte en pouces (moyenne:", round(mean_swath, 1), "in) - conversion en metres"))
+        data$Swath_m <- data$Swath * 0.0254
+      } else {
+        # Cas non prevu, utiliser la valeur telle quelle
+        rlang::warn(paste("Swath de", round(mean_swath, 1), "m - unite incertaine, utilisee telle quelle"))
+        data$Swath_m <- data$Swath
+      }
+   }
+
+   if (!"Distance_m" %in% names(data)) {
+     mean_dist <- mean(data$Distance, na.rm = TRUE)
+     # Distance typique entre points: 1-5m
+     if (mean_dist > 30) {
+       rlang::inform(paste("Distance detectee en pieds (moyenne:", round(mean_dist, 1), "ft) - conversion en metres"))
+       data$Distance_m <- data$Distance * 0.3048
+     } else if (mean_dist > 0.5) {
+       rlang::inform(paste("Distance detectee en metres (moyenne:", round(mean_dist, 2), "m)"))
+       data$Distance_m <- data$Distance
+     } else {
+       rlang::inform(paste("Distance detectee en pouces (moyenne:", round(mean_dist, 1), "in) - conversion en metres"))
+       data$Distance_m <- data$Distance * 0.0254
+     }
+   }
+
+      # Creer Yield_kg_ha si n'existe pas
+     if (!"Yield_kg_ha" %in% names(data)) {
+       if ("Flow" %in% names(data) && mean(data$Flow, na.rm = TRUE) > 100) {
+         # Flow existe avec valeurs > 100, utiliser comme rendement humide (kg/ha)
+         data$Yield_kg_ha <- data$Flow
+         rlang::inform(paste("Yield_kg_ha cree a partir de Flow (moyenne:", round(mean(data$Yield_kg_ha, na.rm = TRUE), 0), "kg/ha)"))
+       }
+     }
+     # Creer Yield_kg_ha_wet si n'existe pas
+     if (!"Yield_kg_ha_wet" %in% names(data) && "Yield_kg_ha" %in% names(data)) {
+       data$Yield_kg_ha_wet <- data$Yield_kg_ha
+     }
+    if (!"Flow_kg_s" %in% names(data) && "Flow" %in% names(data)) {
+      data$Flow_kg_s <- data$Flow * 0.453592
     }
-  }
-  
-  if (!"Distance_m" %in% names(data)) {
-    mean_dist <- mean(data$Distance, na.rm = TRUE)
-    # Si Distance > 0.5, c'est probablement deja en metres (typique: 1-3m entre points)
-    # Si Distance < 0.5, c'est probablement en pouces (40-120 pouces)
-    if (mean_dist > 0.5) {
-      rlang::inform(paste("Distance detectee en metres (moyenne:", round(mean_dist, 2), "m)"))
-      data$Distance_m <- data$Distance
-    } else {
-      rlang::inform(paste("Distance detectee en pouces (moyenne:", round(mean_dist, 2), "in) - conversion en metres"))
-      data$Distance_m <- data$Distance * 0.0254
-    }
-  }
-  
-  if (!"Yield_kg_ha" %in% names(data)) {
-    data$Yield_kg_ha <- data$Yield_buacre * 67.25
-  }
-  if (!"Flow_kg_s" %in% names(data)) {
-    data$Flow_kg_s <- data$Flow * 0.453592
-  }
 
   # Filtrer les lignes avec des valeurs manquantes necessaires pour les polygones
   required_cols <- c("Longitude", "Latitude", "heading", "Swath_m", "Distance_m")
@@ -181,7 +228,8 @@ data_to_sf <- function(data, crs = 4326) {
   # Creer les geometries des polygones
   rlang::inform("Creation des geometries des polygones...")
   polygons_list <- list()
-
+  valid_indices <- c()
+  
   for (i in seq_len(nrow(data))) {
     coords <- create_rectangle(
       data$Longitude[i],
@@ -190,39 +238,59 @@ data_to_sf <- function(data, crs = 4326) {
       data$Swath_m[i],
       data$Distance_m[i]
     )
-    polygons_list[[i]] <- sf::st_polygon(list(coords))
+    
+    # Essayer de creer le polygone, ignorer en cas d'erreur
+    tryCatch({
+      poly <- sf::st_polygon(list(coords))
+      # Verifier que le polygone est valide
+      if (sf::st_is_valid(poly)) {
+        polygons_list[[length(polygons_list) + 1]] <- poly
+        valid_indices <- c(valid_indices, i)
+      } else {
+        rlang::warn(paste("Polygone", i, "invalide - ignore"))
+      }
+    }, error = function(e) {
+      rlang::warn(paste("Erreur creation polygone", i, ":", conditionMessage(e)))
+    })
+  }
+  
+  # Filtrer les donnees pour ne garder que les polygones valides
+  if (length(valid_indices) < nrow(data)) {
+    rlang::inform(paste(length(valid_indices), "polygones valides sur", nrow(data)))
+    data <- data[valid_indices, ]
   }
 
    # Creer l'objet SF
+   # S'assurer que toutes les colonnes ont la meme longueur que les polygones
+   n_poly <- length(polygons_list)
+   
    sf_data <- sf::st_sf(
      geometry = sf::st_sfc(polygons_list, crs = crs),
       # Colonnes metriques (principales)
-     Flow_kg_s = data$Flow_kg_s,
-     Yield_kg_ha = data$Yield_kg_ha,
-     Yield_kg_ha_wet = if ("Yield_kg_ha_wet" %in% names(data)) data$Yield_kg_ha_wet else NA_real_,
-     Moisture_pct = data$Moisture,
-     Swath_m = data$Swath_m,
-     Distance_m = data$Distance_m,
-     Heading_deg = data$heading,
-     Altitude_m = data$Altitude * 0.3048,
+     Flow_kg_s = if ("Flow_kg_s" %in% names(data)) data$Flow_kg_s else rep(NA_real_, n_poly),
+     Yield_kg_ha = if ("Yield_kg_ha" %in% names(data)) data$Yield_kg_ha else rep(NA_real_, n_poly),
+     Yield_kg_ha_wet = if ("Yield_kg_ha_wet" %in% names(data)) data$Yield_kg_ha_wet else rep(NA_real_, n_poly),
+     Moisture_pct = if ("Moisture" %in% names(data)) data$Moisture else rep(NA_real_, n_poly),
+     Swath_m = if ("Swath_m" %in% names(data)) data$Swath_m else rep(NA_real_, n_poly),
+     Distance_m = if ("Distance_m" %in% names(data)) data$Distance_m else rep(NA_real_, n_poly),
+     Heading_deg = if ("heading" %in% names(data)) data$heading else rep(NA_real_, n_poly),
+     Altitude_m = if ("Altitude" %in% names(data)) data$Altitude * 0.3048 else rep(NA_real_, n_poly),
       # Colonnes imperiales (secondaires)
-     Flow_lbs_s = data$Flow,
-     Yield_bu_ac = data$Yield_buacre,
-     Yield_bu_ac_wet = if ("Yield_buacre_wet" %in% names(data)) data$Yield_buacre_wet else NA_real_,
-     Swath_in = data$Swath,
-     Distance_in = data$Distance,
-     Altitude_ft = data$Altitude,
+      Flow_lbs_s = if ("Flow" %in% names(data)) data$Flow else rep(NA_real_, n_poly),
+     Swath_in = if ("Swath" %in% names(data)) data$Swath else rep(NA_real_, n_poly),
+     Distance_in = if ("Distance" %in% names(data)) data$Distance else rep(NA_real_, n_poly),
+     Altitude_ft = if ("Altitude" %in% names(data)) data$Altitude else rep(NA_real_, n_poly),
       # Colonnes de metadonnees
-     GPS_Time = data$GPS_Time,
-     HeaderStatus = data$HeaderStatus,
-     Pass = data$Pass,
-     Longitude = data$Longitude,
-     Latitude = data$Latitude,
-     X_utm = data$X,
-     Y_utm = data$Y,
-     orig_row_id = if ("orig_row_id" %in% names(data)) data$orig_row_id else seq_len(nrow(data)),
-     Variety = if ("Variety" %in% names(data)) data$Variety else NA_character_,
-     GrainType = if ("GrainType" %in% names(data)) data$GrainType else NA_character_
+     GPS_Time = if ("GPS_Time" %in% names(data)) data$GPS_Time else rep(NA_real_, n_poly),
+     HeaderStatus = if ("HeaderStatus" %in% names(data)) data$HeaderStatus else rep(NA_integer_, n_poly),
+     Pass = if ("Pass" %in% names(data)) data$Pass else rep(NA_integer_, n_poly),
+     Longitude = if ("Longitude" %in% names(data)) data$Longitude else rep(NA_real_, n_poly),
+     Latitude = if ("Latitude" %in% names(data)) data$Latitude else rep(NA_real_, n_poly),
+     X_utm = if ("X" %in% names(data)) data$X else rep(NA_real_, n_poly),
+     Y_utm = if ("Y" %in% names(data)) data$Y else rep(NA_real_, n_poly),
+     orig_row_id = if ("orig_row_id" %in% names(data)) data$orig_row_id else seq_len(n_poly),
+     Variety = if ("Variety" %in% names(data)) data$Variety else rep(NA_character_, n_poly),
+     GrainType = if ("GrainType" %in% names(data)) data$GrainType else rep(NA_character_, n_poly)
    )
 
   rlang::inform(paste("Objet SF cree :", nrow(sf_data), "polygones"))
@@ -253,27 +321,39 @@ data_to_sf_points <- function(data, crs = 4326) {
 
   rlang::inform("Creation d'un objet SF avec points...")
 
-  # Calculer le rendement en kg/ha
-  data$Yield_kg_ha <- data$Yield_buacre * 67.25
-  data$Flow_kg_s <- data$Flow * 0.453592
+    # Creer Yield_kg_ha si n'existe pas
+     if (!"Yield_kg_ha" %in% names(data)) {
+       if ("Flow" %in% names(data) && mean(data$Flow, na.rm = TRUE) > 100) {
+         # Flow existe avec valeurs > 100, utiliser comme rendement humide (kg/ha)
+         data$Yield_kg_ha <- data$Flow
+         rlang::inform(paste("Yield_kg_ha cree a partir de Flow (moyenne:", round(mean(data$Yield_kg_ha, na.rm = TRUE), 0), "kg/ha)"))
+       }
+     }
+     # Creer Yield_kg_ha_wet si n'existe pas
+     if (!"Yield_kg_ha_wet" %in% names(data) && "Yield_kg_ha" %in% names(data)) {
+       data$Yield_kg_ha_wet <- data$Yield_kg_ha
+     }
+    if ("Flow" %in% names(data)) {
+      data$Flow_kg_s <- data$Flow * 0.453592
+    }
   data$Swath_m <- data$Swath * 0.0254
   data$Distance_m <- data$Distance * 0.0254
   data$Altitude_m <- data$Altitude * 0.3048
 
-  # Creer l'objet SF avec points
-  sf_data <- sf::st_as_sf(
-    data,
-    coords = c("Longitude", "Latitude"),
-    crs = crs,
-    agr = "identity"
-  ) |>
-    dplyr::mutate(
-      Yield_kg_ha = Yield_buacre * 67.25,
-      Flow_kg_s = Flow * 0.453592,
-      Swath_m = Swath * 0.0254,
-      Distance_m = Distance * 0.0254,
-      Altitude_m = Altitude * 0.3048
-    )
+   # Creer l'objet SF avec points
+   sf_data <- sf::st_as_sf(
+     data,
+     coords = c("Longitude", "Latitude"),
+     crs = crs,
+     agr = "identity"
+   ) |>
+     dplyr::mutate(
+       # Yield_kg_ha deja calcule ci-dessus avec detection d'unites
+       Flow_kg_s = Flow * 0.453592,
+       Swath_m = Swath * 0.0254,
+       Distance_m = Distance * 0.0254,
+       Altitude_m = Altitude * 0.3048
+     )
 
   rlang::inform(paste("Objet SF points cree :", nrow(sf_data), "points"))
 
@@ -300,15 +380,10 @@ plot_yield <- function(sf_data, column = "Yield", ...) {
   }
 
   if (column == "Yield") {
-    # Utiliser la colonne de rendement adaptee aux unites
-    if ("Yield_kg_ha" %in% names(sf_data)) {
-      column <- "Yield_kg_ha"
-      title <- "Rendement (kg/ha)"
-    } else {
-      column <- "Yield_bu_ac"
-      title <- "Rendement (bu/acre)"
-    }
-  } else {
+     # Toujours utiliser kg/ha
+     column <- "Yield_kg_ha"
+     title <- "Rendement (kg/ha)"
+   } else {
     title <- column
   }
 
@@ -337,8 +412,8 @@ yield_summary <- function(sf_data) {
     rlang::abort("sf_data must be an SF object")
   }
 
-  # Utiliser la colonne de rendement adaptee
-  yield_col <- if ("Yield_kg_ha" %in% names(sf_data)) "Yield_kg_ha" else "Yield_bu_ac"
+  # Toujours utiliser kg/ha
+   yield_col <- "Yield_kg_ha"
 
   dplyr::summarise(sf_data,
     n = dplyr::n(),

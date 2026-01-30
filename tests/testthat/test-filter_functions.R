@@ -79,23 +79,23 @@ test_that("filter_velocity filters by speed range", {
 # Test filter_yield_range ----
 test_that("filter_yield_range keeps values within range", {
   data <- tibble::tibble(
-    Yield_buacre = c(100, 150, 50, 300, 180),
+    Yield_kg_ha = c(6270, 9405, 3135, 18810, 11286),
     Flow = 1:5
   )
 
-  result <- filter_yield_range(data, min_yield = 50, max_yield = 200)
+  result <- filter_yield_range(data, min_yield = 3135, max_yield = 11286, yield_column = "Yield_kg_ha")
 
   expect_equal(nrow(result), 4)
-  expect_true(all(result$Yield_buacre >= 50 & result$Yield_buacre <= 200))
+  expect_true(all(result$Yield_kg_ha >= 3135 & result$Yield_kg_ha <= 11286))
 })
 
 test_that("filter_yield_range removes all when none in range", {
   data <- tibble::tibble(
-    Yield_buacre = c(600, 700, 800, 900, 1000),
+    Yield_kg_ha = c(37620, 43900, 50160, 56430, 62700),
     Flow = 1:5
   )
 
-  result <- filter_yield_range(data, min_yield = 50, max_yield = 200)
+  result <- filter_yield_range(data, min_yield = 3135, max_yield = 11286, yield_column = "Yield_kg_ha")
 
   expect_equal(nrow(result), 0)
 })
@@ -121,7 +121,8 @@ test_that("apply_flow_delay shifts flow values", {
 
   result <- apply_flow_delay(data, delay = 1)
 
-  expect_equal(nrow(result), nrow(data) - 1)
+  expect_equal(nrow(result), nrow(data))
+  expect_equal(sum(is.na(result$Flow)), 1)
 })
 
 # Test apply_moisture_delay ----

@@ -156,28 +156,16 @@
       data$Serial <- as.character(data$Serial)
     } else if (n_cols == 15) {
       # Format court (ex : sample3.txt, sample4.txt)
-      # Verifier si la derniere colonne est numerique et ressemble a une altitude (>100)
-      col15 <- suppressWarnings(as.numeric(data[[15]]))
-      is_altitude <- !is.na(col15[1]) && abs(col15[1]) > 100
-
-      if (is_altitude) {
-        # Colonne 15 numerique et ressemble a une altitude
-        colnames(data) <- c(
-          "Longitude", "Latitude", "Flow", "GPS_Time",
-          "Interval", "Distance", "Swath", "Moisture",
-          "HeaderStatus", "Pass", "Serial", "FieldID",
-          "LoadID", "GrainType", "Altitude"
-        )
-      } else {
-        # Colonne 15 n'est pas une altitude, probablement un ID
-        colnames(data) <- c(
-          "Longitude", "Latitude", "Flow", "GPS_Time",
-          "Interval", "Distance", "Swath", "Moisture",
-          "HeaderStatus", "Pass", "Serial", "FieldID",
-          "LoadID", "GrainType", "FieldID2"
-        )
-        data$Altitude <- NA_real_
-      }
+      # Colonne 15 = Altitude (toujours en position 15 pour ce format)
+      # Colonne 14 = GrainType, pas de DOP/GPSStatus pour ce format
+      colnames(data) <- c(
+        "Longitude", "Latitude", "Flow", "GPS_Time",
+        "Interval", "Distance", "Swath", "Moisture",
+        "HeaderStatus", "Pass", "Serial", "FieldID",
+        "LoadID", "GrainType", "Altitude"
+      )
+      data$DOP <- NA_real_
+      data$GPSStatus <- NA_integer_
       # Ajouter les colonnes manquantes
       data$DOP <- NA_real_
       data$GPSStatus <- NA_integer_
@@ -249,8 +237,9 @@ detect_and_convert_imperial_units <- function(data) {
   mean_swath <- mean(data$Swath[!is.na(data$Swath)], na.rm = TRUE)
 
   # Detection des unites basee sur des valeurs typiques
-  # En pouces (AgLeader): Distance ~40-120 pouces (1-3m), Swath ~295-472 pouces (30-40 pieds)
+  # En pouces (AgLeader): Distance ~40-120 pouces (1-3m), Swath ~295-472 pouces (7.5-12m)
   # En metres: Distance ~1-3m, Swath ~7.5-12m
+  # Un swath reel ne peut pas etre < 3m (sinon c'est des pouces)
 
   # Si Distance > 20 et < 200, c'est probablement en pouces
   if (!is.na(mean_distance) && mean_distance > 20 && mean_distance < 200) {
@@ -258,11 +247,28 @@ detect_and_convert_imperial_units <- function(data) {
     data$Distance <- data$Distance * 0.0254  # pouces -> metres
   }
 
-  # Si Swath > 200 et < 500, c'est probablement en pouces
-  if (!is.na(mean_swath) && mean_swath > 200 && mean_swath < 500) {
-    rlang::inform(paste("Swath detecte en pouces (moyenne:", round(mean_swath, 1), ") - conversion en metres"))
-    data$Swath <- data$Swath * 0.0254  # pouces -> metres
-  }
+   # Detection Swath:
+   # Un swath reel est toujours entre 3-15m (typique: 6-12m pour moissonneuses)
+   # Valeurs en pouces typiques: 120-472 pouces (10-40 pieds)
+   # Valeurs en metres typiques: 3-15m
+   # Si Swath > 100 et < 200, c'est probablement en pouces (120 = 10 pieds header)
+   if (!is.na(mean_swath)) {
+     if (mean_swath < 3) {
+       # < 3m: probablement pouces (un swath reel est toujours > 3m)
+       rlang::inform(paste("Swath detecte en pouces (moyenne:", round(mean_swath, 1), ") - conversion en metres"))
+       data$Swath <- data$Swath * 0.0254
+     } else if (mean_swath >= 100 && mean_swath <= 200) {
+       # 100-200 pouces = 2.5-5m (10-16 pieds header -tres courant)
+       rlang::inform(paste("Swath detecte en pouces (moyenne:", round(mean_swath, 1), ") - conversion en metres"))
+       data$Swath <- data$Swath * 0.0254
+     } else if (mean_swath > 200 && mean_swath < 500) {
+       # 200-500 pouces (17-40 pieds - grandes captures)
+       rlang::inform(paste("Swath detecte en pouces (moyenne:", round(mean_swath, 1), ") - conversion en metres"))
+       data$Swath <- data$Swath * 0.0254
+     }
+     # Si 3-100m: on garde comme metres (valeur normale)
+     # Si > 500: valeur aberrante, on garde telle quelle
+   }
 
   return(data)
 }
@@ -529,9 +535,10 @@ convert_jd_metric_to_yieldcleanr <- function(data) {
   }
   
   # Convertir les unites si necessaire
+  # Flow contient TOUJOURS le rendement HUMIDE (quelle que soit la source)
   if ("Flow" %in% names(data) && !all(is.na(data$Flow))) {
     mean_flow <- mean(data$Flow[!is.na(data$Flow)], na.rm = TRUE)
-    message(paste("Rendement moyen:", round(mean_flow, 2)))
+    message(paste("Rendement humide moyen:", round(mean_flow, 2)))
     
     # Si le rendement est > 100, c'est probablement en kg/ha
     # Si le rendement est < 20, c'est probablement en tonnes/ha
@@ -540,22 +547,29 @@ convert_jd_metric_to_yieldcleanr <- function(data) {
       data$Flow <- data$Flow * 1000  # tonnes -> kg
     }
     
-    data$Yield_kg_ha <- data$Flow
-    message(paste("Yield_kg_ha cree avec", sum(!is.na(data$Yield_kg_ha)), "valeurs"))
+    # Flow contient le rendement HUMIDE
+    data$Yield_kg_ha_wet <- data$Flow
+    message(paste("Yield_kg_ha_wet (humide) cree avec", sum(!is.na(data$Yield_kg_ha_wet)), "valeurs"))
+    
+    # Yield_kg_ha (sec) sera calcule plus tard a partir de l'humidite
+    # Ne pas creer Yield_kg_ha ici pour forcer le calcul avec humidite
   }
   
-  # Creer Yield_kg_ha_wet si Flow_Wet existe
+  # Creer Yield_kg_ha_wet si Flow_Wet existe (donnees avec rendement humide explicite)
   if ("Flow_Wet" %in% names(data) && !all(is.na(data$Flow_Wet))) {
     mean_flow_wet <- mean(data$Flow_Wet[!is.na(data$Flow_Wet)], na.rm = TRUE)
-    message(paste("Rendement humide moyen:", round(mean_flow_wet, 2)))
+    message(paste("Rendement humide explicite moyen:", round(mean_flow_wet, 2)))
     
     if (mean_flow_wet < 20 && mean_flow_wet > 0) {
       message("Conversion rendement humide tonnes/ha -> kg/ha")
       data$Flow_Wet <- data$Flow_Wet * 1000  # tonnes -> kg
     }
     
-    data$Yield_kg_ha_wet <- data$Flow_Wet
-    message(paste("Yield_kg_ha_wet cree avec", sum(!is.na(data$Yield_kg_ha_wet)), "valeurs"))
+    # Si Yield_kg_ha_wet n'existe pas encore, le creer
+    if (!"Yield_kg_ha_wet" %in% names(data) || all(is.na(data$Yield_kg_ha_wet))) {
+      data$Yield_kg_ha_wet <- data$Flow_Wet
+      message(paste("Yield_kg_ha_wet cree a partir de Flow_Wet avec", sum(!is.na(data$Yield_kg_ha_wet)), "valeurs"))
+    }
   }
   
   # Verifier Swath (largeur)
@@ -660,16 +674,75 @@ convert_jd_metric_to_yieldcleanr <- function(data) {
   
   # Calculer le rendement sec a partir du rendement humide et de l'humidite
   if ("Moisture" %in% names(data) && !all(is.na(data$Moisture))) {
+    # Obtenir l'humidite standard selon la culture
+    moisture_std <- get_standard_moisture(data)
+    moisture_factor <- 100 - moisture_std
+    
+    message(paste("Humidite standard pour conversion:", moisture_std, "% (facteur:", moisture_factor, ")"))
+    
     if ("Yield_kg_ha_wet" %in% names(data) && !all(is.na(data$Yield_kg_ha_wet))) {
       message("Calcul du rendement sec a partir du rendement humide...")
-      data$Yield_kg_ha <- data$Yield_kg_ha_wet * (100 - data$Moisture) / 85.5
+      data$Yield_kg_ha <- data$Yield_kg_ha_wet * (100 - data$Moisture) / moisture_factor
       message(paste("Rendement sec calcule:", round(mean(data$Yield_kg_ha, na.rm = TRUE), 1), "kg/ha"))
     }
     if ("Flow_Wet" %in% names(data) && !all(is.na(data$Flow_Wet))) {
-      data$Flow <- data$Flow_Wet * (100 - data$Moisture) / 85.5
+      data$Flow <- data$Flow_Wet * (100 - data$Moisture) / moisture_factor
+    }
+  } else {
+    # Pas d'humidite - le rendement sec est egal au rendement humide
+    message("Pas d'humidite disponible - Yield_kg_ha = Yield_kg_ha_wet")
+    if ("Yield_kg_ha_wet" %in% names(data) && !all(is.na(data$Yield_kg_ha_wet))) {
+      data$Yield_kg_ha <- data$Yield_kg_ha_wet
+      message(paste("Rendement utilise (pas de conversion humidite):", round(mean(data$Yield_kg_ha, na.rm = TRUE), 1), "kg/ha"))
     }
   }
   
   message("Conversion terminee")
   return(data)
+}
+
+
+#' Obtenir l'humidite standard selon la culture
+#'
+#' Retourne l'humidite standard pour le calcul rendement sec.
+#'
+#' @param data Tibble avec GrainType ou Grain_Type
+#' @return Humidite standard en pourcentage
+#' @noRd
+get_standard_moisture <- function(data) {
+  # Verifier la colonne GrainType ou Grain_Type
+  grain_col <- if ("GrainType" %in% names(data)) {
+    "GrainType"
+  } else if ("Grain_Type" %in% names(data)) {
+    "Grain_Type"
+  } else {
+    NULL
+  }
+  
+  if (!is.null(grain_col)) {
+    grain <- tolower(unique(data[[grain_col]]))
+    
+    # Detecter le mais
+    if (any(grepl("mais|corn|maize", grain))) {
+      return(15.5)  # Mais standard USDA
+    }
+    
+    # Detecter le soja
+    if (any(grepl("soja|soy|soybean", grain))) {
+      return(13.0)  # Soja standard USDA
+    }
+    
+    # Detecter ble/cereales
+    if (any(grepl("ble|wheat|blé|orge|barley|avoine|oat", grain))) {
+      return(13.5)  # Ble standard USDA
+    }
+    
+    # Defaut : mais
+    message(paste("GrainType non reconnu ('", paste(grain, collapse = ", "), "'), utilisation 15.5% (mais par defaut)"))
+    return(15.5)
+  }
+  
+  # Defaut si pas de GrainType
+  message("Pas de colonne GrainType, utilisation 15.5% (mais par defaut)")
+  return(15.5)
 }

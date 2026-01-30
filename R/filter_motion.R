@@ -67,11 +67,11 @@
 #' (par exemple: un point tourne et le point suivant revient dans le bon sens).
 #'
 #' @param data Tibble avec au minimum X, Y, orig_row_id et GPS_Time
-#' @param max_heading_change Variation maximale de direction entre 3 points consecutifs (degrés, défaut: 45)
-#' @param window_size Taille de la fenetre pour detecter les anomalies (defaut: 3)
-#' @return Liste avec data (donnees filtrees) et removed (points supprimes)
-#' @export
- filter_heading_anomalies <- function(data, max_heading_change = 45, window_size = 3) {
+ #' @param max_heading_change Variation maximale de direction entre 3 points consecutifs (degrés, défaut: 60)
+ #' @param window_size Taille de la fenetre pour detecter les anomalies (defaut: 3)
+ #' @return Liste avec data (donnees filtrees) et removed (points supprimes)
+ #' @export
+  filter_heading_anomalies <- function(data, max_heading_change = 60, window_size = 3) {
   if (!all(c("X", "Y") %in% names(data))) {
     rlang::warn("Colonnes X ou Y manquantes - saut du filtre de direction")
     return(list(data = data, removed = data[0, ]))
@@ -116,4 +116,99 @@
                    -heading_next, -heading_prev, -heading_change, -is_anomaly)
 
    return(list(data = to_keep, removed = removed))
+ }
+
+
+ #' Filtre de position pour eliminer les points hors champ
+ #'
+ #' Detecte et supprime les points qui sont en dehors du champ principal
+ #' en utilisant une methode de buffer autour du centre du champ.
+ #' Seuls les points dans les zones avec suffisamment de points voisins sont conserves.
+ #'
+ #' @param data Tibble avec au minimum X, Y
+ #' @param buffer_radius Rayon du buffer en metres (defaut: 50)
+ #' @param min_points_cell Nombre minimum de points par cellule pour qu'une zone soit valide (defaut: 5)
+ #' @param grid_size Taille de la grille pour l'analyse en metres (defaut: 20)
+ #' @return Liste avec data (donnees filtrees) et removed (points supprimes)
+ #' @export
+ filter_position_outliers <- function(data, buffer_radius = 50, min_points_cell = 5, grid_size = 20) {
+   if (!all(c("X", "Y") %in% names(data))) {
+     rlang::warn("Colonnes X ou Y manquantes - saut du filtre de position")
+     return(list(data = data, removed = data[0, ]))
+   }
+   
+   n_before <- nrow(data)
+   
+   # Creer une grille reguliere
+   x_range <- range(data$X, na.rm = TRUE)
+   y_range <- range(data$Y, na.rm = TRUE)
+   
+   # Creer les cellules de grille
+   x_breaks <- seq(x_range[1], x_range[2], by = grid_size)
+   y_breaks <- seq(y_range[1], y_range[2], by = grid_size)
+   
+   if (length(x_breaks) < 2 || length(y_breaks) < 2) {
+     rlang::warn("Plage de coordonnees trop petite pour le filtre de position")
+     return(list(data = data, removed = data[0, ]))
+   }
+   
+   # Assigner chaque point a une cellule
+   data$grid_x <- findInterval(data$X, x_breaks)
+   data$grid_y <- findInterval(data$Y, y_breaks)
+   data$grid_id <- paste(data$grid_x, data$grid_y, sep = "_")
+   
+   # Calculer le nombre de points par cellule
+   grid_counts <- table(data$grid_id)
+   
+   # Identifier les cellules valides (avec au moins min_points_cell points)
+   valid_cells <- names(grid_counts)[grid_counts >= min_points_cell]
+   
+   # Si aucune cellule valide, utiliser les cellules avec le plus de points
+   if (length(valid_cells) == 0) {
+     # Prendre les cellules avec le plus de points (top 80%)
+     sorted_counts <- sort(grid_counts, decreasing = TRUE)
+     n_cells_to_keep <- max(1, ceiling(length(sorted_counts) * 0.8))
+     valid_cells <- names(sorted_counts)[1:n_cells_to_keep]
+   }
+   
+   # Pour chaque point, verifier s'il est dans une cellule valide
+   data$is_valid <- data$grid_id %in% valid_cells
+   
+   # Pour les points non valides, verifier s'ils sont dans le buffer d'une cellule valide
+   # Utiliser une approche vectorisee plus rapide
+   if (buffer_radius > 0 && length(valid_cells) > 0) {
+     # Extraire les coordonnees des points valides
+     valid_idx <- which(data$is_valid)
+     
+     if (length(valid_idx) > 0) {
+       # Pour chaque point non valide, calculer la distance minimale aux points valides
+       invalid_idx <- which(!data$is_valid)
+       
+       # Calcul vectorise: pour chaque point invalide, distance minimale a un point valide
+       min_dists <- sapply(invalid_idx, function(i) {
+         min(sqrt((data$X[i] - data$X[valid_idx])^2 + 
+                  (data$Y[i] - data$Y[valid_idx])^2), na.rm = TRUE)
+       })
+       
+       # Marquer comme valide si dans le buffer
+       data$is_valid[invalid_idx] <- min_dists <= buffer_radius
+     }
+   }
+   
+   # Filtrer les donnees
+   to_keep <- data |>
+     dplyr::filter(is_valid) |>
+     dplyr::select(-grid_x, -grid_y, -grid_id, -is_valid)
+   
+   to_remove <- data |>
+     dplyr::filter(!is_valid) |>
+     dplyr::select(-grid_x, -grid_y, -grid_id, -is_valid)
+   
+   n_removed <- n_before - nrow(to_keep)
+   if (n_removed > 0) {
+     rlang::inform(paste("Filtre position:", n_removed, "points hors champ elimines (", 
+                         round(n_removed / n_before * 100, 1), "%)"))
+   }
+   
+   return(list(data = to_keep, removed = to_remove))
  }

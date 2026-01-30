@@ -4,12 +4,12 @@
 \alias{filter_heading_anomalies}
 \title{Filtre pour variations brusques de direction du header}
 \usage{
-filter_heading_anomalies(data, max_heading_change = 45, window_size = 3)
+filter_heading_anomalies(data, max_heading_change = 60, window_size = 3)
 }
 \arguments{
 \item{data}{Tibble avec au minimum X, Y, orig_row_id et GPS_Time}
 
-\item{max_heading_change}{Variation maximale de direction entre 3 points consecutifs (degrés, défaut: 45)}
+\item{max_heading_change}{Variation maximale de direction entre 3 points consecutifs (degrés, défaut: 60)}
 
 \item{window_size}{Taille de la fenetre pour detecter les anomalies (defaut: 3)}
 }

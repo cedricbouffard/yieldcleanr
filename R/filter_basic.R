@@ -5,21 +5,22 @@
 #' Header Status: 1 = harvesting (actif), 33 = header down (abaisse).
 #' Les deux valeurs indiquent une recolte active.
 #'
-#' @param data Tibble avec donnees de rendement
-#' @param header_values Valeurs indiquant une recolte active (defaut c(1, 33))
-#' @return Tibble filtre avec header actif
- #' @export
- #' @examples
- #' # Creer des donnees d'exemple avec header mixte
- #' data <- tibble::tibble(
- #'   Flow = c(1.53, 3.7, 7.56, 10.36, 15.48),
- #'   HeaderStatus = c(1, 33, 33, 0, 33)  # 1=actif, 33=header bas, 0=header haut
- #' )
- #'
- #' # Filtrer pour ne garder que la recolte active
- #' data_filtered <- filter_header_status(data)
- #' print(data_filtered)
- filter_header_status <- function(data, header_values = c(1, 33)) {
+ #' @param data Tibble avec donnees de rendement
+ #' @param header_values Valeurs indiquant une recolte active (defaut c(1, 33))
+ #'   1 = harvesting, 33 = header bas
+ #' @return Tibble filtre avec header actif
+  #' @export
+  #' @examples
+  #' # Creer des donnees d'exemple avec header mixte
+  #' data <- tibble::tibble(
+  #'   Flow = c(1.53, 3.7, 7.56, 10.36, 15.48),
+  #'   HeaderStatus = c(1, 33, 33, 0, 33)  # 1=actif, 33=header bas, 0=header haut
+  #' )
+  #'
+  #' # Filtrer pour ne garder que la recolte active (defaut: 1 et 33)
+  #' data_filtered <- filter_header_status(data)
+  #' print(data_filtered)
+  filter_header_status <- function(data, header_values = c(1, 33)) {
   if (!"HeaderStatus" %in% names(data)) {
     rlang::warn("Colonne HeaderStatus non trouvee, saut du filtrage")
     return(data)

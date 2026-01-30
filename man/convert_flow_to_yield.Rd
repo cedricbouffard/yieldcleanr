@@ -8,7 +8,8 @@ convert_flow_to_yield(
   data,
   lbs_per_bushel = NULL,
   sqft_per_acre = 43560,
-  inches_per_foot = 12
+  inches_per_foot = 12,
+  force_recalculate = FALSE
 )
 }
 \arguments{
@@ -22,7 +23,7 @@ Defaut 56 pour le mais. Utiliser 60 pour soja et cereales.}
 \item{inches_per_foot}{Pouces par pied (defaut 12)}
 }
 \value{
-Donnees avec colonne Yield_buacre
+Donnees avec colonne Yield_kg_ha
 }
 \description{
 Convertit le flux brut (LBS/SEC) en rendement (boisseaux/acre)

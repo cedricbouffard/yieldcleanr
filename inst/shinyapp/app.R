@@ -173,32 +173,62 @@ ui <- fluidPage(
         color: var(--ink);
       }
       
-      .progress-modal .modal-content {
-        background: var(--panel);
-        border-radius: 16px;
-        border: 1px solid var(--line);
-        box-shadow: var(--shadow);
-      }
+       .progress-modal .modal-content {
+         background: var(--panel);
+         border-radius: 16px;
+         border: 1px solid var(--line);
+         box-shadow: var(--shadow);
+         min-width: 500px;
+       }
+       
+       .progress-modal .modal-header {
+         border-bottom: 1px solid var(--line);
+         background: linear-gradient(135deg, rgba(47, 111, 109, 0.08), rgba(183, 131, 47, 0.08));
+         padding: 20px;
+       }
+       
+       .progress-modal .modal-title {
+         font-size: 20px !important;
+         font-weight: bold;
+       }
+       
+       .progress-modal .modal-body {
+         padding: 30px;
+         font-size: 16px;
+       }
       
-      .progress-modal .modal-header {
-        border-bottom: 1px solid var(--line);
-        background: linear-gradient(135deg, rgba(47, 111, 109, 0.08), rgba(183, 131, 47, 0.08));
-      }
-      
-      .progress-bar {
-        background-color: var(--accent);
-        border-radius: 4px;
-      }
-      
-      .field-selector {
-        background: var(--soft);
-        padding: 12px;
-        border-radius: 10px;
-        margin-bottom: 12px;
-        border: 1px solid var(--line);
-        max-height: 250px;
-        overflow-y: auto;
-      }
+       .progress-bar {
+         background-color: var(--accent);
+         border-radius: 6px;
+         height: 30px !important;
+         font-size: 16px !important;
+         font-weight: bold;
+         line-height: 30px;
+       }
+       
+       .progress {
+         height: 30px !important;
+         margin-bottom: 15px;
+       }
+        
+        .field-selector {
+          background: var(--soft);
+          padding: 12px;
+          border-radius: 10px;
+          margin-bottom: 12px;
+          border: 1px solid var(--line);
+          max-height: 250px;
+          overflow-y: auto;
+        }
+ 
+        .progress-text {
+          color: var(--accent);
+          font-size: 18px !important;
+          margin-top: 8px;
+          font-style: italic;
+          min-height: 24px;
+          font-weight: 600;
+        }
       
       .field-selector label {
         font-weight: 600;
@@ -301,14 +331,16 @@ ui <- fluidPage(
     )
   ),
   
-  fluidRow(
-    column(3,
-      div(class = "sidebar-panel",
-        div(class = "status-bar",
-          textOutput("status")
-        ),
-        
-        div(class = "section-title", "1. Importation"),
+   fluidRow(
+     column(3,
+       div(class = "sidebar-panel",
+         div(class = "status-bar",
+           textOutput("status")
+         ),
+         div(class = "progress-text",
+           textOutput("progress_step")
+         ),
+         div(class = "section-title", "1. Importation"),
         
         # Import fichier unique (détection automatique du type)
         fileInput("file_input", "Choisir un fichier",
@@ -337,29 +369,41 @@ ui <- fluidPage(
 
         # Section Filtres avec checkboxes statiques
         div(class = "section-title", "3. Filtres a appliquer"),
-        checkboxInput("apply_pcdi_flow", "PCDI flux", value = TRUE),
-        checkboxInput("apply_pcdi_moisture", "PCDI humidite", value = TRUE),
-        checkboxInput("apply_header", "Filtre header", value = TRUE),
-        checkboxInput("apply_gps", "Filtre GPS", value = TRUE),
-        checkboxInput("apply_velocity", "Filtre vitesse", value = TRUE),
-        checkboxInput("apply_velocity_jump", "Filtre changement de vitesse", value = TRUE),
-        checkboxInput("apply_heading_anomaly", "Filtre anomalies de direction", value = TRUE),
-        checkboxInput("apply_null_yield", "Retirer rendements nuls", value = TRUE),
-        checkboxInput("apply_yield_range", "Filtre plage de rendement", value = TRUE),
-        checkboxInput("apply_moisture", "Filtre humidite", value = TRUE),
-        checkboxInput("apply_overlap", "Filtre chevauchement", value = TRUE),
-        checkboxInput("apply_local_sd", "Filtre ecart-type local", value = TRUE),
+         checkboxInput("apply_pcdi_flow", "PCDI flux", value = TRUE),
+         checkboxInput("apply_pcdi_moisture", "PCDI humidite", value = TRUE),
+         checkboxInput("apply_position", "Filtre position (hors champ)", value = TRUE),
+         checkboxInput("apply_header", "Filtre header", value = TRUE),
+         checkboxInput("apply_gps", "Filtre GPS", value = TRUE),
+         checkboxInput("apply_velocity", "Filtre vitesse", value = TRUE),
+         checkboxInput("apply_velocity_jump", "Filtre changement de vitesse", value = TRUE),
+         checkboxInput("apply_heading_anomaly", "Filtre anomalies de direction", value = TRUE),
+         checkboxInput("apply_null_yield", "Retirer rendements nuls", value = TRUE),
+         checkboxInput("apply_yield_range", "Filtre plage de rendement", value = TRUE),
+         checkboxInput("apply_moisture", "Filtre humidite", value = TRUE),
+         checkboxInput("apply_overlap", "Filtre chevauchement", value = TRUE),
+         checkboxInput("apply_local_sd", "Filtre ecart-type local", value = TRUE),
 
-        # Vue carte brute/nettoyee
-        div(class = "section-title", "4. Visualisation"),
-        div(class = "view-toggle",
-            actionButton("view_raw", "Carte brute", 
-                        class = ifelse(FALSE, "btn", "btn active")),
-            actionButton("view_clean", "Carte nettoyee",
-                        class = ifelse(TRUE, "btn active", "btn"))
-        ),
-        
-        # Bouton pour ouvrir les parametres avances
+         # Vue carte brute/nettoyee
+          div(class = "section-title", "4. Visualisation"),
+          shinyWidgets::switchInput(
+            inputId = "view_mode_switch",
+            label = "Carte",
+            value = TRUE,
+            onLabel = "Nettoyee",
+            offLabel = "Brute",
+            onStatus = "success",
+            offStatus = "primary",
+            size = "large",
+            width = "100%"
+          ),
+         
+         # Mode d'affichage : points ou rectangles
+         radioButtons("display_mode", "Mode d'affichage :",
+                     c("Points" = "points",
+                       "Rectangles" = "rectangles"),
+                     selected = "points"),
+         
+         # Bouton pour ouvrir les parametres avances
         div(class = "section-title", "5. Parametres avances"),
         actionButton("show_params", "Ouvrir les parametres",
                     class = "btn btn-primary btn-block",
@@ -449,17 +493,25 @@ server <- function(input, output, session) {
   # Operateur pour valeurs par defaut si NULL
   `%||%` <- function(x, y) if (is.null(x)) y else x
   
-  rv <- reactiveValues(
-    result = NULL,
-    processed = FALSE,
-    zip_data = NULL,
-    zip_fields = NULL,
-    selected_fields = NULL,
-    view_mode = "clean",  # "raw" ou "clean" - par defaut: carte nettoyee
-    import_progress = list(total = 0, current = 0, field_name = ""),
-    raster_data = NULL,  # Pour stocker le raster genere
-    deletions_sf = NULL  # Pour stocker les points supprimes avec raisons
-  )
+   rv <- reactiveValues(
+     result = NULL,
+     processed = FALSE,
+     zip_data = NULL,
+     zip_fields = NULL,
+     selected_fields = NULL,
+     view_mode = "clean",  # "raw" ou "clean" - par defaut: carte nettoyee
+     import_progress = list(total = 0, current = 0, field_name = ""),
+     raster_data = NULL,  # Pour stocker le raster genere
+     deletions_sf = NULL,  # Pour stocker les points supprimes avec raisons
+     progress_step = "",  # Pour afficher l'etape actuelle
+     progress_detail = "",  # Pour afficher le detail de l'etape
+     # Stockage des resultats intermediaires pour eviter de recalculer
+     pcdi_result = NULL,  # Resultat du PCDI (delai optimal)
+     pcdi_params = NULL,  # Parametres utilises pour le PCDI
+     overlap_result = NULL,  # Resultat de l'analyse d'overlap
+     overlap_params = NULL,  # Parametres utilises pour l'overlap
+     preprocessed_data = NULL  # Donnees pretraitees (apres UTM, position, PCDI)
+   )
   
   output$map <- renderLeaflet({
     leaflet() %>%
@@ -505,12 +557,14 @@ server <- function(input, output, session) {
           div(class = "param-label", "Plage de delai (secondes)"),
           fluidRow(
             column(6, sliderInput("delay_min", "Min :", -50, 0, -25, 1)),
-            column(6, sliderInput("delay_max", "Max :", 0, 50, 10, 1))
+            column(6, sliderInput("delay_max", "Max :", 0, 50, 20, 1))
           ),
           div(class = "param-label", "Iterations"),
-          sliderInput("n_iterations", "Iterations PCDI :", 1, 20, 5, 1),
+          sliderInput("n_iterations", "Iterations PCDI :", 1, 20, 10, 1),
           div(class = "param-label", "Niveau de bruit"),
-          sliderInput("noise_level", "Bruit :", 0, 0.2, 0.05, 0.01)
+          sliderInput("noise_level", "Bruit :", 0, 0.2, 0.03, 0.01),
+          div(class = "param-label", "Echantillonnage (pour grandes donnees)"),
+          sliderInput("sample_fraction", "Fraction des points :", 0.05, 1, 1, 0.05)
         ),
         tabPanel("Seuils",
           div(class = "param-label", "Quantiles de rendement"),
@@ -534,7 +588,7 @@ server <- function(input, output, session) {
           div(class = "param-label", "Chevauchement"),
           fluidRow(
             column(6, sliderInput("cellsize_overlap", "Taille cellule (m) :", 0.1, 1.0, 0.3, 0.1)),
-            column(6, sliderInput("overlap_threshold", "Seuil :", 0.1, 1.0, 0.5, 0.1))
+            column(6, sliderInput("overlap_threshold", "Seuil :", 0.1, 1.0, 0.4, 0.1))
           ),
           div(class = "param-label", "Ecart-type local"),
           fluidRow(
@@ -553,7 +607,7 @@ server <- function(input, output, session) {
             column(6, sliderInput("max_deceleration", "Deceleration max (m/s) :", -20, -1, -5, 1))
           ),
           div(class = "param-label", "Anomalies de direction"),
-          sliderInput("max_heading_change", "Variation max direction (deg) :", 5, 60, 15, 5)
+          sliderInput("max_heading_change", "Variation max direction (deg) :", 5, 90, 60, 5)
         )
       ),
       
@@ -599,14 +653,26 @@ server <- function(input, output, session) {
         
         # Importer le fichier texte
         data <- yieldcleanr::read_yield_data(file_path)
-        rv$raw_data <- data
         
-        # Garder la vue nettoyee si les donnees nettoyees existent deja
-        if (is.null(rv$result) || is.null(rv$result$data_clean)) {
-          rv$view_mode <- "raw"
+        # Calculer le rendement en kg/ha pour l'affichage des donnees brutes
+        # Les donnees brutes ont Flow en lbs/sec, il faut convertir en kg/ha
+        if (all(c("Flow", "Interval", "Swath", "Distance") %in% names(data))) {
+          message("Conversion du flux en rendement (kg/ha) pour l'affichage...")
+          data <- yieldcleanr::convert_flow_to_yield(data)
+          message(paste("Rendement calcule:", round(mean(data$Yield_kg_ha, na.rm = TRUE), 1), "kg/ha"))
         }
         
-        # Afficher sur la carte
+        rv$raw_data <- data
+         
+         # Garder la vue nettoyee si les donnees nettoyees existent deja
+         if (is.null(rv$result) || is.null(rv$result$data_clean)) {
+           rv$view_mode <- "raw"
+         }
+         
+         # Reinitialiser les etiquettes des checkboxes
+         resetCheckboxLabels()
+         
+         # Afficher sur la carte
         if (nrow(data) > 0) {
           raw_sf <- data %>%
             dplyr::select(Longitude, Latitude) %>%
@@ -796,52 +862,76 @@ server <- function(input, output, session) {
         rv$view_mode <- "raw"
       }
       
+      # Reinitialiser les etiquettes des checkboxes
+      resetCheckboxLabels()
+      
       # Afficher sur la carte
       if (!is.null(data) && nrow(data) > 0) {
-        center <- sf::st_coordinates(sf::st_centroid(sf::st_union(data)))
-        
-        # Determiner la colonne de rendement
-        yield_col <- NULL
-        if ("Flow" %in% names(data) && !all(is.na(data$Flow))) {
-          yield_col <- "Flow"
-        } else if ("Yield_kg_ha" %in% names(data) && !all(is.na(data$Yield_kg_ha))) {
-          yield_col <- "Yield_kg_ha"
+        # Calculer le centre sans sf (donnees brutes = data frame)
+        if ("Longitude" %in% names(data) && "Latitude" %in% names(data)) {
+          center <- c(
+            mean(data$Longitude, na.rm = TRUE),
+            mean(data$Latitude, na.rm = TRUE)
+          )
+        } else if ("X" %in% names(data) && "Y" %in% names(data)) {
+          center <- c(
+            mean(data$X, na.rm = TRUE),
+            mean(data$Y, na.rm = TRUE)
+          )
         } else {
-          # Chercher une colonne avec des valeurs numeriques
-          for (col in names(data)) {
-            if (is.numeric(data[[col]]) && !all(is.na(data[[col]]))) {
-              yield_col <- col
-              break
-            }
-          }
+          center <- c(0, 0)
         }
+        
+         # Determiner la colonne de rendement
+         # Prioriser Yield_kg_ha (rendement calcule) sur Flow (flux brut)
+         yield_col <- NULL
+         if ("Yield_kg_ha" %in% names(data) && !all(is.na(data$Yield_kg_ha))) {
+           yield_col <- "Yield_kg_ha"
+         } else if ("Flow" %in% names(data) && !all(is.na(data$Flow))) {
+           yield_col <- "Flow"
+         } else {
+           # Chercher une colonne avec des valeurs numeriques
+           for (col in names(data)) {
+             if (is.numeric(data[[col]]) && !all(is.na(data[[col]]))) {
+               yield_col <- col
+               break
+             }
+           }
+         }
         
         message(paste("Colonne de rendement:", yield_col))
         
-        # Verifier que la colonne existe et contient des valeurs valides
-        if (!is.null(yield_col) && yield_col %in% names(data) && !all(is.na(data[[yield_col]]))) {
-          valid_values <- data[[yield_col]][!is.na(data[[yield_col]])]
-          
-          if (length(valid_values) > 0) {
-            message(paste("Valeurs valides:", length(valid_values)))
+         # Verifier que la colonne existe et contient des valeurs valides
+         if (!is.null(yield_col) && yield_col %in% names(data) && !all(is.na(data[[yield_col]]))) {
+           valid_values <- data[[yield_col]][!is.na(data[[yield_col]])]
+           
+           if (length(valid_values) > 0) {
+             message(paste("Valeurs valides:", length(valid_values)))
+             
+             # Utiliser les quantiles 2% et 98% pour l'echelle
+             q02 <- quantile(valid_values, 0.02, na.rm = TRUE)
+             q98 <- quantile(valid_values, 0.98, na.rm = TRUE)
+             
+             # Clamper les valeurs pour la visualisation (2% -> 98%)
+             data[[paste0(yield_col, "_clamped")]] <- pmin(pmax(data[[yield_col]], q02), q98)
+             
+             pal <- colorNumeric(c("#b04a3b", "#e9b44c", "#3d8a6b"), c(q02, q98))
             
-            pal <- colorNumeric(c("#b04a3b", "#e9b44c", "#3d8a6b"), valid_values)
-            
-            leafletProxy("map") %>%
-              clearMarkers() %>%
-              clearShapes() %>%
-              clearControls() %>%
-              addCircleMarkers(data = data,
-                              radius = 3,
-                              fillColor = ~pal(get(yield_col)),
-                              fillOpacity = 0.7,
-                              weight = 0.5,
-                              color = "black") %>%
-              addLegend(position = "bottomright",
-                       pal = pal,
-                       values = valid_values,
-                       title = "Rendement") %>%
-              setView(lng = center[1], lat = center[2], zoom = 15)
+             leafletProxy("map") %>%
+               clearMarkers() %>%
+               clearShapes() %>%
+               clearControls() %>%
+               addCircleMarkers(data = data,
+                               radius = 3,
+                               fillColor = ~pal(get(paste0(yield_col, "_clamped"))),
+                               fillOpacity = 0.7,
+                               weight = 0.5,
+                               color = "black") %>%
+               addLegend(position = "bottomright",
+                        pal = pal,
+                         values = c(q02, q98),
+                         title = paste0("Rendement (", round(q02, 1), "-", round(q98, 1), " kg/ha)")) %>%
+                setView(lng = center[1], lat = center[2], zoom = 15)
           } else {
             # Afficher sans palette de couleurs si pas de valeurs valides
             leafletProxy("map") %>%
@@ -887,18 +977,24 @@ server <- function(input, output, session) {
     })
   }
   
-  # Gestion des boutons de vue
-  observeEvent(input$view_raw, {
-    rv$view_mode <- "raw"
-    update_map()
-  })
-  
-  observeEvent(input$view_clean, {
-    rv$view_mode <- "clean"
-    update_map()
-  })
-  
-  # Mise a jour de la carte selon le mode de vue
+   # Gestion du switch de vue
+   observeEvent(input$view_mode_switch, {
+     if (isTRUE(input$view_mode_switch)) {
+       rv$view_mode <- "clean"
+     } else {
+       rv$view_mode <- "raw"
+     }
+     update_map()
+   }, ignoreInit = FALSE)
+   
+   # Mise a jour de la carte quand le mode d'affichage change
+   observeEvent(input$display_mode, {
+     if (!is.null(rv$result) && rv$view_mode == "clean") {
+       display_clean_map()
+     }
+   })
+   
+   # Mise a jour de la carte selon le mode de vue
   update_map <- function() {
     req(rv$result)
     
@@ -906,23 +1002,44 @@ server <- function(input, output, session) {
       # Afficher les donnees brutes
       data <- rv$raw_data
       
-      # Determiner la colonne de rendement
-      yield_col <- NULL
-      if ("Flow" %in% names(data) && !all(is.na(data$Flow))) {
-        yield_col <- "Flow"
-      } else if ("Yield_kg_ha" %in% names(data) && !all(is.na(data$Yield_kg_ha))) {
-        yield_col <- "Yield_kg_ha"
-      }
+       # Determiner la colonne de rendement
+       # Prioriser Yield_kg_ha (rendement calcule) sur Flow (flux brut)
+       yield_col <- NULL
+       if ("Yield_kg_ha" %in% names(data) && !all(is.na(data$Yield_kg_ha))) {
+         yield_col <- "Yield_kg_ha"
+       } else if ("Flow" %in% names(data) && !all(is.na(data$Flow))) {
+         yield_col <- "Flow"
+       }
       
       if (nrow(data) > 0 && !is.null(yield_col)) {
-        center <- sf::st_coordinates(sf::st_centroid(sf::st_union(data)))
+        # Calculer le centre sans sf (donnees brutes = data frame)
+        if ("Longitude" %in% names(data) && "Latitude" %in% names(data)) {
+          center <- c(
+            mean(data$Longitude, na.rm = TRUE),
+            mean(data$Latitude, na.rm = TRUE)
+          )
+        } else if ("X" %in% names(data) && "Y" %in% names(data)) {
+          center <- c(
+            mean(data$X, na.rm = TRUE),
+            mean(data$Y, na.rm = TRUE)
+          )
+        } else {
+          center <- c(0, 0)
+        }
         
         # Verifier que la colonne existe et contient des valeurs valides
         if (yield_col %in% names(data) && !all(is.na(data[[yield_col]]))) {
           valid_values <- data[[yield_col]][!is.na(data[[yield_col]])]
           
           if (length(valid_values) > 0) {
-            pal <- colorNumeric(c("#b04a3b", "#e9b44c", "#3d8a6b"), valid_values)
+            # Utiliser les quantiles 2% et 98% pour l'echelle
+            q02 <- quantile(valid_values, 0.02, na.rm = TRUE)
+            q98 <- quantile(valid_values, 0.98, na.rm = TRUE)
+            
+            # Clamping des valeurs pour la visualisation
+            data[[paste0(yield_col, "_clamped")]] <- pmin(pmax(data[[yield_col]], q02), q98)
+            
+            pal <- colorNumeric(c("#b04a3b", "#e9b44c", "#3d8a6b"), c(q02, q98))
             
             leafletProxy("map") %>%
               clearMarkers() %>%
@@ -930,14 +1047,14 @@ server <- function(input, output, session) {
               clearControls() %>%
               addCircleMarkers(data = data,
                               radius = 3,
-                              fillColor = ~pal(get(yield_col)),
+                              fillColor = ~pal(get(paste0(yield_col, "_clamped"))),
                               fillOpacity = 0.7,
                               weight = 0.5,
                               color = "black") %>%
               addLegend(position = "bottomright",
                        pal = pal,
-                       values = valid_values,
-                       title = "Rendement brut") %>%
+                       values = c(q02, q98),
+                        title = "Rendement brut (kg/ha)") %>%
               setView(lng = center[1], lat = center[2], zoom = 15)
           } else {
             leafletProxy("map") %>%
@@ -1000,9 +1117,21 @@ server <- function(input, output, session) {
       unit_label <- "%"
     }
     
-    map_data <- rv$result$data_clean
+     map_data <- rv$result$data_clean
     
     if (nrow(map_data) == 0) return()
+    
+    # Mode d'affichage : points ou rectangles
+    display_mode <- input$display_mode %||% "points"
+    
+    # Si on demande points mais les donnees sont des polygones, convertir en centroides
+    if (display_mode == "points" && inherits(map_data, "sf")) {
+      geom_type <- sf::st_geometry_type(map_data)[1]
+      if (grepl("POLYGON", geom_type)) {
+        # Convertir polygones en points (centroides)
+        map_data <- sf::st_centroid(map_data)
+      }
+    }
     
     # Determiner la colonne d'humidite apres avoir map_data
     if (display_var == "moisture") {
@@ -1015,7 +1144,25 @@ server <- function(input, output, session) {
       }
     }
     
-    center <- sf::st_coordinates(sf::st_centroid(sf::st_union(map_data)))
+    # Calculer le centre avec gestion des erreurs de geometrie
+    tryCatch({
+      # Verifier et reparer les geometries si necessaire
+      if (any(!sf::st_is_valid(map_data))) {
+        map_data <- sf::st_make_valid(map_data)
+      }
+      center <- sf::st_coordinates(sf::st_centroid(sf::st_union(map_data)))
+    }, error = function(e) {
+      # Fallback: utiliser la moyenne des coordonnees
+      if ("Longitude" %in% names(map_data)) {
+        center <<- c(mean(map_data$Longitude, na.rm = TRUE), 
+                     mean(map_data$Latitude, na.rm = TRUE))
+      } else {
+        # Extraire les coordonnees de la geometrie
+        coords <- sf::st_coordinates(map_data)
+        center <<- c(mean(coords[, 1], na.rm = TRUE), 
+                     mean(coords[, 2], na.rm = TRUE))
+      }
+    })
     
     # Debug: afficher les colonnes disponibles
     message(paste("Colonnes disponibles:", paste(names(map_data), collapse = ", ")))
@@ -1047,50 +1194,107 @@ server <- function(input, output, session) {
       }
     }
     
-    # Verifier que la colonne contient des valeurs valides
+     # Verifier que la colonne contient des valeurs valides
     if (!all(is.na(map_data[[value_col]]))) {
       valid_values <- map_data[[value_col]][!is.na(map_data[[value_col]])]
       message(paste("Valeurs valides:", length(valid_values), "/", nrow(map_data)))
       
       if (length(valid_values) > 0) {
-        pal <- colorNumeric(c("#b04a3b", "#e9b44c", "#3d8a6b"), valid_values)
+        # Utiliser les quantiles 2% et 98% pour l'echelle
+        q02 <- quantile(valid_values, 0.02, na.rm = TRUE)
+        q98 <- quantile(valid_values, 0.98, na.rm = TRUE)
+        
+        # Clamping des valeurs pour la visualisation
+        map_data[[paste0(value_col, "_clamped")]] <- pmin(pmax(map_data[[value_col]], q02), q98)
+        
+        pal <- colorNumeric(c("#b04a3b", "#e9b44c", "#3d8a6b"), c(q02, q98))
+        
+        # Mode d'affichage : points ou rectangles
+        display_mode <- input$display_mode %||% "points"
         
         leafletProxy("map") %>%
           clearMarkers() %>%
           clearShapes() %>%
-          clearControls() %>%
-          addPolygons(data = map_data,
-                      fillColor = ~pal(get(value_col)),
-                      fillOpacity = 0.7,
-                      weight = 0,
-                      popup = ~paste0(popup_label, " : ", round(get(value_col), 1), " ", unit_label)) %>%
+          clearControls()
+        
+        if (display_mode == "points") {
+          # Afficher en tant que points (cercles)
+          leafletProxy("map") %>%
+            addCircleMarkers(data = map_data,
+                            radius = 3,
+                            fillColor = ~pal(get(paste0(value_col, "_clamped"))),
+                            fillOpacity = 0.7,
+                            weight = 0.5,
+                            color = "black",
+                            popup = ~paste0(popup_label, " : ", round(get(value_col), 1), " ", unit_label))
+        } else {
+          # Afficher en tant que rectangles (polygones)
+          leafletProxy("map") %>%
+            addPolygons(data = map_data,
+                        fillColor = ~pal(get(paste0(value_col, "_clamped"))),
+                        fillOpacity = 0.7,
+                        weight = 0,
+                        popup = ~paste0(popup_label, " : ", round(get(value_col), 1), " ", unit_label))
+        }
+        
+        leafletProxy("map") %>%
           addLegend(position = "bottomright",
                    pal = pal,
-                   values = valid_values,
+                   values = c(q02, q98),
                    title = legend_title) %>%
           setView(lng = center[1], lat = center[2], zoom = 15)
       } else {
         message("Aucune valeur valide pour la palette de couleurs")
+        display_mode <- input$display_mode %||% "points"
+        
         leafletProxy("map") %>%
           clearMarkers() %>%
           clearShapes() %>%
-          clearControls() %>%
-          addPolygons(data = map_data,
-                      fillColor = "gray",
-                      fillOpacity = 0.7,
-                      weight = 0) %>%
+          clearControls()
+        
+        if (display_mode == "points") {
+          leafletProxy("map") %>%
+            addCircleMarkers(data = map_data,
+                            radius = 3,
+                            fillColor = "gray",
+                            fillOpacity = 0.7,
+                            weight = 0.5,
+                            color = "black")
+        } else {
+          leafletProxy("map") %>%
+            addPolygons(data = map_data,
+                        fillColor = "gray",
+                        fillOpacity = 0.7,
+                        weight = 0)
+        }
+        leafletProxy("map") %>%
           setView(lng = center[1], lat = center[2], zoom = 15)
       }
     } else {
       message(paste("Toutes les valeurs de", value_col, "sont NA"))
+      display_mode <- input$display_mode %||% "points"
+      
       leafletProxy("map") %>%
         clearMarkers() %>%
         clearShapes() %>%
-        clearControls() %>%
-        addPolygons(data = map_data,
-                    fillColor = "gray",
-                    fillOpacity = 0.7,
-                    weight = 0) %>%
+        clearControls()
+      
+      if (display_mode == "points") {
+        leafletProxy("map") %>%
+          addCircleMarkers(data = map_data,
+                          radius = 3,
+                          fillColor = "gray",
+                          fillOpacity = 0.7,
+                          weight = 0.5,
+                          color = "black")
+      } else {
+        leafletProxy("map") %>%
+          addPolygons(data = map_data,
+                      fillColor = "gray",
+                      fillOpacity = 0.7,
+                      weight = 0)
+      }
+      leafletProxy("map") %>%
         setView(lng = center[1], lat = center[2], zoom = 15)
     }
   }
@@ -1098,7 +1302,7 @@ server <- function(input, output, session) {
   get_params <- reactive({
     # Valeurs par defaut si les inputs n'existent pas encore (modal ferme)
     delay_min_val <- if (!is.null(input$delay_min)) input$delay_min else -25
-    delay_max_val <- if (!is.null(input$delay_max)) input$delay_max else 10
+    delay_max_val <- if (!is.null(input$delay_max)) input$delay_max else 20
     delay_min <- min(delay_min_val, delay_max_val)
     delay_max <- max(delay_min_val, delay_max_val)
 
@@ -1106,6 +1310,7 @@ server <- function(input, output, session) {
       delay_range = seq(delay_min, delay_max, by = 1),
       n_iterations = if (!is.null(input$n_iterations)) input$n_iterations else 5,
       noise_level = if (!is.null(input$noise_level)) input$noise_level else 0.05,
+      sample_fraction = if (!is.null(input$sample_fraction)) input$sample_fraction else 1,
       yllim = if (!is.null(input$yllim)) input$yllim else 0.10,
       yulim = if (!is.null(input$yulim)) input$yulim else 0.90,
       yscale = if (!is.null(input$yscale)) input$yscale else 1.1,
@@ -1115,16 +1320,17 @@ server <- function(input, output, session) {
       minv_abs = if (!is.null(input$minv)) input$minv else 0.5,
       gbuffer = 100,  # Valeur par defaut
       cellsize_overlap = if (!is.null(input$cellsize_overlap)) input$cellsize_overlap else 0.3,
-      overlap_threshold = if (!is.null(input$overlap_threshold)) input$overlap_threshold else 0.5,
+      overlap_threshold = if (!is.null(input$overlap_threshold)) input$overlap_threshold else 0.4,
       n_swaths = if (!is.null(input$nswaths)) input$nswaths else 5,
       lsd_limit = if (!is.null(input$lsd_limit)) input$lsd_limit else 2.4,
       min_cells = if (!is.null(input$min_cells)) input$min_cells else 3,
       n_std = if (!is.null(input$nstd)) input$nstd else 3,
-      # PCDI
-      apply_pcdi_flow = if (!is.null(input$apply_pcdi_flow)) input$apply_pcdi_flow else TRUE,
-      apply_pcdi_moisture = if (!is.null(input$apply_pcdi_moisture)) input$apply_pcdi_moisture else TRUE,
-      # Filtres optionnels - utiliser TRUE/FALSE explicites
-      apply_header = if (!is.null(input$apply_header)) input$apply_header else TRUE,
+       # PCDI
+       apply_pcdi_flow = if (!is.null(input$apply_pcdi_flow)) input$apply_pcdi_flow else TRUE,
+       apply_pcdi_moisture = if (!is.null(input$apply_pcdi_moisture)) input$apply_pcdi_moisture else TRUE,
+       # Filtres optionnels - utiliser TRUE/FALSE explicites
+       apply_position = if (!is.null(input$apply_position)) input$apply_position else TRUE,
+       apply_header = if (!is.null(input$apply_header)) input$apply_header else TRUE,
       apply_gps = if (!is.null(input$apply_gps)) input$apply_gps else TRUE,
       apply_velocity = if (!is.null(input$apply_velocity)) input$apply_velocity else TRUE,
       apply_velocity_jump = if (!is.null(input$apply_velocity_jump)) input$apply_velocity_jump else TRUE,
@@ -1137,22 +1343,49 @@ server <- function(input, output, session) {
       # Parametres des filtres - plus stricts par defaut
       max_acceleration = if (!is.null(input$max_acceleration)) input$max_acceleration else 3,
       max_deceleration = if (!is.null(input$max_deceleration)) input$max_deceleration else -5,
-      max_heading_change = if (!is.null(input$max_heading_change)) input$max_heading_change else 15
+      max_heading_change = if (!is.null(input$max_heading_change)) input$max_heading_change else 60
     )
   })
 
+  # Fonction pour reinitialiser les labels des checkboxes aux valeurs par defaut
+  resetCheckboxLabels <- function() {
+    # Labels par defaut
+    default_labels <- list(
+      "apply_pcdi_flow" = "PCDI flux",
+      "apply_pcdi_moisture" = "PCDI humidite",
+      "apply_position" = "Filtre position (hors champ)",
+      "apply_header" = "Filtre header",
+      "apply_gps" = "Filtre GPS",
+      "apply_velocity" = "Filtre vitesse",
+      "apply_velocity_jump" = "Filtre changement de vitesse",
+      "apply_heading_anomaly" = "Filtre anomalies de direction",
+      "apply_null_yield" = "Retirer rendements nuls",
+      "apply_yield_range" = "Filtre plage de rendement",
+      "apply_moisture" = "Filtre humidite",
+      "apply_overlap" = "Filtre chevauchement",
+      "apply_local_sd" = "Filtre ecart-type local"
+    )
+    
+    # Reinitialiser chaque checkbox
+    for (input_id in names(default_labels)) {
+      updateCheckboxInput(session, input_id, label = default_labels[[input_id]])
+    }
+  }
+  
   # Fonction pour mettre a jour les labels des checkboxes avec le nombre de points retires
   updateCheckboxLabels <- function(result) {
     if (is.null(result) || is.null(result$stats) || is.null(result$stats$deletions_by_step)) {
       return()
     }
     
+    # Recuperer les suppressions par etape
     deletions <- result$stats$deletions_by_step
     
-    # Mapping des noms de filtres
+    # Mapping des noms de filtres avec leurs labels par defaut
     filter_mapping <- list(
       "PCDI flux" = "apply_pcdi_flow",
       "PCDI humidite" = "apply_pcdi_moisture",
+      "Filtre position" = "apply_position",
       "Filtre header" = "apply_header",
       "Filtre GPS" = "apply_gps",
       "Filtre vitesse" = "apply_velocity",
@@ -1165,13 +1398,49 @@ server <- function(input, output, session) {
       "Filtre ET local" = "apply_local_sd"
     )
     
-    # Mettre a jour chaque checkbox avec le nombre de points retires
+    # Labels par defaut
+    default_labels <- list(
+      "PCDI flux" = "PCDI flux",
+      "PCDI humidite" = "PCDI humidite",
+      "Filtre position" = "Filtre position (hors champ)",
+      "Filtre header" = "Filtre header",
+      "Filtre GPS" = "Filtre GPS",
+      "Filtre vitesse" = "Filtre vitesse",
+      "Filtre changement vitesse" = "Filtre changement de vitesse",
+      "Filtre direction" = "Filtre anomalies de direction",
+      "Rendement nul" = "Retirer rendements nuls",
+      "Filtre plage rendement" = "Filtre plage de rendement",
+      "Filtre humidite" = "Filtre humidite",
+      "Filtre chevauchement" = "Filtre chevauchement",
+      "Filtre ET local" = "Filtre ecart-type local"
+    )
+    
+    # Mettre a jour chaque checkbox avec le nombre de points retires pour CE filtre
     for (step_name in names(filter_mapping)) {
       input_id <- filter_mapping[[step_name]]
-      n_points <- deletions$n[deletions$step == step_name]
-      if (length(n_points) > 0 && n_points > 0) {
-        new_label <- paste0(step_name, " (", n_points, " points)")
+      default_label <- default_labels[[step_name]]
+      
+      # Verifier si le filtre est active (coché)
+      is_active <- tryCatch({
+        input[[input_id]]
+      }, error = function(e) FALSE)
+      
+      # Chercher le nombre de suppressions pour cette etape specifique
+      n_for_step <- 0
+      if (nrow(deletions) > 0) {
+        step_deletions <- deletions$n[deletions$step == step_name]
+        if (length(step_deletions) > 0) {
+          n_for_step <- step_deletions[1]
+        }
+      }
+      
+      # Si le filtre est actif et qu'il y a des suppressions pour cette etape, afficher le nombre
+      if (isTRUE(is_active) && n_for_step > 0) {
+        new_label <- paste0(default_label, " (-", n_for_step, " pts)")
         updateCheckboxInput(session, input_id, label = new_label)
+      } else {
+        # Sinon, remettre le label par defaut
+        updateCheckboxInput(session, input_id, label = default_label)
       }
     }
   }
@@ -1246,9 +1515,16 @@ server <- function(input, output, session) {
       }
       
       # Palette de couleurs avec NA transparent
+      # Utiliser les quantiles 2% et 98% pour l'echelle
+      q02 <- quantile(raster_df$value, 0.02, na.rm = TRUE)
+      q98 <- quantile(raster_df$value, 0.98, na.rm = TRUE)
+      
+      # Clamping des valeurs pour la visualisation
+      raster_df$value_clamped <- pmin(pmax(raster_df$value, q02), q98)
+      
       pal <- colorNumeric(
         palette = c("#b04a3b", "#e9b44c", "#3d8a6b"),
-        domain = raster_df$value,
+        domain = c(q02, q98),
         na.color = "transparent"
       )
       
@@ -1269,7 +1545,7 @@ server <- function(input, output, session) {
         addLegend(
           position = "bottomright",
           pal = pal,
-          values = raster_df$value,
+          values = c(q02, q98),
           title = "Rendement (kg/ha)",
           na.label = "NA"
         ) %>%
@@ -1326,6 +1602,24 @@ server <- function(input, output, session) {
       setView(lng = center[1], lat = center[2], zoom = 15)
   }
 
+  # Fonction pour verifier si les parametres de pre-traitement ont change
+  has_preprocess_params_changed <- function(current_params) {
+    if (is.null(rv$preprocessed_data)) return(TRUE)
+    if (is.null(rv$preprocess_params)) return(TRUE)
+    
+    # Parametres qui affectent le pre-traitement
+    preprocess_keys <- c("apply_position", "apply_pcdi_flow", "apply_pcdi_moisture",
+                         "delay_range", "n_iterations", "noise_level", "sample_fraction")
+    
+    for (key in preprocess_keys) {
+      if (!identical(current_params[[key]], rv$preprocess_params[[key]])) {
+        message(paste("Parametre de pre-traitement change:", key))
+        return(TRUE)
+      }
+    }
+    return(FALSE)
+  }
+  
   process_data <- function() {
     req(rv$raw_data)
     
@@ -1334,11 +1628,10 @@ server <- function(input, output, session) {
       
       output$status <- renderText("Traitement en cours...")
       
-      withProgress(message = "Nettoyage des donnees...", value = 0, {
-        # Etape 1: Preparation des donnees
-        incProgress(0.05, detail = "Preparation des donnees...")
+       withProgress(message = "Nettoyage des donnees...", value = 0, {
+         # Convertir les donnees sf en format compatible
+         incProgress(0.05, detail = "Preparation des donnees...")
         
-        # Convertir les donnees sf en format compatible
         data_df <- as.data.frame(rv$raw_data)
         if ("geometry" %in% names(data_df)) {
           coords <- sf::st_coordinates(rv$raw_data)
@@ -1355,7 +1648,6 @@ server <- function(input, output, session) {
             paste("Colonnes manquantes:", paste(missing_cols, collapse = ", ")),
             type = "warning"
           )
-          # Ajouter les colonnes manquantes avec NA
           for (col in missing_cols) {
             data_df[[col]] <- NA_real_
           }
@@ -1363,72 +1655,117 @@ server <- function(input, output, session) {
         
         # Log des donnees pour debug
         message(paste("Donnees brutes:", nrow(data_df), "lignes"))
-        message(paste("Colonnes:", paste(names(data_df), collapse = ", ")))
-        if ("Flow" %in% names(data_df)) {
-          valid_flow <- sum(!is.na(data_df$Flow))
-          message(paste("Valeurs Flow valides:", valid_flow))
-        }
-        if ("Yield_kg_ha" %in% names(data_df)) {
-          valid_yield <- sum(!is.na(data_df$Yield_kg_ha))
-          message(paste("Valeurs Yield_kg_ha valides:", valid_yield))
-        }
         
-        # Etape 2: Nettoyage avec suivi
-        incProgress(0.1, detail = "Application des filtres...")
-        
-        result <- yieldcleanr::clean_yield_with_tracking(
-          data = data_df,
-          metrique = TRUE,  # Toujours métrique
-          polygon = TRUE,
-          params = params
-        )
-        
-        # Etape 3: Mise a jour des resultats
-        incProgress(0.7, detail = "Mise a jour des resultats...")
-        
-        rv$result <- result
-        rv$processed <- TRUE
-        rv$view_mode <- "clean"  # Forcer l'affichage des donnees nettoyees
-        
-        # Log du resultat
-        message(paste("Resultat:", result$stats$n_clean, "points retenus sur", result$stats$n_raw))
-        
-        # Creer les donnees de suppression en format sf pour affichage
-        if (!is.null(result$deletions) && nrow(result$deletions) > 0) {
-          # Joindre avec les donnees brutes pour avoir les coordonnees
-          deletions_data <- result$data_raw %>%
-            dplyr::filter(orig_row_id %in% result$deletions$orig_row_id) %>%
-            dplyr::left_join(result$deletions, by = "orig_row_id")
+        # === PHASE 1: PRE-TRAITEMENT (si necessaire) ===
+        if (has_preprocess_params_changed(params)) {
+          incProgress(0.1, detail = "Phase 1: Pre-traitement (UTM, PCDI, position)...")
+          message("Parametres de pre-traitement changes - recalcul necessaire")
           
-          if (nrow(deletions_data) > 0) {
-            rv$deletions_sf <- sf::st_as_sf(deletions_data, 
-                                            coords = c("Longitude", "Latitude"), 
-                                            crs = 4326)
+          rv$preprocessed_data <- yieldcleanr::preprocess_yield_data(
+            data = data_df,
+            params = params,
+            metrique = TRUE
+          )
+          rv$preprocess_params <- params
+          
+          message("Pre-traitement termine")
+        } else {
+          incProgress(0.1, detail = "Phase 1: Pre-traitement (deja calcule)...")
+          message("Reutilisation des donnees pre-traitees en cache")
+        }
+        
+         # === PHASE 2: APPLICATION DES FILTRES ===
+         incProgress(0.3, detail = "Phase 2: Application des filtres...")
+         
+         filter_result <- yieldcleanr::apply_yield_filters(
+           preprocessed_data = rv$preprocessed_data,
+           params = params,
+           polygon = TRUE
+         )
+         
+          # Extraire les donnees et les suppressions
+          data_clean <- filter_result$data
+          deletions_by_step <- filter_result$deletions
+          deleted_points <- filter_result$deleted_points
+          
+          # Creer le resultat au format attendu
+          incProgress(0.7, detail = "Mise a jour des resultats...")
+          
+           # Calculer les suppressions totales
+           n_deleted <- nrow(data_df) - nrow(data_clean)
+           
+           result <- list(
+             data_clean = data_clean,
+             data_raw = data_df,
+             stats = list(
+               n_raw = nrow(data_df),
+               n_clean = nrow(data_clean),
+               n_deleted = n_deleted,
+               retention_rate = nrow(data_clean) / nrow(data_df) * 100,
+               deletions_by_step = deletions_by_step
+             )
+           )
+         
+          rv$result <- result
+          rv$processed <- TRUE
+          rv$view_mode <- "clean"
+          
+          message(paste("Resultat:", result$stats$n_clean, "points retenus sur", result$stats$n_raw))
+          
+          # Creer l'objet sf pour les points supprimes si disponibles
+          if (!is.null(deleted_points) && nrow(deleted_points) > 0) {
+            # Vérifier si Longitude/Latitude sont disponibles, sinon utiliser X/Y
+            if ("Longitude" %in% names(deleted_points) && "Latitude" %in% names(deleted_points)) {
+              rv$deletions_sf <- sf::st_as_sf(
+                deleted_points,
+                coords = c("Longitude", "Latitude"),
+                crs = 4326
+              )
+            } else {
+              # Fallback: convertir X,Y (UTM) vers lat/lon
+              zone <- floor((mean(deleted_points$X, na.rm = TRUE) + 180) / 6) + 1
+              utm_epsg <- 32600 + zone
+              deleted_points_sf <- sf::st_as_sf(
+                deleted_points,
+                coords = c("X", "Y"),
+                crs = paste0("EPSG:", utm_epsg),
+                remove = FALSE
+              ) %>%
+                sf::st_transform(crs = 4326)
+              coords <- sf::st_coordinates(deleted_points_sf)
+              deleted_points$Longitude <- coords[, 1]
+              deleted_points$Latitude <- coords[, 2]
+              rv$deletions_sf <- sf::st_as_sf(
+                deleted_points,
+                coords = c("Longitude", "Latitude"),
+                crs = 4326
+              )
+            }
+            # Mettre a jour les choix du dropdown filter_step
+            step_choices <- c("Toutes les etapes", unique(deleted_points$step))
+            updateSelectInput(session, "filter_step", choices = step_choices, selected = "Toutes les etapes")
           } else {
             rv$deletions_sf <- NULL
+            updateSelectInput(session, "filter_step", choices = "Toutes les etapes", selected = "Toutes les etapes")
           }
-        } else {
-          rv$deletions_sf <- NULL
-        }
-        
-        # Mettre a jour les labels des checkboxes avec le nombre de points retires
-        updateCheckboxLabels(result)
-        
-        # Etape 4: Mise a jour de la carte
+         
+         # Mettre a jour les etiquettes des checkboxes avec le nombre de points retires
+         updateCheckboxLabels(result)
+         
+         # Mettre a jour la carte
         incProgress(0.85, detail = "Mise a jour de la carte...")
         update_map()
         
-        steps <- c("Toutes les etapes", unique(result$deletions$step))
-        updateSelectInput(session, "filter_step", choices = steps)
-        
-        # Etape 5: Finalisation
+        # Finalisation
         incProgress(1.0, detail = "Termine!")
-      })
+        rv$progress_step <- ""
+        rv$progress_detail <- ""
+       })
       
-      output$status <- renderText({
-        paste("Retenus :", round(rv$result$stats$retention_rate * 100, 1), "% |",
-              "Supprimes :", rv$result$stats$n_deleted, "points")
-      })
+       output$status <- renderText({
+         paste("Retenus :", round(rv$result$stats$retention_rate, 1), "% |",
+               "Supprimes :", rv$result$stats$n_raw - rv$result$stats$n_clean, "points")
+       })
       
     }, error = function(e) {
       message(paste("Erreur lors du traitement:", e$message))
@@ -1473,16 +1810,24 @@ server <- function(input, output, session) {
     }
   }, ignoreInit = TRUE)
   
-  output$status <- renderText({
-    if (rv$processed && !is.null(rv$result)) {
-      paste("Retenus :", round(rv$result$stats$retention_rate * 100, 1), "% |",
-            "Supprimes :", rv$result$stats$n_deleted, "points")
-    } else if (!is.null(rv$raw_data)) {
-      "Traitement en cours..."
-    } else {
-      "Importer un fichier pour commencer"
-    }
-  })
+   output$status <- renderText({
+     if (rv$processed && !is.null(rv$result)) {
+       paste("Retenus :", round(rv$result$stats$retention_rate, 1), "% |",
+             "Supprimes :", rv$result$stats$n_deleted, "points")
+     } else if (!is.null(rv$raw_data)) {
+       "Traitement en cours..."
+     } else {
+       "Importer un fichier pour commencer"
+     }
+   })
+
+   output$progress_step <- renderText({
+     if (rv$progress_step != "") {
+       paste(rv$progress_step, "-", rv$progress_detail)
+     } else {
+       ""
+     }
+   })
   
   # Observer pour changer la vue de la carte selon map_type
   observe({
@@ -1532,7 +1877,7 @@ server <- function(input, output, session) {
         rv$result$stats$n_raw,
         rv$result$stats$n_clean,
         rv$result$stats$n_deleted,
-        paste0(round(rv$result$stats$retention_rate * 100, 1), "%"),
+        paste0(round(rv$result$stats$retention_rate, 1), "%"),
         round(rv$result$stats$flow_delay, 2),
         paste0(round(mean(data_clean[[yield_col]], na.rm = TRUE), 1), " ", unit_label)
       )

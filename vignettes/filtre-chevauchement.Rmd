@@ -1,0 +1,388 @@
+---
+title: "Filtre de Chevauchement (Overlap)"
+subtitle: "Détection et élimination des zones de recouvrement"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Filtre de Chevauchement - Théorie mathématique}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 10,
+  fig.height = 6,
+  warning = FALSE,
+  message = FALSE
+)
+```
+
+# Introduction
+
+Le filtre de chevauchement détecte et élimine les points situés dans des zones où plusieurs passages de la moissonneuse se superposent. Ces chevauchements créent un **sur-échantillonnage** qui fausse les statistiques de rendement.
+
+# Problématique
+
+## Pourquoi les chevauchements posent problème
+
+1. **Sur-échantillonnage** : Une zone de 10m² peut être récoltée 2-3 fois
+2. **Biais de rendement** : Les zones de chevauchement ont plus de poids statistique
+3. **Artéfacts visuels** : Bandes de rendement artificiellement élevées
+4. **Doublons** : Même grain mesuré plusieurs fois
+
+## Sources de chevauchement
+
+- **Manœuvres de demi-tour** : Recouvrement aux extrémités des rangs
+- **Correction de trajectoire** : Chevauchement lors des ajustements
+- **Zones de difficulté** : Passages multiples dans les zones humides
+- **Erreurs de guidage** : Dérives GPS créant des doubles passages
+
+# Principes mathématiques
+
+## 1. Rasterisation spatiale
+
+L'espace est discrétisé en une grille régulière de cellules carrées :
+
+$$C_{i,j} = \{(x, y) : x_{min} + i \cdot cs \leq x < x_{min} + (i+1) \cdot cs,$$
+$$y_{min} + j \cdot cs \leq y < y_{min} + (j+1) \cdot cs\}$$
+
+Où :
+- $C_{i,j}$ = cellule $(i, j)$
+- $cs$ = taille de cellule (cell size)
+- $x_{min}, y_{min}$ = coordonnées minimales du champ
+
+## 2. Comptage des passages
+
+Pour chaque cellule $C_{i,j}$, on compte le nombre de points qui tombent dans cette cellule, regroupés par passage (Pass) :
+
+$$N_{i,j} = |\{p_k : (x_k, y_k) \in C_{i,j}\}|$$
+
+$$N_{i,j}^{(pass)} = |\{p_k : (x_k, y_k) \in C_{i,j} \wedge pass_k = pass\}|$$
+
+## 3. Ratio de chevauchement
+
+Le ratio de chevauchement mesure la densité relative d'une cellule par rapport à la moyenne :
+
+$$R_{i,j} = \frac{N_{i,j}}{\bar{N}}$$
+
+Où $\bar{N}$ est le nombre moyen de points par cellule.
+
+Une variante pondérée par passage :
+
+$$R_{i,j}^{(weighted)} = \frac{\sum_{pass} \mathbb{1}(N_{i,j}^{(pass)} > 0)}{N_{passages\_total}}$$
+
+## 4. Seuil d'élimination
+
+Une cellule est marquée comme "overlap" si :
+
+$$R_{i,j} > R_{max}$$
+
+Où $R_{max}$ est le seuil de chevauchement (défaut: 0.5).
+
+Les points dans les cellules "overlap" sont éliminés selon une stratégie de sélection :
+- Garder uniquement le premier passage
+- Garder le passage avec le meilleur rendement
+- Garder aléatoirement un seul point
+
+# Implémentation
+
+```{r overlap-setup}
+library(yieldcleanr)
+library(ggplot2)
+library(dplyr)
+
+# Charger les données
+file_path <- system.file("extdata", "sample1.txt", package = "yieldcleanr")
+data_raw <- read_yield_data(file_path)
+
+# Préparation
+data <- latlon_to_utm(data_raw) %>%
+  convert_flow_to_yield() %>%
+  filter_velocity(min_velocity = 0.5, max_velocity = 10) %>%
+  filter_moisture_range(n_std = 3)
+
+cat("=== Filtre de chevauchement ===\n")
+cat("Points avant filtrage:", nrow(data), "\n")
+cat("Nombre de passages uniques:", length(unique(data$Pass)), "\n")
+```
+
+# Création de la grille
+
+## Paramètres de discrétisation
+
+```{r grid-params}
+# Paramètres de la grille
+cell_size <- 0.3  # 30 cm
+overlap_threshold <- 0.5
+
+cat("\n=== Paramètres de la grille ===\n")
+cat("Taille des cellules:", cell_size, "m\n")
+cat("Seuil de chevauchement:", overlap_threshold, "\n")
+cat("Surface par cellule:", cell_size^2, "m²\n")
+
+# Calculer les dimensions de la grille
+x_range <- range(data$X, na.rm = TRUE)
+y_range <- range(data$Y, na.rm = TRUE)
+
+nx <- ceiling((x_range[2] - x_range[1]) / cell_size)
+ny <- ceiling((y_range[2] - y_range[1]) / cell_size)
+
+cat("\nDimensions de la grille:", nx, "x", ny, "=", nx * ny, "cellules\n")
+```
+
+## Visualisation de la grille
+
+```{r grid-viz, fig.width=12, fig.height=8}
+# Créer une visualisation simplifiée de la grille
+set.seed(42)
+
+# Échantillon de points pour visualisation
+sample_data <- data %>%
+  sample_n(min(1000, nrow(data)))
+
+# Créer la grille pour visualisation
+x_seq <- seq(x_range[1], x_range[2], by = cell_size)
+y_seq <- seq(y_range[1], y_range[2], by = cell_size)
+
+# Graphique
+p1 <- ggplot(sample_data, aes(x = X, y = Y)) +
+  geom_point(aes(color = factor(Pass)), size = 1, alpha = 0.6) +
+  geom_hline(yintercept = y_seq, color = "gray80", alpha = 0.3, size = 0.2) +
+  geom_vline(xintercept = x_seq[seq(1, length(x_seq), by = 10)], 
+             color = "gray80", alpha = 0.3, size = 0.2) +
+  coord_equal() +
+  labs(title = "Points de rendement superposés à la grille spatiale",
+       subtitle = paste("Cellules de", cell_size, "m - Passages colorés différemment"),
+       x = "X (m)", y = "Y (m)", color = "Passage") +
+  theme_minimal() +
+  theme(legend.position = "bottom")
+
+p1
+```
+
+# Application du filtre
+
+```{r overlap-application}
+cat("\n=== Application du filtre de chevauchement ===\n")
+
+# Appliquer le filtre
+data_filtered <- apply_overlap_filter(data, 
+                                       cellsize = cell_size,
+                                       overlap_threshold = overlap_threshold)
+
+cat("Points après filtrage:", nrow(data_filtered), "\n")
+cat("Points retirés:", nrow(data) - nrow(data_filtered), "\n")
+cat("Taux de rétention:", round(nrow(data_filtered)/nrow(data)*100, 1), "%\n")
+```
+
+# Analyse des zones de chevauchement
+
+## Identification des zones problématiques
+
+```{r overlap-zones, fig.width=14, fig.height=6}
+# Identifier les points éliminés
+removed <- anti_join(data, data_filtered, by = c("X", "Y", "GPS_Time"))
+
+cat("\n=== Analyse des zones de chevauchement ===\n")
+cat("Points en zone de chevauchement:", nrow(removed), "\n")
+
+if (nrow(removed) > 0) {
+  # Distribution par passage
+  removed_by_pass <- removed %>%
+    group_by(Pass) %>%
+    summarise(n = n()) %>%
+    arrange(desc(n))
+  
+  cat("\nDistribution par passage (top 5):\n")
+  print(head(removed_by_pass, 5))
+  
+  # Visualisation
+  sf_removed <- sf::st_as_sf(removed, coords = c("Longitude", "Latitude"), crs = 4326)
+  sf_all <- sf::st_as_sf(data, coords = c("Longitude", "Latitude"), crs = 4326)
+  
+  par(mfrow = c(1, 2))
+  
+  plot(sf_all["Yield_kg_ha"], main = "Tous les points", 
+       pch = 19, cex = 0.3, breaks = "jenks", key.pos = NULL)
+  
+  plot(sf_removed["Yield_kg_ha"], main = "Points en chevauchement", 
+       pch = 19, cex = 0.5, breaks = "jenks", key.pos = NULL)
+}
+```
+
+# Exemple illustratif
+
+## Simulation de chevauchement
+
+```{r overlap-simulation, fig.width=14, fig.height=10}
+# Créer une simulation de passages avec chevauchement
+set.seed(42)
+
+# Passage 1 : ligne droite
+pass1 <- data.frame(
+  x = seq(0, 100, by = 1),
+  y = rep(10, 101),
+  pass = 1,
+  yield = rnorm(101, mean = 5000, sd = 200)
+)
+
+# Passage 2 : ligne droite parallèle
+pass2 <- data.frame(
+  x = seq(0, 100, by = 1),
+  y = rep(20, 101),
+  pass = 2,
+  yield = rnorm(101, mean = 5200, sd = 200)
+)
+
+# Passage 3 : avec chevauchement sur la fin
+pass3_x <- c(seq(0, 80, by = 1), seq(80, 100, by = 0.5))  # Densité doublée à la fin
+pass3 <- data.frame(
+  x = pass3_x,
+  y = rep(30, length(pass3_x)),
+  pass = 3,
+  yield = rnorm(length(pass3_x), mean = 4800, sd = 200)
+)
+
+# Combiner
+all_passes <- bind_rows(pass1, pass2, pass3)
+
+# Visualisation des passages
+p2 <- ggplot(all_passes, aes(x = x, y = y, color = factor(pass))) +
+  geom_point(size = 2, alpha = 0.7) +
+  geom_hline(yintercept = c(10, 20, 30), linetype = "dashed", alpha = 0.3) +
+  annotate("rect", xmin = 80, xmax = 100, ymin = 28, ymax = 32,
+           alpha = 0.2, fill = "red") +
+  annotate("text", x = 90, y = 35, label = "Zone de\nchevauchement", 
+           color = "red", size = 4) +
+  labs(title = "Simulation de passages avec zone de chevauchement",
+       subtitle = "Passage 3 a une densité doublée entre x=80 et x=100",
+       x = "X (m)", y = "Y (m)", color = "Passage") +
+  theme_minimal() +
+  coord_equal()
+
+p2
+```
+
+## Calcul du ratio de chevauchement
+
+```{r overlap-ratio}
+# Discrétiser en cellules de 5m
+cell_sim <- 5
+
+all_passes$cell_x <- floor(all_passes$x / cell_sim)
+all_passes$cell_y <- floor(all_passes$y / cell_sim)
+
+# Compter les points par cellule
+cell_counts <- all_passes %>%
+  group_by(cell_x, cell_y) %>%
+  summarise(
+    n_points = n(),
+    n_passes = n_distinct(pass),
+    .groups = 'drop'
+  )
+
+cat("\n=== Comptage par cellule (simulation) ===\n")
+cat("Cellules occupées:", nrow(cell_counts), "\n")
+cat("Moyenne de points par cellule:", round(mean(cell_counts$n_points), 1), "\n")
+cat("Max points dans une cellule:", max(cell_counts$n_points), "\n")
+
+# Identifier les cellules en chevauchement
+mean_points <- mean(cell_counts$n_points)
+cell_counts$ratio <- cell_counts$n_points / mean_points
+cell_counts$is_overlap <- cell_counts$ratio > 1.5
+
+cat("\nCellules en chevauchement (ratio > 1.5):", 
+    sum(cell_counts$is_overlap), "\n")
+print(cell_counts %>% filter(is_overlap))
+```
+
+# Paramètres recommandés
+
+## Choix de la taille de cellule
+
+| Taille de cellule | Application | Avantage | Inconvénient |
+|-------------------|-------------|----------|--------------|
+| **0.1 m (10 cm)** | Très précis | Détecte les micro-chevauchements | Très sensible au bruit |
+| **0.3 m (30 cm)** | Standard USDA | Bon compromis précision/robustesse | Peut manquer les chevauchements légers |
+| **0.5 m (50 cm)** | Données bruitées | Moins sensible au bruit GPS | Moins précis |
+| **1.0 m (1 m)** | Champs très larges | Robustesse maximale | Détecte uniquement les gros chevauchements |
+
+## Choix du seuil
+
+| Seuil | Interprétation | Utilisation |
+|-------|----------------|-------------|
+| **0.3** | Conservateur | Champs avec peu de chevauchement |
+| **0.5** | Standard | Usage général recommandé |
+| **0.7** | Tolérant | Champs avec beaucoup de manœuvres |
+| **1.0** | Très tolérant | Uniquement pour les gros chevauchements |
+
+## Paramètres de la fonction
+
+```{r params-table-overlap, echo=FALSE}
+params_df <- data.frame(
+  Paramètre = c("cellsize", "overlap_threshold", "max_pass"),
+  Description = c(
+    "Taille des cellules (m)",
+    "Seuil de ratio pour élimination",
+    "Nombre max de passages avant élimination"
+  ),
+  Défaut = c("0.3", "0.5", "50")
+)
+
+knitr::kable(params_df, caption = "Paramètres du filtre de chevauchement")
+```
+
+# Impact sur les statistiques
+
+```{r overlap-stats}
+cat("\n=== Impact sur les statistiques ===\n")
+
+# Avant filtrage
+stats_before <- data.frame(
+  metric = c("Nombre de points", "Rendement moyen", "Écart-type", "CV (%)"),
+  value = c(
+    nrow(data),
+    mean(data$Yield_kg_ha, na.rm = TRUE),
+    sd(data$Yield_kg_ha, na.rm = TRUE),
+    sd(data$Yield_kg_ha, na.rm = TRUE) / mean(data$Yield_kg_ha, na.rm = TRUE) * 100
+  )
+)
+
+# Après filtrage
+stats_after <- data.frame(
+  metric = c("Nombre de points", "Rendement moyen", "Écart-type", "CV (%)"),
+  value = c(
+    nrow(data_filtered),
+    mean(data_filtered$Yield_kg_ha, na.rm = TRUE),
+    sd(data_filtered$Yield_kg_ha, na.rm = TRUE),
+    sd(data_filtered$Yield_kg_ha, na.rm = TRUE) / mean(data_filtered$Yield_kg_ha, na.rm = TRUE) * 100
+  )
+)
+
+comparison <- data.frame(
+  Métrique = stats_before$metric,
+  Avant = round(stats_before$value, 1),
+  Après = round(stats_after$value, 1),
+  Variation = round((stats_after$value - stats_before$value) / stats_before$value * 100, 2)
+)
+
+print(comparison, row.names = FALSE)
+```
+
+# Conclusion
+
+Le filtre de chevauchement est important pour :
+1. **Éliminer le sur-échantillonnage** dans les zones de manœuvre
+2. **Standardiser la densité** de points sur tout le champ
+3. **Éviter les biais** dans les statistiques de rendement
+4. **Améliorer la qualité visuelle** des cartes
+
+**Points clés :**
+- La rasterisation discrétise l'espace en cellules régulières
+- Le ratio de chevauchement compare la densité locale à la moyenne
+- Une taille de cellule de 0.3m est recommandée par l'USDA
+- Le seuil de 0.5 élimine les zones avec 50% plus de points que la moyenne
+
+**Recommandation** : Utiliser une taille de cellule adaptée à la résolution des données. Pour des données avec un point tous les 0.5-1m, une cellule de 0.3m est appropriée. Pour des données plus denses, réduire la taille de cellule.

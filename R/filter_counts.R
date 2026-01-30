@@ -42,7 +42,7 @@
 
    # Etape 5 : filtre header
    if ("HeaderStatus" %in% names(data)) {
-     to_keep <- dplyr::filter(data, HeaderStatus %in% c(1, 33) | is.na(HeaderStatus))
+     to_keep <- dplyr::filter(data, HeaderStatus %in% c(0, 1, 33) | is.na(HeaderStatus))
      counts$header <- nrow(data) - nrow(to_keep)
    }
 
@@ -93,22 +93,22 @@
   if (isTRUE(params$apply_heading_anomaly)) {
     result <- filter_heading_anomalies(
       data,
-      max_heading_change = params$max_heading_change %||% 15
+      max_heading_change = params$max_heading_change %||% 60
     )
     counts$heading_anomaly <- nrow(result$removed)
   }
 
   # Etape 10 : suppression des rendements nuls
-  if ("Yield_buacre" %in% names(data)) {
-    to_keep <- dplyr::filter(data, Yield_buacre > 0)
+  if ("Yield_kg_ha" %in% names(data)) {
+    to_keep <- dplyr::filter(data, Yield_kg_ha > 0)
     counts$null_yield <- nrow(data) - nrow(to_keep)
   }
 
   # Etape 11 : filtre plage de rendement
-  if ("Yield_buacre" %in% names(data)) {
+  if ("Yield_kg_ha" %in% names(data)) {
     to_keep <- dplyr::filter(data,
-      Yield_buacre >= thresholds$min_yield &
-      Yield_buacre <= thresholds$max_yield)
+      Yield_kg_ha >= thresholds$min_yield &
+      Yield_kg_ha <= thresholds$max_yield)
     counts$yield_range <- nrow(data) - nrow(to_keep)
   }
 

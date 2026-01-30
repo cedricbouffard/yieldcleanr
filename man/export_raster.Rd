@@ -9,7 +9,9 @@ export_raster(
   cell_size = 1,
   column_colonne = "Yield_kg_ha",
   fun = mean,
-  crs_code = NULL
+  crs_code = NULL,
+  method = c("auto", "tps", "idw", "nearest"),
+  max_points_tps = 5000
 )
 }
 \arguments{
@@ -22,6 +24,17 @@ export_raster(
 \item{fun}{Fonction d'agregation (defaut: mean)}
 
 \item{crs_code}{Code EPSG du systeme de coordonnees (defaut: NULL, auto-detecte)}
+
+\item{method}{Methode d'interpolation: "auto" (defaut), "tps", "idw", ou "nearest"
+\itemize{
+\item "auto": Choisit automatiquement selon le nombre de points
+\item "tps": Thin Plate Spline (lent mais precis, max 5000 points)
+\item "idw": Inverse Distance Weighting (rapide, recommande)
+\item "nearest": Plus proche voisin (tres rapide)
+}}
+
+\item{max_points_tps}{Nombre maximum de points pour TPS (defaut: 5000)
+Si plus de points, echantillonnage aleatoire ou switch vers IDW}
 }
 \value{
 Objet SpatRaster

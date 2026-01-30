@@ -9,7 +9,8 @@ filter_header_status(data, header_values = c(1, 33))
 \arguments{
 \item{data}{Tibble avec donnees de rendement}
 
-\item{header_values}{Valeurs indiquant une recolte active (defaut c(1, 33))}
+\item{header_values}{Valeurs indiquant une recolte active (defaut c(1, 33))
+1 = harvesting, 33 = header bas}
 }
 \value{
 Tibble filtre avec header actif
@@ -27,7 +28,7 @@ data <- tibble::tibble(
   HeaderStatus = c(1, 33, 33, 0, 33)  # 1=actif, 33=header bas, 0=header haut
 )
 
-# Filtrer pour ne garder que la recolte active
+# Filtrer pour ne garder que la recolte active (defaut: 1 et 33)
 data_filtered <- filter_header_status(data)
 print(data_filtered)
 }

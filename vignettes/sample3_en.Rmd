@@ -1,8 +1,0 @@
----
-title: "sample3.txt - Corn Data"
-output: rmarkdown::html_vignette
-vignette: >
-  %\VignetteIndexEntry{sample3.txt - Corn Data}
-  %\VignetteEngine{knitr::rmarkdown}
-  %\VignetteEncoding{UTF-8}
----
