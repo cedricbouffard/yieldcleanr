@@ -145,6 +145,7 @@ PCDI(data, delay_range, n_iterations):
 ```{r pcdi-demo}
 library(yieldcleanr)
 library(ggplot2)
+library(dplyr)
 
 # Charger les données
 file_path <- system.file("extdata", "sample2.txt", package = "yieldcleanr")
