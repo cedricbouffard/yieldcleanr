@@ -1,3 +1,5 @@
+url: https://cedricbouffard.github.io/yieldcleanr
+
 template:
   package: pkgdown
   bootstrap: 5
@@ -18,7 +20,7 @@ template:
             const isEn = currentPath.includes('/en/') || currentPath.endsWith('_en.html');
             let newPath;
             if (isEn) {
-              newPath = currentPath.replace('/en/', '/fr/').replace('_en.html', '_fr.html');
+              newPath = currentPath.replace('/en/', '/fr/').replace('_en.html', '_en.html');
             } else {
               newPath = currentPath.replace('/fr/', '/en/').replace('_fr.html', '_en.html');
             }
@@ -51,31 +53,20 @@ navbar:
       class: "lang-toggle"
 
 articles:
-  - title: "Guides d'Utilisation (Français)"
+  - title: "Filtres de Nettoyage"
+    desc: "Documentation détaillée des filtres de nettoyage"
     contents:
-      - nettoyage_donnees_rendement
-      - donnees_exemple
-      - filtres_nettoyage
+      - filtre-rendement
+      - filtre-humidite
+      - filtre-vitesse
+      - filtre-ecart-type-local
+      - filtre-chevauchement
+      - filtre-pcdi
 
-  - title: "Exemples par Fichier"
+  - title: "Guides et Exemples"
+    desc: "Guides d'utilisation et exemples"
     contents:
-      - sample1
-      - sample2
-      - sample3
-      - sample4
-
-  - title: "User Guides (English)"
-    contents:
-      - nettoyage_donnees_rendement_en
-      - donnees_exemple_en
-      - filtres_nettoyage_en
-
-  - title: "Examples by File"
-    contents:
-      - sample1_en
-      - sample2_en
-      - sample3_en
-      - sample4_en
+      - guide-complet-samples
 
 home:
   title: "yieldcleanr"
@@ -96,6 +87,7 @@ reference:
     desc: "Fonctions principales pour nettoyer les données de rendement"
     contents:
       - clean_yield
+      - clean_yield_fast
       - clean_yield_with_tracking
       - read_yield_data
       - launch_shiny_app
@@ -105,6 +97,7 @@ reference:
     contents:
       - ayce_clean
       - ayce_sf
+      - preprocess_yield_data
 
   - title: "Application des Filtres"
     desc: "Fonctions pour appliquer les filtres de nettoyage"
@@ -115,6 +108,7 @@ reference:
       - apply_overlap_filter
       - apply_pcdi
       - apply_position_filter
+      - apply_yield_filters
 
   - title: "Filtres de Données"
     desc: "Fonctions de filtrage des données de rendement"
@@ -126,6 +120,7 @@ reference:
       - filter_heading_anomalies
       - filter_local_std
       - filter_moisture_range
+      - filter_position_outliers
       - filter_sliding_window
       - filter_velocity
       - filter_velocity_jumps
