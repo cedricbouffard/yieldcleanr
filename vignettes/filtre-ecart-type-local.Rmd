@@ -133,7 +133,7 @@ calc_local_stats <- function(data, n_swaths) {
 # Calculer sur un échantillon
 data_sample <- data %>%
   group_by(Pass) %>%
-  slice_sample(n = min(50, n())) %>%
+  slice_sample(n = 50) %>%
   ungroup()
 
 data_with_stats <- calc_local_stats(data_sample, n_swaths)
