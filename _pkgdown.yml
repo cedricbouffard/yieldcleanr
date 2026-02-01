@@ -67,6 +67,12 @@ articles:
     desc: "Guides d'utilisation et exemples"
     contents:
       - guide-complet-samples
+      - guide-meta-fonctions
+
+  - title: "Sécurité et Confidentialité"
+    desc: "Protection des données sensibles"
+    contents:
+      - securite-donnees
 
 home:
   title: "yieldcleanr"
@@ -97,48 +103,36 @@ reference:
     contents:
       - ayce_clean
       - ayce_sf
-      - preprocess_yield_data
 
-  - title: "Application des Filtres"
-    desc: "Fonctions pour appliquer les filtres de nettoyage"
+  - title: "Filtres et Anomalies"
+    desc: "Fonctions pour appliquer les filtres et détecter les anomalies"
     contents:
-      - apply_flow_delay
-      - apply_local_sd_filter
-      - apply_moisture_delay
-      - apply_overlap_filter
+      - filter_data
+      - detect_anomalies
       - apply_pcdi
-      - apply_position_filter
-      - apply_yield_filters
+      - optimize_delays
+      - calculate_thresholds
 
-  - title: "Filtres de Données"
-    desc: "Fonctions de filtrage des données de rendement"
-    contents:
-      - filter_bounds
-      - filter_dop
-      - filter_gps_status
-      - filter_header_status
-      - filter_heading_anomalies
-      - filter_local_std
-      - filter_moisture_range
-      - filter_position_outliers
-      - filter_sliding_window
-      - filter_velocity
-      - filter_velocity_jumps
-      - filter_yield_range
-
-  - title: "Calculs et Statistiques"
-    desc: "Fonctions de calcul et analyse des données"
-    contents:
-      - calculate_auto_thresholds
-      - calculate_filter_counts
-
-  - title: "Utilitaires"
-    desc: "Fonctions utilitaires pour la manipulation des données"
+  - title: "Conversion et Import/Export"
+    desc: "Fonctions de conversion et manipulation des données"
     contents:
       - convert_flow_to_yield
-      - export_raster
+      - convert_coordinates
+      - convert_yield_units
       - latlon_to_utm
-      - list_fields_from_zip
+      - export_data
+
+  - title: "Lecture de Fichiers"
+    desc: "Fonctions pour lire les données depuis différentes sources"
+    contents:
       - read_yield_from_zip
-      - remove_overlap
-      - save_raster
+      - list_fields_from_zip
+
+  - title: "Anonymisation"
+    desc: "Fonctions pour anonymiser les données sensibles"
+    contents:
+      - anonymize_coordinates
+      - anonymize_data
+      - anonymize_yield_data
+      - remove_sensitive_attributes
+      - restore_coordinates

@@ -389,9 +389,8 @@ restore_coordinates <- function(
 #'   print("Mot de passe correct, fichier valide")
 #' }
 #' }
-#'
- #' @noRd
- #' @keywords internal
+ #'
+ #' @export
  verify_key_file <- function(key_file, password) {
   if (!file.exists(key_file)) {
     return(FALSE)
@@ -438,9 +437,8 @@ restore_coordinates <- function(
 #' report <- security_report(result)
 #' print(report$summary)
 #' }
-#'
- #' @noRd
- #' @keywords internal
+ #'
+ #' @export
  security_report <- function(anonymization_result, include_recommendations = TRUE) {
   report <- list(
     summary = list(),
