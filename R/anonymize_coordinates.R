@@ -390,7 +390,8 @@ restore_coordinates <- function(
 #' }
 #' }
  #'
- #' @export
+ #' @noRd
+ #' @keywords internal
  verify_key_file <- function(key_file, password) {
   if (!file.exists(key_file)) {
     return(FALSE)
@@ -438,7 +439,8 @@ restore_coordinates <- function(
 #' print(report$summary)
 #' }
  #'
- #' @export
+ #' @noRd
+ #' @keywords internal
  security_report <- function(anonymization_result, include_recommendations = TRUE) {
   report <- list(
     summary = list(),

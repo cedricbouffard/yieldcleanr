@@ -136,8 +136,3 @@ reference:
       - anonymize_yield_data
       - remove_sensitive_attributes
       - restore_coordinates
-      - list_sensitive_columns
-      - setup_secure_password_storage
-      - get_secure_password
-      - verify_key_file
-      - security_report

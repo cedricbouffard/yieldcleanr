@@ -172,7 +172,8 @@ remove_sensitive_attributes <- function(
 #' print(sensitive_cols)
 #' }
  #'
- #' @export
+ #' @noRd
+ #' @keywords internal
  list_sensitive_columns <- function(detail_level = "basic") {
   cols <- list(
     Serial = list(
@@ -414,7 +415,8 @@ anonymize_yield_data <- function(
 #' )
 #' }
  #'
- #' @export
+ #' @noRd
+ #' @keywords internal
  setup_secure_password_storage <- function(
     method = "env_var",
     env_var = "YIELD_ANON_PASSWORD",
@@ -506,7 +508,8 @@ anonymize_yield_data <- function(
 #'
 #' @return Le mot de passe recupere ou NULL si non trouve
  #'
- #' @export
+ #' @noRd
+ #' @keywords internal
  get_secure_password <- function(
     method = "env_var",
     env_var = "YIELD_ANON_PASSWORD",

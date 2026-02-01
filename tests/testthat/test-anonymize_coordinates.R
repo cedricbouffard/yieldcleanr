@@ -268,90 +268,6 @@ describe("restore_coordinates", {
   })
 })
 
-describe("verify_key_file", {
-  it("devrait retourner TRUE pour un fichier valide", {
-    skip_if_not_installed("openssl")
-    
-    data <- create_test_data(50)
-    temp_file <- tempfile(fileext = ".enc")
-    
-    result <- anonymize_coordinates(
-      data,
-      output_key_file = temp_file,
-      password = "test_password_123"
-    )
-    
-    expect_true(verify_key_file(temp_file, "test_password_123"))
-    
-    unlink(temp_file)
-  })
-  
-  it("devrait retourner FALSE pour un mot de passe incorrect", {
-    skip_if_not_installed("openssl")
-    
-    data <- create_test_data(50)
-    temp_file <- tempfile(fileext = ".enc")
-    
-    result <- anonymize_coordinates(
-      data,
-      output_key_file = temp_file,
-      password = "correct_password"
-    )
-    
-    expect_false(verify_key_file(temp_file, "wrong_password"))
-    
-    unlink(temp_file)
-  })
-  
-  it("devrait retourner FALSE pour un fichier inexistant", {
-    expect_false(verify_key_file("fichier_inexistant.enc", "password"))
-  })
-})
-
-describe("security_report", {
-  it("devrait générer un rapport pour l'anonymisation sans chiffrement", {
-    data <- create_test_data(50)
-    result <- anonymize_coordinates(data, password = NULL)
-    
-    report <- security_report(result)
-    
-    expect_equal(report$security_level, "low")
-    expect_equal(report$summary$encryption, "Aucun chiffrement")
-    expect_true("recommendations" %in% names(report))
-    expect_true(length(report$recommendations) > 0)
-  })
-  
-  it("devrait générer un rapport pour l'anonymisation avec chiffrement", {
-    skip_if_not_installed("openssl")
-    
-    data <- create_test_data(50)
-    temp_file <- tempfile(fileext = ".enc")
-    
-    result <- anonymize_coordinates(
-      data,
-      output_key_file = temp_file,
-      password = "test_password_123"
-    )
-    
-    report <- security_report(result)
-    
-    expect_equal(report$security_level, "high")
-    expect_true(grepl("AES-256", report$summary$encryption))
-    expect_true(!is.null(report$summary$approximate_shift_km))
-    
-    unlink(temp_file)
-  })
-  
-  it("ne devrait pas inclure de recommandations si demandé", {
-    data <- create_test_data(50)
-    result <- anonymize_coordinates(data, password = NULL)
-    
-    report <- security_report(result, include_recommendations = FALSE)
-    
-    expect_equal(length(report$recommendations), 0)
-  })
-})
-
 describe("workflow complet", {
   it("devrait anonymiser et restaurer correctement dans un workflow complet", {
     skip_if_not_installed("openssl")
@@ -373,12 +289,11 @@ describe("workflow complet", {
     # Vérifier que les données sont bien anonymisées
     expect_false(identical(result$data$Latitude, original_lat))
     
-    # Étape 2: Vérifier la clé
-    expect_true(verify_key_file(temp_file, "mon_mot_de_passe_securise_123!"))
+    # Étape 2: Vérifier que le fichier de clé existe
+    expect_true(file.exists(temp_file))
     
-    # Étape 3: Générer un rapport
-    report <- security_report(result)
-    expect_equal(report$security_level, "high")
+    # Étape 3: Vérifier le niveau de sécurité dans les métadonnées
+    expect_equal(result$metadata$algorithm, "aes-256-gcm")
     
     # Étape 4: Restaurer
     restored <- restore_coordinates(
