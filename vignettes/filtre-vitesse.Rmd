@@ -308,7 +308,7 @@ x <- c(seq(0, 50, length.out = 50),
        100,  # Saut
        seq(102, 150, length.out = 49))
 y <- seq(0, 100, length.out = 100)
-velocity <- c(rep(2, 49), 50, rep(2, 49))  # Pic de vitesse
+velocity <- c(rep(2, 50), 50, rep(2, 49))  # Pic de vitesse
 
 df_case2 <- data.frame(time = time, x = x, y = y, velocity = velocity)
 

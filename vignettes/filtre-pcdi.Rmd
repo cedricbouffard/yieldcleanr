@@ -160,8 +160,12 @@ cat("=== Application du PCDI ===\n")
 pcdi_result <- apply_pcdi(data, delay_range = -25:25, n_iterations = 10)
 
 cat("Délai optimal détecté:", pcdi_result$optimal_delay, "secondes\n")
-cat("Score Moran moyen au délai optimal:", 
-    round(pcdi_result$rsc_values$mean_rsc[pcdi_result$rsc_values$delay == pcdi_result$optimal_delay], 4), "\n")
+optimal_rsc <- pcdi_result$rsc_values$mean_score[pcdi_result$rsc_values$delay == pcdi_result$optimal_delay]
+if (length(optimal_rsc) > 0 && !is.na(optimal_rsc[1])) {
+  cat("Score Moran moyen au délai optimal:", round(optimal_rsc[1], 4), "\n")
+} else {
+  cat("Score Moran moyen au délai optimal: NA\n")
+}
 ```
 
 # Visualisation des résultats PCDI
@@ -173,17 +177,17 @@ cat("Score Moran moyen au délai optimal:",
 rsc_data <- pcdi_result$rsc_values
 
 # Graphique des scores Moran
-p1 <- ggplot(rsc_data, aes(x = delay, y = mean_rsc)) +
+p1 <- ggplot(rsc_data, aes(x = delay, y = mean_score)) +
   geom_line(color = "#2c3e50", size = 1) +
   geom_point(data = rsc_data %>% filter(delay == pcdi_result$optimal_delay),
-             aes(x = delay, y = mean_rsc), 
+             aes(x = delay, y = mean_score),
              color = "#e74c3c", size = 4) +
-  geom_errorbar(aes(ymin = mean_rsc - sd_rsc, ymax = mean_rsc + sd_rsc),
+  geom_errorbar(aes(ymin = mean_score - sd_score, ymax = mean_score + sd_score),
                 alpha = 0.3, width = 0.5) +
-  geom_vline(xintercept = pcdi_result$optimal_delay, 
+  geom_vline(xintercept = pcdi_result$optimal_delay,
              linetype = "dashed", color = "#e74c3c") +
-  annotate("text", x = pcdi_result$optimal_delay + 2, 
-           y = max(rsc_data$mean_rsc) - 0.02,
+  annotate("text", x = pcdi_result$optimal_delay + 2,
+           y = max(rsc_data$mean_score) - 0.02,
            label = paste("Optimal:", pcdi_result$optimal_delay, "s"),
            color = "#e74c3c", hjust = 0) +
   labs(title = "Score d'autocorrélation spatiale (Moran I) selon le délai",
