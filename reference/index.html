@@ -11,7 +11,7 @@ document.addEventListener('DOMContentLoaded', function() {
       const isEn = currentPath.includes('/en/') || currentPath.endsWith('_en.html');
       let newPath;
       if (isEn) {
-        newPath = currentPath.replace('/en/', '/fr/').replace('_en.html', '_fr.html');
+        newPath = currentPath.replace('/en/', '/fr/').replace('_en.html', '_en.html');
       } else {
         newPath = currentPath.replace('/fr/', '/en/').replace('_fr.html', '_en.html');
       }
@@ -72,6 +72,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
         <dt>
 
+          <code><a href="clean_yield_fast.html">clean_yield_fast()</a></code>
+
+        </dt>
+        <dd>Nettoyage rapide des données de rendement avec mise en cache</dd>
+
+        <dt>
+
           <code><a href="clean_yield_with_tracking.html">clean_yield_with_tracking()</a></code>
 
         </dt>
@@ -113,6 +120,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
         </dt>
         <dd>Pipeline AYCE complet avec sortie SF</dd>
+
+        <dt>
+
+          <code><a href="preprocess_yield_data.html">preprocess_yield_data()</a></code>
+
+        </dt>
+        <dd>Pré-traitement des données de rendement</dd>
       </dl></div><div class="section level2">
       <h2 id="application-des-filtres">Application des Filtres<a class="anchor" aria-label="anchor" href="#application-des-filtres"></a></h2>
 
@@ -156,7 +170,7 @@ document.addEventListener('DOMContentLoaded', function() {
           <code><a href="apply_pcdi.html">apply_pcdi()</a></code>
 
         </dt>
-        <dd>PCDI : Phase Correlation Delay Identification</dd>
+        <dd>PCDI : Phase Correlation Delay Identification (Version Rapide)</dd>
 
         <dt>
 
@@ -164,6 +178,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
         </dt>
         <dd>Appliquer le filtre de position (POS)</dd>
+
+        <dt>
+
+          <code><a href="apply_yield_filters.html">apply_yield_filters()</a></code>
+
+        </dt>
+        <dd>Application des filtres de rendement</dd>
       </dl></div><div class="section level2">
       <h2 id="filtres-de-donn-es">Filtres de Données<a class="anchor" aria-label="anchor" href="#filtres-de-donn-es"></a></h2>
 
@@ -222,6 +243,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
         </dt>
         <dd>Filtrer selon la plage d'humidite</dd>
+
+        <dt>
+
+          <code><a href="filter_position_outliers.html">filter_position_outliers()</a></code>
+
+        </dt>
+        <dd>Filtre de position pour eliminer les points hors champ</dd>
 
         <dt>
 

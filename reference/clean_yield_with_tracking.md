@@ -11,7 +11,8 @@ clean_yield_with_tracking(
   data = NULL,
   metrique = TRUE,
   polygon = TRUE,
-  params = NULL
+  params = NULL,
+  progress_callback = NULL
 )
 ```
 

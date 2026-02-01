@@ -135,17 +135,23 @@ continuous surfaces.
 
 ## Documentation
 
-- [Getting Started](vignettes/getting-started.md) - Introduction and
-  basic usage
-- [Filtering Methods](vignettes/filtering-methods.md) - Detailed
-  explanation of filters
-- [Shiny Application](vignettes/shiny-app.md) - Guide to the interactive
-  app
-- [API Reference](reference/index.md) - Function documentation
+- [Getting
+  Started](https://cedricbouffard.github.io/yieldcleanr/vignettes/getting-started.md) -
+  Introduction and basic usage
+- [Filtering
+  Methods](https://cedricbouffard.github.io/yieldcleanr/vignettes/filtering-methods.md) -
+  Detailed explanation of filters
+- [Shiny
+  Application](https://cedricbouffard.github.io/yieldcleanr/vignettes/shiny-app.md) -
+  Guide to the interactive app
+- [API
+  Reference](https://cedricbouffard.github.io/yieldcleanr/reference/index.md) -
+  Function documentation
 
 ## Contributing
 
-Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md)
+Contributions are welcome! Please see
+[CONTRIBUTING.md](https://cedricbouffard.github.io/yieldcleanr/CONTRIBUTING.md)
 for guidelines.
 
 1.  Fork the repository
@@ -163,8 +169,9 @@ If you use this package in your research, please cite:
 
 ## License
 
-This project is licensed under the MIT License - see [LICENSE](LICENSE)
-for details.
+This project is licensed under the MIT License - see
+[LICENSE](https://cedricbouffard.github.io/yieldcleanr/LICENSE) for
+details.
 
 ## Acknowledgments
 

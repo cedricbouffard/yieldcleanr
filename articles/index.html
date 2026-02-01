@@ -11,7 +11,7 @@ document.addEventListener('DOMContentLoaded', function() {
       const isEn = currentPath.includes('/en/') || currentPath.endsWith('_en.html');
       let newPath;
       if (isEn) {
-        newPath = currentPath.replace('/en/', '/fr/').replace('_en.html', '_fr.html');
+        newPath = currentPath.replace('/en/', '/fr/').replace('_en.html', '_en.html');
       } else {
         newPath = currentPath.replace('/fr/', '/en/').replace('_fr.html', '_en.html');
       }
@@ -54,51 +54,27 @@ document.addEventListener('DOMContentLoaded', function() {
     </div>
 
     <div class="section ">
-      <h3>Guides d’Utilisation (Français)</h3>
-      <div class="section-desc"></div>
+      <h3>Filtres de Nettoyage</h3>
+      <div class="section-desc"><p>Documentation détaillée des filtres de nettoyage</p></div>
 
-      <dl><dt><a href="nettoyage_donnees_rendement.html">Nettoyage des Données de Rendement</a></dt>
+      <dl><dt><a href="filtre-rendement.html">Filtre de Plage de Rendement</a></dt>
         <dd>
-        </dd><dt><a href="donnees_exemple.html">Utilisation des Données d'Exemple</a></dt>
+        </dd><dt><a href="filtre-humidite.html">Filtre d'Humidité</a></dt>
         <dd>
-        </dd><dt><a href="filtres_nettoyage.html">Filtres de Nettoyage des Données de Rendement</a></dt>
+        </dd><dt><a href="filtre-vitesse.html">Filtre de Vitesse - Théorie et Applications</a></dt>
+        <dd>
+        </dd><dt><a href="filtre-ecart-type-local.html">Filtre d'Écart-type Local (Local SD)</a></dt>
+        <dd>
+        </dd><dt><a href="filtre-chevauchement.html">Filtre de Chevauchement (Overlap)</a></dt>
+        <dd>
+        </dd><dt><a href="filtre-pcdi.html">Filtre PCDI - Position-Coordinate Delay Identification</a></dt>
         <dd>
       </dd></dl></div>
     <div class="section ">
-      <h3>Exemples par Fichier</h3>
-      <div class="section-desc"></div>
+      <h3>Guides et Exemples</h3>
+      <div class="section-desc"><p>Guides d’utilisation et exemples</p></div>
 
-      <dl><dt><a href="sample1.html">sample1.txt - Données de Soja</a></dt>
-        <dd>
-        </dd><dt><a href="sample2.html">sample2.txt - Données de Soja (Fichier 2)</a></dt>
-        <dd>
-        </dd><dt><a href="sample3.html">sample3.txt - Données de Maïs</a></dt>
-        <dd>
-        </dd><dt><a href="sample4.html">sample4.txt - Données de Maïs Blanc</a></dt>
-        <dd>
-      </dd></dl></div>
-    <div class="section ">
-      <h3>User Guides (English)</h3>
-      <div class="section-desc"></div>
-
-      <dl><dt><a href="nettoyage_donnees_rendement_en.html">Nettoyage des Données de Rendement</a></dt>
-        <dd>
-        </dd><dt><a href="donnees_exemple_en.html">Example Data Usage</a></dt>
-        <dd>
-        </dd><dt><a href="filtres_nettoyage_en.html">Filtres de Nettoyage des Données de Rendement</a></dt>
-        <dd>
-      </dd></dl></div>
-    <div class="section ">
-      <h3>Examples by File</h3>
-      <div class="section-desc"></div>
-
-      <dl><dt><a href="sample1_en.html">sample1.txt - Soybean Data</a></dt>
-        <dd>
-        </dd><dt><a href="sample2_en.html">sample2.txt - Soybean Data (File 2)</a></dt>
-        <dd>
-        </dd><dt><a href="sample3_en.html">sample3.txt - Corn Data</a></dt>
-        <dd>
-        </dd><dt><a href="sample4_en.html">sample4.txt - White Corn Data</a></dt>
+      <dl><dt><a href="guide-complet-samples.html">Guide Complet du Nettoyage de Données de Rendement</a></dt>
         <dd>
       </dd></dl></div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

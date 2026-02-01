@@ -40,9 +40,9 @@ data <- tibble::tibble(
 
 # Appliquer la correction de delai de flux
 data_corrected <- apply_flow_delay(data, delay = 1)
-#> Flow delay correction: 1 seconds, 1 points elimines (valeurs NA)
+#> Flow delay correction: 1 secondes, 1 valeurs NA creees (points conserves)
 print(data_corrected)
-#> # A tibble: 6 × 4
+#> # A tibble: 7 × 4
 #>    Flow Longitude Latitude Flow_raw
 #>   <dbl>     <int>    <int>    <dbl>
 #> 1   2.5         1        1      1.5
@@ -51,4 +51,5 @@ print(data_corrected)
 #> 4   5.5         4        4      4.5
 #> 5   6.5         5        5      5.5
 #> 6   7.5         6        6      6.5
+#> 7  NA           7        7      7.5
 ```

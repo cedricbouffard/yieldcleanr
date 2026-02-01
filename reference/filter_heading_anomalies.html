@@ -15,7 +15,7 @@ document.addEventListener('DOMContentLoaded', function() {
       const isEn = currentPath.includes('/en/') || currentPath.endsWith('_en.html');
       let newPath;
       if (isEn) {
-        newPath = currentPath.replace('/en/', '/fr/').replace('_en.html', '_fr.html');
+        newPath = currentPath.replace('/en/', '/fr/').replace('_en.html', '_en.html');
       } else {
         newPath = currentPath.replace('/fr/', '/en/').replace('_fr.html', '_en.html');
       }
@@ -67,7 +67,7 @@ Conserve les virages normaux mais retire les points isoles anormaux
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">filter_heading_anomalies</span><span class="op">(</span><span class="va">data</span>, max_heading_change <span class="op">=</span> <span class="fl">45</span>, window_size <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">filter_heading_anomalies</span><span class="op">(</span><span class="va">data</span>, max_heading_change <span class="op">=</span> <span class="fl">60</span>, window_size <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -79,7 +79,7 @@ Conserve les virages normaux mais retire les points isoles anormaux
 
 
 <dt id="arg-max-heading-change">max_heading_change<a class="anchor" aria-label="anchor" href="#arg-max-heading-change"></a></dt>
-<dd><p>Variation maximale de direction entre 3 points consecutifs (degrés, défaut: 45)</p></dd>
+<dd><p>Variation maximale de direction entre 3 points consecutifs (degrés, défaut: 60)</p></dd>
 
 
 <dt id="arg-window-size">window_size<a class="anchor" aria-label="anchor" href="#arg-window-size"></a></dt>

@@ -1,29 +1,25 @@
 # Articles
 
-### Guides d’Utilisation (Français)
+### Filtres de Nettoyage
 
-- [Nettoyage des Données de Rendement](nettoyage_donnees_rendement.md):
-- [Utilisation des Données d'Exemple](donnees_exemple.md):
-- [Filtres de Nettoyage des Données de Rendement](filtres_nettoyage.md):
+Documentation détaillée des filtres de nettoyage
 
-### Exemples par Fichier
+- [Filtre de Plage de
+  Rendement](https://cedricbouffard.github.io/yieldcleanr/articles/filtre-rendement.md):
+- [Filtre
+  d'Humidité](https://cedricbouffard.github.io/yieldcleanr/articles/filtre-humidite.md):
+- [Filtre de Vitesse - Théorie et
+  Applications](https://cedricbouffard.github.io/yieldcleanr/articles/filtre-vitesse.md):
+- [Filtre d'Écart-type Local (Local
+  SD)](https://cedricbouffard.github.io/yieldcleanr/articles/filtre-ecart-type-local.md):
+- [Filtre de Chevauchement
+  (Overlap)](https://cedricbouffard.github.io/yieldcleanr/articles/filtre-chevauchement.md):
+- [Filtre PCDI - Position-Coordinate Delay
+  Identification](https://cedricbouffard.github.io/yieldcleanr/articles/filtre-pcdi.md):
 
-- [sample1.txt - Données de Soja](sample1.md):
-- [sample2.txt - Données de Soja (Fichier 2)](sample2.md):
-- [sample3.txt - Données de Maïs](sample3.md):
-- [sample4.txt - Données de Maïs Blanc](sample4.md):
+### Guides et Exemples
 
-### User Guides (English)
+Guides d’utilisation et exemples
 
-- [Nettoyage des Données de
-  Rendement](nettoyage_donnees_rendement_en.md):
-- [Example Data Usage](donnees_exemple_en.md):
-- [Filtres de Nettoyage des Données de
-  Rendement](filtres_nettoyage_en.md):
-
-### Examples by File
-
-- [sample1.txt - Soybean Data](sample1_en.md):
-- [sample2.txt - Soybean Data (File 2)](sample2_en.md):
-- [sample3.txt - Corn Data](sample3_en.md):
-- [sample4.txt - White Corn Data](sample4_en.md):
+- [Guide Complet du Nettoyage de Données de
+  Rendement](https://cedricbouffard.github.io/yieldcleanr/articles/guide-complet-samples.md):

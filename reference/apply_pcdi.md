@@ -1,17 +1,23 @@
-# PCDI : Phase Correlation Delay Identification
+# PCDI : Phase Correlation Delay Identification (Version Rapide)
 
 Determine automatiquement le delai optimal entre le flux et la position
-GPS en utilisant la methode de correlation de phase.
+GPS en utilisant une recherche en deux etapes (grossiere + fine) avec
+rgeoda.
 
 ## Usage
 
 ``` r
 apply_pcdi(
   data,
-  delay_range = 0:20,
-  n_iterations = 10,
-  noise_level = 0.05,
-  value_col = "Flow"
+  delay_range = -25:25,
+  n_iterations = 5,
+  noise_level = NULL,
+  value_col = "Flow",
+  sample_fraction = NULL,
+  method = NULL,
+  coarse_step = 2,
+  max_points = 10000,
+  bandwidth = 30
 )
 ```
 
@@ -23,24 +29,32 @@ apply_pcdi(
 
 - delay_range:
 
-  Plage de delais a tester (defaut 0:20 secondes)
+  Plage de delais a tester (defaut -25:25 secondes)
 
-- n_iterations:
+- value_col:
 
-  Nombre d'iterations avec bruit aleatoire (defaut 10)
+  Nom de la colonne de valeurs a analyser
 
-- noise_level:
+- coarse_step:
 
-  Niveau de bruit gaussien en proportion de la plage
+  Pas pour la recherche grossiere (defaut 2)
+
+- max_points:
+
+  Nombre maximum de points pour l'analyse
+
+- bandwidth:
+
+  Distance de bande passante pour Moran (defaut 30m)
 
 ## Value
 
-Liste avec optimal_delay, rsc_values et stability_metrics
+Liste avec optimal_delay, score_values et stability_metrics
 
 ## Examples
 
 ``` r
 if (FALSE) { # \dontrun{
-result <- apply_pcdi(data, delay_range = 0:20)
+result <- apply_pcdi(data, delay_range = -25:25)
 } # }
 ```

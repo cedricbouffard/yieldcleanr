@@ -7,7 +7,7 @@ un point tourne et le point suivant revient dans le bon sens).
 ## Usage
 
 ``` r
-filter_heading_anomalies(data, max_heading_change = 45, window_size = 3)
+filter_heading_anomalies(data, max_heading_change = 60, window_size = 3)
 ```
 
 ## Arguments
@@ -19,7 +19,7 @@ filter_heading_anomalies(data, max_heading_change = 45, window_size = 3)
 - max_heading_change:
 
   Variation maximale de direction entre 3 points consecutifs (degrés,
-  défaut: 45)
+  défaut: 60)
 
 - window_size:
 

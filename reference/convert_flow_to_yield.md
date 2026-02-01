@@ -11,7 +11,8 @@ convert_flow_to_yield(
   data,
   lbs_per_bushel = NULL,
   sqft_per_acre = 43560,
-  inches_per_foot = 12
+  inches_per_foot = 12,
+  force_recalculate = FALSE
 )
 ```
 
@@ -36,7 +37,7 @@ convert_flow_to_yield(
 
 ## Value
 
-Donnees avec colonne Yield_buacre
+Donnees avec colonne Yield_kg_ha
 
 ## Details
 

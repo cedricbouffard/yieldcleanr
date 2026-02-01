@@ -135,17 +135,23 @@ continuous surfaces.
 
 ## Documentation
 
-- [Getting Started](vignettes/getting-started.md) - Introduction and
-  basic usage
-- [Filtering Methods](vignettes/filtering-methods.md) - Detailed
-  explanation of filters
-- [Shiny Application](vignettes/shiny-app.md) - Guide to the interactive
-  app
-- [API Reference](reference/index.md) - Function documentation
+- [Getting
+  Started](https://cedricbouffard.github.io/yieldcleanr/vignettes/getting-started.md) -
+  Introduction and basic usage
+- [Filtering
+  Methods](https://cedricbouffard.github.io/yieldcleanr/vignettes/filtering-methods.md) -
+  Detailed explanation of filters
+- [Shiny
+  Application](https://cedricbouffard.github.io/yieldcleanr/vignettes/shiny-app.md) -
+  Guide to the interactive app
+- [API
+  Reference](https://cedricbouffard.github.io/yieldcleanr/reference/index.md) -
+  Function documentation
 
 ## Contributing
 
-Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md)
+Contributions are welcome! Please see
+[CONTRIBUTING.md](https://cedricbouffard.github.io/yieldcleanr/CONTRIBUTING.md)
 for guidelines.
 
 1.  Fork the repository
@@ -163,8 +169,9 @@ If you use this package in your research, please cite:
 
 ## License
 
-This project is licensed under the MIT License - see [LICENSE](LICENSE)
-for details.
+This project is licensed under the MIT License - see
+[LICENSE](https://cedricbouffard.github.io/yieldcleanr/LICENSE) for
+details.
 
 ## Acknowledgments
 
@@ -189,120 +196,126 @@ issues or feature requests on GitHub.
 
 Fonctions principales pour nettoyer les données de rendement
 
-- [`clean_yield()`](clean_yield.md) : Fonction unifiee de nettoyage des
-  donnees de rendement
-- [`clean_yield_with_tracking()`](clean_yield_with_tracking.md) :
-  Nettoyage des donnees de rendement avec suivi des suppressions
-- [`read_yield_data()`](read_yield_data.md) : Lire des donnees de
-  rendement brutes depuis un fichier texte
-- [`launch_shiny_app()`](launch_shiny_app.md) : Lancer l'application
-  Shiny de nettoyage des rendements
+- [`clean_yield()`](https://cedricbouffard.github.io/yieldcleanr/reference/clean_yield.md)
+  : Fonction unifiee de nettoyage des donnees de rendement
+- [`clean_yield_fast()`](https://cedricbouffard.github.io/yieldcleanr/reference/clean_yield_fast.md)
+  : Nettoyage rapide des données de rendement avec mise en cache
+- [`clean_yield_with_tracking()`](https://cedricbouffard.github.io/yieldcleanr/reference/clean_yield_with_tracking.md)
+  : Nettoyage des donnees de rendement avec suivi des suppressions
+- [`read_yield_data()`](https://cedricbouffard.github.io/yieldcleanr/reference/read_yield_data.md)
+  : Lire des donnees de rendement brutes depuis un fichier texte
+- [`launch_shiny_app()`](https://cedricbouffard.github.io/yieldcleanr/reference/launch_shiny_app.md)
+  : Lancer l'application Shiny de nettoyage des rendements
 
 ## AYCE - Auto Yield Cleaning Engine
 
 Fonctions du moteur de nettoyage automatique AYCE
 
-- [`ayce_clean()`](ayce_clean.md) : AYCE : Auto Yield Cleaning Engine
-  (sortie imperiale)
-- [`ayce_sf()`](ayce_sf.md) : Pipeline AYCE complet avec sortie SF
+- [`ayce_clean()`](https://cedricbouffard.github.io/yieldcleanr/reference/ayce_clean.md)
+  : AYCE : Auto Yield Cleaning Engine (sortie imperiale)
+- [`ayce_sf()`](https://cedricbouffard.github.io/yieldcleanr/reference/ayce_sf.md)
+  : Pipeline AYCE complet avec sortie SF
+- [`preprocess_yield_data()`](https://cedricbouffard.github.io/yieldcleanr/reference/preprocess_yield_data.md)
+  : Pré-traitement des données de rendement
 
 ## Application des Filtres
 
 Fonctions pour appliquer les filtres de nettoyage
 
-- [`apply_flow_delay()`](apply_flow_delay.md) : Appliquer la correction
-  de delai de flux
-- [`apply_local_sd_filter()`](apply_local_sd_filter.md) : Filtre
-  d'ecart-type localise
-- [`apply_moisture_delay()`](apply_moisture_delay.md) : Appliquer la
-  correction de delai d'humidite
-- [`apply_overlap_filter()`](apply_overlap_filter.md) : Filtre de
-  chevauchement base sur un bitmap
-- [`apply_pcdi()`](apply_pcdi.md) : PCDI : Phase Correlation Delay
-  Identification
-- [`apply_position_filter()`](apply_position_filter.md) : Appliquer le
-  filtre de position (POS)
+- [`apply_flow_delay()`](https://cedricbouffard.github.io/yieldcleanr/reference/apply_flow_delay.md)
+  : Appliquer la correction de delai de flux
+- [`apply_local_sd_filter()`](https://cedricbouffard.github.io/yieldcleanr/reference/apply_local_sd_filter.md)
+  : Filtre d'ecart-type localise
+- [`apply_moisture_delay()`](https://cedricbouffard.github.io/yieldcleanr/reference/apply_moisture_delay.md)
+  : Appliquer la correction de delai d'humidite
+- [`apply_overlap_filter()`](https://cedricbouffard.github.io/yieldcleanr/reference/apply_overlap_filter.md)
+  : Filtre de chevauchement base sur un bitmap
+- [`apply_pcdi()`](https://cedricbouffard.github.io/yieldcleanr/reference/apply_pcdi.md)
+  : PCDI : Phase Correlation Delay Identification (Version Rapide)
+- [`apply_position_filter()`](https://cedricbouffard.github.io/yieldcleanr/reference/apply_position_filter.md)
+  : Appliquer le filtre de position (POS)
+- [`apply_yield_filters()`](https://cedricbouffard.github.io/yieldcleanr/reference/apply_yield_filters.md)
+  : Application des filtres de rendement
 
 ## Filtres de Données
 
 Fonctions de filtrage des données de rendement
 
-- [`filter_bounds()`](filter_bounds.md) : Filtrer selon les limites
-  geographiques
-- [`filter_dop()`](filter_dop.md) : Filtrer selon le DOP (Dilution of
-  Precision)
-- [`filter_gps_status()`](filter_gps_status.md) : Filtrer selon le
-  statut GPS
-- [`filter_header_status()`](filter_header_status.md) : Filtrer selon le
-  statut du header
-- [`filter_heading_anomalies()`](filter_heading_anomalies.md) : Filtre
-  pour variations brusques de direction du header
-- [`filter_local_std()`](filter_local_std.md) : Appliquer le filtre ET
-  local
-- [`filter_moisture_range()`](filter_moisture_range.md) : Filtrer selon
-  la plage d'humidite
-- [`filter_sliding_window()`](filter_sliding_window.md) : Appliquer le
-  filtre a fenetre glissante
-- [`filter_velocity()`](filter_velocity.md) : Filtrer selon la plage de
-  vitesse
-- [`filter_velocity_jumps()`](filter_velocity_jumps.md) : Filtre pour
-  changements brusques de vitesse
-- [`filter_yield_range()`](filter_yield_range.md) : Filtrer selon la
-  plage de rendement
+- [`filter_bounds()`](https://cedricbouffard.github.io/yieldcleanr/reference/filter_bounds.md)
+  : Filtrer selon les limites geographiques
+- [`filter_dop()`](https://cedricbouffard.github.io/yieldcleanr/reference/filter_dop.md)
+  : Filtrer selon le DOP (Dilution of Precision)
+- [`filter_gps_status()`](https://cedricbouffard.github.io/yieldcleanr/reference/filter_gps_status.md)
+  : Filtrer selon le statut GPS
+- [`filter_header_status()`](https://cedricbouffard.github.io/yieldcleanr/reference/filter_header_status.md)
+  : Filtrer selon le statut du header
+- [`filter_heading_anomalies()`](https://cedricbouffard.github.io/yieldcleanr/reference/filter_heading_anomalies.md)
+  : Filtre pour variations brusques de direction du header
+- [`filter_local_std()`](https://cedricbouffard.github.io/yieldcleanr/reference/filter_local_std.md)
+  : Appliquer le filtre ET local
+- [`filter_moisture_range()`](https://cedricbouffard.github.io/yieldcleanr/reference/filter_moisture_range.md)
+  : Filtrer selon la plage d'humidite
+- [`filter_position_outliers()`](https://cedricbouffard.github.io/yieldcleanr/reference/filter_position_outliers.md)
+  : Filtre de position pour eliminer les points hors champ
+- [`filter_sliding_window()`](https://cedricbouffard.github.io/yieldcleanr/reference/filter_sliding_window.md)
+  : Appliquer le filtre a fenetre glissante
+- [`filter_velocity()`](https://cedricbouffard.github.io/yieldcleanr/reference/filter_velocity.md)
+  : Filtrer selon la plage de vitesse
+- [`filter_velocity_jumps()`](https://cedricbouffard.github.io/yieldcleanr/reference/filter_velocity_jumps.md)
+  : Filtre pour changements brusques de vitesse
+- [`filter_yield_range()`](https://cedricbouffard.github.io/yieldcleanr/reference/filter_yield_range.md)
+  : Filtrer selon la plage de rendement
 
 ## Calculs et Statistiques
 
 Fonctions de calcul et analyse des données
 
-- [`calculate_auto_thresholds()`](calculate_auto_thresholds.md) :
-  Calculer les seuils automatiques (methode quantiles-IQR)
-- [`calculate_filter_counts()`](calculate_filter_counts.md) : Calculer
-  le nombre de points retires par chaque filtre
+- [`calculate_auto_thresholds()`](https://cedricbouffard.github.io/yieldcleanr/reference/calculate_auto_thresholds.md)
+  : Calculer les seuils automatiques (methode quantiles-IQR)
+- [`calculate_filter_counts()`](https://cedricbouffard.github.io/yieldcleanr/reference/calculate_filter_counts.md)
+  : Calculer le nombre de points retires par chaque filtre
 
 ## Utilitaires
 
 Fonctions utilitaires pour la manipulation des données
 
-- [`convert_flow_to_yield()`](convert_flow_to_yield.md) : Convertir le
-  flux de grain en rendement (boisseaux/acre)
-- [`export_raster()`](export_raster.md) : Exporter les donnees nettoyees
-  en raster
-- [`latlon_to_utm()`](latlon_to_utm.md) : Convertir Latitude/Longitude
-  en coordonnees UTM
-- [`list_fields_from_zip()`](list_fields_from_zip.md) : Lister les
-  champs disponibles dans un fichier ZIP
-- [`read_yield_from_zip()`](read_yield_from_zip.md) : Lire les donnees
-  de rendement depuis un fichier ZIP
-- [`remove_overlap()`](remove_overlap.md) : Supprimer les points en
-  chevauchement
-- [`save_raster()`](save_raster.md) : Sauvegarder un raster en fichier
+- [`convert_flow_to_yield()`](https://cedricbouffard.github.io/yieldcleanr/reference/convert_flow_to_yield.md)
+  : Convertir le flux de grain en rendement (boisseaux/acre)
+- [`export_raster()`](https://cedricbouffard.github.io/yieldcleanr/reference/export_raster.md)
+  : Exporter les donnees nettoyees en raster
+- [`latlon_to_utm()`](https://cedricbouffard.github.io/yieldcleanr/reference/latlon_to_utm.md)
+  : Convertir Latitude/Longitude en coordonnees UTM
+- [`list_fields_from_zip()`](https://cedricbouffard.github.io/yieldcleanr/reference/list_fields_from_zip.md)
+  : Lister les champs disponibles dans un fichier ZIP
+- [`read_yield_from_zip()`](https://cedricbouffard.github.io/yieldcleanr/reference/read_yield_from_zip.md)
+  : Lire les donnees de rendement depuis un fichier ZIP
+- [`remove_overlap()`](https://cedricbouffard.github.io/yieldcleanr/reference/remove_overlap.md)
+  : Supprimer les points en chevauchement
+- [`save_raster()`](https://cedricbouffard.github.io/yieldcleanr/reference/save_raster.md)
+  : Sauvegarder un raster en fichier
 
 # Articles
 
-### Guides d’Utilisation (Français)
+### Filtres de Nettoyage
 
-- [Nettoyage des Données de Rendement](nettoyage_donnees_rendement.md):
-- [Utilisation des Données d'Exemple](donnees_exemple.md):
-- [Filtres de Nettoyage des Données de Rendement](filtres_nettoyage.md):
+Documentation détaillée des filtres de nettoyage
 
-### Exemples par Fichier
+- [Filtre de Plage de
+  Rendement](https://cedricbouffard.github.io/yieldcleanr/articles/filtre-rendement.md):
+- [Filtre
+  d'Humidité](https://cedricbouffard.github.io/yieldcleanr/articles/filtre-humidite.md):
+- [Filtre de Vitesse - Théorie et
+  Applications](https://cedricbouffard.github.io/yieldcleanr/articles/filtre-vitesse.md):
+- [Filtre d'Écart-type Local (Local
+  SD)](https://cedricbouffard.github.io/yieldcleanr/articles/filtre-ecart-type-local.md):
+- [Filtre de Chevauchement
+  (Overlap)](https://cedricbouffard.github.io/yieldcleanr/articles/filtre-chevauchement.md):
+- [Filtre PCDI - Position-Coordinate Delay
+  Identification](https://cedricbouffard.github.io/yieldcleanr/articles/filtre-pcdi.md):
 
-- [sample1.txt - Données de Soja](sample1.md):
-- [sample2.txt - Données de Soja (Fichier 2)](sample2.md):
-- [sample3.txt - Données de Maïs](sample3.md):
-- [sample4.txt - Données de Maïs Blanc](sample4.md):
+### Guides et Exemples
 
-### User Guides (English)
+Guides d’utilisation et exemples
 
-- [Nettoyage des Données de
-  Rendement](nettoyage_donnees_rendement_en.md):
-- [Example Data Usage](donnees_exemple_en.md):
-- [Filtres de Nettoyage des Données de
-  Rendement](filtres_nettoyage_en.md):
-
-### Examples by File
-
-- [sample1.txt - Soybean Data](sample1_en.md):
-- [sample2.txt - Soybean Data (File 2)](sample2_en.md):
-- [sample3.txt - Corn Data](sample3_en.md):
-- [sample4.txt - White Corn Data](sample4_en.md):
+- [Guide Complet du Nettoyage de Données de
+  Rendement](https://cedricbouffard.github.io/yieldcleanr/articles/guide-complet-samples.md):

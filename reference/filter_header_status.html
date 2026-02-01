@@ -17,7 +17,7 @@ document.addEventListener('DOMContentLoaded', function() {
       const isEn = currentPath.includes('/en/') || currentPath.endsWith('_en.html');
       let newPath;
       if (isEn) {
-        newPath = currentPath.replace('/en/', '/fr/').replace('_en.html', '_fr.html');
+        newPath = currentPath.replace('/en/', '/fr/').replace('_en.html', '_en.html');
       } else {
         newPath = currentPath.replace('/fr/', '/en/').replace('_fr.html', '_en.html');
       }
@@ -82,7 +82,8 @@ Les deux valeurs indiquent une recolte active.</p>
 
 
 <dt id="arg-header-values">header_values<a class="anchor" aria-label="anchor" href="#arg-header-values"></a></dt>
-<dd><p>Valeurs indiquant une recolte active (defaut c(1, 33))</p></dd>
+<dd><p>Valeurs indiquant une recolte active (defaut c(1, 33))
+1 = harvesting, 33 = header bas</p></dd>
 
 </dl></div>
     <div class="section level2">
@@ -98,7 +99,7 @@ Les deux valeurs indiquent une recolte active.</p>
 <span class="r-in"><span>  HeaderStatus <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">33</span>, <span class="fl">33</span>, <span class="fl">0</span>, <span class="fl">33</span><span class="op">)</span>  <span class="co"># 1=actif, 33=header bas, 0=header haut</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># Filtrer pour ne garder que la recolte active</span></span></span>
+<span class="r-in"><span><span class="co"># Filtrer pour ne garder que la recolte active (defaut: 1 et 33)</span></span></span>
 <span class="r-in"><span><span class="va">data_filtered</span> <span class="op">&lt;-</span> <span class="fu">filter_header_status</span><span class="op">(</span><span class="va">data</span><span class="op">)</span></span></span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Header Status filter: 1 points elimines (header non actif, valeurs acceptees: 1, 33 )</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">data_filtered</span><span class="op">)</span></span></span>

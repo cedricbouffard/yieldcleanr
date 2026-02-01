@@ -2,18 +2,14 @@ pandoc: 3.1.3
 pkgdown: 2.2.0
 pkgdown_sha: ~
 articles:
-  donnees_exemple_en: donnees_exemple_en.html
-  donnees_exemple: donnees_exemple.html
-  filtres_nettoyage_en: filtres_nettoyage_en.html
-  filtres_nettoyage: filtres_nettoyage.html
-  nettoyage_donnees_rendement_en: nettoyage_donnees_rendement_en.html
-  nettoyage_donnees_rendement: nettoyage_donnees_rendement.html
-  sample1_en: sample1_en.html
-  sample1: sample1.html
-  sample2_en: sample2_en.html
-  sample2: sample2.html
-  sample3_en: sample3_en.html
-  sample3: sample3.html
-  sample4_en: sample4_en.html
-  sample4: sample4.html
-last_built: 2026-01-29T19:44Z
+  filtre-chevauchement: filtre-chevauchement.html
+  filtre-ecart-type-local: filtre-ecart-type-local.html
+  filtre-humidite: filtre-humidite.html
+  filtre-pcdi: filtre-pcdi.html
+  filtre-rendement: filtre-rendement.html
+  filtre-vitesse: filtre-vitesse.html
+  guide-complet-samples: guide-complet-samples.html
+last_built: 2026-02-01T18:44Z
+urls:
+  reference: https://cedricbouffard.github.io/yieldcleanr/reference
+  article: https://cedricbouffard.github.io/yieldcleanr/articles

@@ -11,7 +11,7 @@ document.addEventListener('DOMContentLoaded', function() {
       const isEn = currentPath.includes('/en/') || currentPath.endsWith('_en.html');
       let newPath;
       if (isEn) {
-        newPath = currentPath.replace('/en/', '/fr/').replace('_en.html', '_fr.html');
+        newPath = currentPath.replace('/en/', '/fr/').replace('_en.html', '_en.html');
       } else {
         newPath = currentPath.replace('/fr/', '/en/').replace('_fr.html', '_en.html');
       }
