@@ -174,13 +174,22 @@ filter_data <- function(data, type = "all", ...) {
     return(data)
   }
 
+  # Check if Interval column exists
+  has_interval <- "Interval" %in% names(data)
+  
   # Calcul automatique des seuils si non fournis
   if (is.null(min_velocity) || is.null(max_velocity)) {
-    data_temp <- data |>
-      dplyr::mutate(
-        velocity = sqrt((X - dplyr::lag(X))^2 + (Y - dplyr::lag(Y))^2) /
-          dplyr::coalesce(Interval, 1)
-      )
+    if (has_interval) {
+      data_temp <- data |>
+        dplyr::mutate(
+          velocity = sqrt((X - dplyr::lag(X))^2 + (Y - dplyr::lag(Y))^2) / Interval
+        )
+    } else {
+      data_temp <- data |>
+        dplyr::mutate(
+          velocity = sqrt((X - dplyr::lag(X))^2 + (Y - dplyr::lag(Y))^2)
+        )
+    }
     data_temp$velocity[is.na(data_temp$velocity)] <- 0
 
     vel_values <- data_temp$velocity[is.finite(data_temp$velocity)]
@@ -193,11 +202,17 @@ filter_data <- function(data, type = "all", ...) {
   }
 
   n_before <- nrow(data)
-  data <- data |>
-    dplyr::mutate(
-      velocity = sqrt((X - dplyr::lag(X))^2 + (Y - dplyr::lag(Y))^2) /
-        dplyr::coalesce(Interval, 1)
-    )
+  if (has_interval) {
+    data <- data |>
+      dplyr::mutate(
+        velocity = sqrt((X - dplyr::lag(X))^2 + (Y - dplyr::lag(Y))^2) / Interval
+      )
+  } else {
+    data <- data |>
+      dplyr::mutate(
+        velocity = sqrt((X - dplyr::lag(X))^2 + (Y - dplyr::lag(Y))^2)
+      )
+  }
   data$velocity[is.na(data$velocity)] <- 0
 
   data <- data |>
@@ -481,6 +496,8 @@ detect_anomalies <- function(data, type = "all", action = "filter", ...) {
   cell_stats <- data |>
     dplyr::group_by(.cell_id) |>
     dplyr::summarise(
+      local_median = stats::median(Flow, na.rm = TRUE),
+      local_mad = stats::mad(Flow, na.rm = TRUE),
       local_mean = mean(Flow, na.rm = TRUE),
       local_sd = stats::sd(Flow, na.rm = TRUE),
       n = dplyr::n(),
@@ -489,17 +506,26 @@ detect_anomalies <- function(data, type = "all", action = "filter", ...) {
     dplyr::filter(n >= min_cells)
 
   # Statistiques globales pour les cellules avec peu de points
+  global_median <- stats::median(data$Flow, na.rm = TRUE)
+  global_mad <- stats::mad(data$Flow, na.rm = TRUE)
   global_mean <- mean(data$Flow, na.rm = TRUE)
   global_sd <- stats::sd(data$Flow, na.rm = TRUE)
 
   # Joindre et identifier les outliers
+  # Use MAD for outlier detection (more robust), fall back to SD if MAD is 0
   data <- data |>
     dplyr::left_join(cell_stats, by = ".cell_id") |>
     dplyr::mutate(
+      local_median = dplyr::coalesce(local_median, global_median),
+      local_mad = dplyr::coalesce(local_mad, global_mad),
       local_mean = dplyr::coalesce(local_mean, global_mean),
       local_sd = dplyr::coalesce(local_sd, global_sd),
-      .is_outlier = Flow > (local_mean + lsd_limit * local_sd) |
-        Flow < (local_mean - lsd_limit * local_sd)
+      # Use MAD if available and non-zero, otherwise use SD
+      upper_limit = ifelse(local_mad > 0, local_median + lsd_limit * local_mad * 1.4826,
+                           local_mean + lsd_limit * local_sd),
+      lower_limit = ifelse(local_mad > 0, local_median - lsd_limit * local_mad * 1.4826,
+                           local_mean - lsd_limit * local_sd),
+      .is_outlier = Flow > upper_limit | Flow < lower_limit
     )
 
   n_anomalies <- sum(data$.is_outlier, na.rm = TRUE)
@@ -507,14 +533,14 @@ detect_anomalies <- function(data, type = "all", action = "filter", ...) {
   if (action == "filter") {
     data <- data |>
       dplyr::filter(!.is_outlier) |>
-      dplyr::select(-.cell_x, -.cell_y, -.cell_id, -local_mean, -local_sd, -n, -.is_outlier)
+      dplyr::select(-.cell_x, -.cell_y, -.cell_id, -local_median, -local_mad, -local_mean, -local_sd, -n, -upper_limit, -lower_limit, -.is_outlier)
   } else if (action == "detect") {
     data <- data |>
       dplyr::rename(local_sd_outlier = .is_outlier) |>
-      dplyr::select(-.cell_x, -.cell_y, -.cell_id)
+      dplyr::select(-.cell_x, -.cell_y, -.cell_id, -local_median, -local_mad, -local_mean, -local_sd, -n, -upper_limit, -lower_limit)
   } else {
     data <- data |>
-      dplyr::select(-.cell_x, -.cell_y, -.cell_id, -local_mean, -local_sd, -n, -.is_outlier)
+      dplyr::select(-.cell_x, -.cell_y, -.cell_id, -local_median, -local_mad, -local_mean, -local_sd, -n, -upper_limit, -lower_limit, -.is_outlier)
   }
 
   return(list(data = data, count = n_anomalies))
@@ -624,7 +650,11 @@ detect_anomalies <- function(data, type = "all", action = "filter", ...) {
 
   # Vérifier que les limites sont valides
   if (x_min >= x_max || y_min >= y_max) {
-    rlang::warn("Buffer trop grand par rapport à l'étendue des données - saut du filtre position")
+    rlang::warn("Buffer trop grand par rapport a l'etendue des donnees - saut du filtre position")
+    # Still create position_outlier column when action="detect"
+    if (action == "detect") {
+      data <- data |> dplyr::mutate(position_outlier = FALSE)
+    }
     return(list(data = data, count = 0))
   }
 
@@ -1069,15 +1099,169 @@ convert_yield_units <- function(data, from = "flow_lbs_s", to = "kg_ha",
 
   # Déterminer l'humidité standard selon la culture
   if (is.null(moisture_std)) {
-    moisture_std <- switch(crop_type,
-      "maize" = 15.5,
-      "corn" = 15.5,
-      "soybean" = 13,
-      "wheat" = 13.5,
-      "barley" = 14.8,
-      "canola" = 10,
-      13 # défaut
-    )
+    if (is.null(crop_type)) {
+      moisture_std <- 13  # default
+    } else {
+      moisture_std <- switch(crop_type[1],
+        "maize" = 15.5,
+        "corn" = 15.5,
+        "soybean" = 13,
+        "wheat" = 13.5,
+        "barley" = 14.8,
+        "canola" = 10,
+        13 # default
+      )
+    }
+  }
+  if (is.null(moisture_std)) {
+    if (is.null(crop_type)) {
+      moisture_std <- 13  # default
+    } else {
+      moisture_std <- switch(crop_type[1],
+        "maize" = 15.5,
+        "corn" = 15.5,
+        "soybean" = 13,
+        "wheat" = 13.5,
+        "barley" = 14.8,
+        "canola" = 10,
+        13 # default
+      )
+    }
+  }
+  if (is.null(moisture_std)) {
+    if (is.null(crop_type)) {
+      moisture_std <- 13  # default
+    } else {
+      moisture_std <- switch(crop_type[1],
+        "maize" = 15.5,
+        "corn" = 15.5,
+        "soybean" = 13,
+        "wheat" = 13.5,
+        "barley" = 14.8,
+        "canola" = 10,
+        13 # default
+      )
+    }
+  }
+  if (is.null(moisture_std)) {
+    if (is.null(crop_type)) {
+      moisture_std <- 13  # default
+    } else {
+      moisture_std <- switch(crop_type[1],
+        "maize" = 15.5,
+        "corn" = 15.5,
+        "soybean" = 13,
+        "wheat" = 13.5,
+        "barley" = 14.8,
+        "canola" = 10,
+        13 # default
+      )
+    }
+  }
+  if (is.null(moisture_std)) {
+    if (is.null(crop_type)) {
+      moisture_std <- 13  # default
+    } else {
+      moisture_std <- switch(crop_type[1],
+        "maize" = 15.5,
+        "corn" = 15.5,
+        "soybean" = 13,
+        "wheat" = 13.5,
+        "barley" = 14.8,
+        "canola" = 10,
+        13 # default
+      )
+    }
+  }
+  if (is.null(moisture_std)) {
+    if (is.null(crop_type)) {
+      moisture_std <- 13  # default
+    } else {
+      moisture_std <- switch(crop_type[1],
+        "maize" = 15.5,
+        "corn" = 15.5,
+        "soybean" = 13,
+        "wheat" = 13.5,
+        "barley" = 14.8,
+        "canola" = 10,
+        13 # default
+      )
+    }
+  }
+  if (is.null(moisture_std)) {
+    if (is.null(crop_type)) {
+      moisture_std <- 13  # default
+    } else {
+      moisture_std <- switch(crop_type[1],
+        "maize" = 15.5,
+        "corn" = 15.5,
+        "soybean" = 13,
+        "wheat" = 13.5,
+        "barley" = 14.8,
+        "canola" = 10,
+        13 # default
+      )
+    }
+  }
+  if (is.null(moisture_std)) {
+    if (is.null(crop_type)) {
+      moisture_std <- 13  # default
+    } else {
+      moisture_std <- switch(crop_type[1],
+        "maize" = 15.5,
+        "corn" = 15.5,
+        "soybean" = 13,
+        "wheat" = 13.5,
+        "barley" = 14.8,
+        "canola" = 10,
+        13 # default
+      )
+    }
+  }
+  if (is.null(moisture_std)) {
+    if (is.null(crop_type)) {
+      moisture_std <- 13  # default
+    } else {
+      moisture_std <- switch(crop_type[1],
+        "maize" = 15.5,
+        "corn" = 15.5,
+        "soybean" = 13,
+        "wheat" = 13.5,
+        "barley" = 14.8,
+        "canola" = 10,
+        13 # default
+      )
+    }
+  }
+  if (is.null(moisture_std)) {
+    if (is.null(crop_type)) {
+      moisture_std <- 13  # default
+    } else {
+      moisture_std <- switch(crop_type[1],
+        "maize" = 15.5,
+        "corn" = 15.5,
+        "soybean" = 13,
+        "wheat" = 13.5,
+        "barley" = 14.8,
+        "canola" = 10,
+        13 # default
+      )
+    }
+  }
+  if (is.null(moisture_std)) {
+    if (is.null(crop_type)) {
+      moisture_std <- 13  # default
+    } else {
+      moisture_std <- switch(crop_type[1],
+        "maize" = 15.5,
+        "corn" = 15.5,
+        "soybean" = 13,
+        "wheat" = 13.5,
+        "barley" = 14.8,
+        "canola" = 10,
+        13 # default
+      )
+    }
   }
 
   # Conversion selon le cas
