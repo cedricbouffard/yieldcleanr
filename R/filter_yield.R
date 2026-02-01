@@ -120,8 +120,7 @@ interpolate_na <- function(data, value_col = "Flow") {
 #' @param delay Nombre d'observations a decaler
 #' @param direction Direction du decalage
  #' @return Tibble avec valeurs d'humidite corrigees
- #' @noRd
- #' @keywords internal
+ #' @export
  apply_moisture_delay <- function(data, delay = 15, direction = "forward") {
   n_before <- nrow(data)
 

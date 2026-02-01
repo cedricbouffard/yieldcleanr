@@ -724,7 +724,7 @@ optimize_delays <- function(data, type = "both", method = "PCDI",
     rlang::inform(paste("  Délai optimal", t, ":", pcdi_result$optimal_delay, "secondes"))
 
     # Appliquer la correction si demandé
-    if (apply_correction && pcdi_result$optimal_delay != 0) {
+    if (apply_correction && isTRUE(pcdi_result$optimal_delay != 0)) {
       data <- .apply_delay_correction_internal(data, pcdi_result$optimal_delay, value_col)
     }
   }
@@ -891,11 +891,18 @@ calculate_thresholds <- function(data, type = "all", ...) {
     return(list(min_velocity = 0.5, max_velocity = 10))
   }
 
-  data_temp <- data |>
-    dplyr::mutate(
-      velocity = sqrt((X - dplyr::lag(X))^2 + (Y - dplyr::lag(Y))^2) /
-        dplyr::coalesce(Interval, 1)
-    )
+  # Calculate velocity - use Interval if available, otherwise assume 1 second intervals
+  if ("Interval" %in% names(data)) {
+    data_temp <- data |>
+      dplyr::mutate(
+        velocity = sqrt((X - dplyr::lag(X))^2 + (Y - dplyr::lag(Y))^2) / Interval
+      )
+  } else {
+    data_temp <- data |>
+      dplyr::mutate(
+        velocity = sqrt((X - dplyr::lag(X))^2 + (Y - dplyr::lag(Y))^2)
+      )
+  }
   vel_vals <- data_temp$velocity[is.finite(data_temp$velocity)]
 
   if (length(vel_vals) == 0) {
