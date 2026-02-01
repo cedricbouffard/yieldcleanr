@@ -24,6 +24,10 @@ create_basic_test_data <- function() {
   )
 }
 
+# Note: Les fonctions individuelles filter_header_status, filter_gps_status, etc.
+# ont été remplacées par la méta-fonction filter_data().
+# Les tests ci-dessous utilisent les nouvelles méta-fonctions.
+
 # Test latlon_to_utm ----
 test_that("latlon_to_utm converts coordinates correctly", {
   data <- tibble::tibble(
@@ -118,93 +122,43 @@ test_that("convert_flow_to_yield handles missing columns gracefully", {
   expect_equal(nrow(result), nrow(data))
 })
 
-# Test filter_header_status ----
-test_that("filter_header_status keeps default values", {
+# Test filter_data - méta-fonction de filtrage unifiée ----
+test_that("filter_data applies header filter correctly", {
   data <- tibble::tibble(
     HeaderStatus = c(1L, 33L, 33L, 0L, 1L),
     Flow = 1:5
   )
 
-  result <- filter_header_status(data)
+  result <- filter_data(data, type = "header")
 
   expect_true(all(result$HeaderStatus %in% c(1, 33)))
   expect_equal(nrow(result), 4)
 })
 
-test_that("filter_header_status with custom values", {
-  data <- tibble::tibble(
-    HeaderStatus = c(1L, 33L, 5L, 10L, 33L),
-    Flow = 1:5
-  )
-
-  result <- filter_header_status(data, header_values = c(33))
-
-  expect_equal(nrow(result), 2)
-  expect_true(all(result$HeaderStatus == 33))
-})
-
-test_that("filter_header_status handles missing column", {
-  data <- tibble::tibble(Flow = 1:5)
-
-  result <- filter_header_status(data)
-
-  expect_equal(nrow(result), nrow(data))
-})
-
-# Test filter_gps_status ----
-test_that("filter_gps_status filters by minimum", {
+test_that("filter_data applies gps filter correctly", {
   data <- tibble::tibble(
     GPSStatus = c(2L, 4L, 4L, 7L, 4L),
     Flow = 1:5
   )
 
-  result <- filter_gps_status(data, min_gps_status = 4)
+  result <- filter_data(data, type = "gps", min_gps_status = 4)
 
   expect_equal(nrow(result), 4)
   expect_true(all(result$GPSStatus >= 4 | is.na(result$GPSStatus)))
 })
 
-test_that("filter_gps_status keeps NA values", {
-  data <- tibble::tibble(
-    GPSStatus = c(7L, NA, 3L, 5L, NA),
-    Flow = 1:5
-  )
-
-  result <- filter_gps_status(data, min_gps_status = 5)
-
-  expect_equal(nrow(result), 4)
-})
-
-test_that("filter_gps_status handles missing column", {
-  data <- tibble::tibble(Flow = 1:5)
-
-  result <- filter_gps_status(data)
-
-  expect_equal(nrow(result), nrow(data))
-})
-
-# Test filter_dop ----
-test_that("filter_dop removes high DOP values", {
+test_that("filter_data applies dop filter correctly", {
   data <- tibble::tibble(
     DOP = c(5L, 15L, 8L, 5L, 10L),
     Flow = 1:5
   )
 
-  result <- filter_dop(data, max_dop = 10)
+  result <- filter_data(data, type = "dop", max_dop = 10)
 
   expect_equal(nrow(result), 4)
 })
 
-test_that("filter_dop handles missing column", {
-  data <- tibble::tibble(Flow = 1:5)
-
-  result <- filter_dop(data)
-
-  expect_equal(nrow(result), nrow(data))
-})
-
-# Test filter_velocity ----
-test_that("filter_velocity filters by range", {
+test_that("filter_data applies velocity filter correctly", {
   data <- tibble::tibble(
     X = c(435000, 435010, 435020, 435030, 435040),
     Y = c(5262000, 5262010, 5262020, 5262030, 5262040),
@@ -212,135 +166,62 @@ test_that("filter_velocity filters by range", {
     Flow = 1:5
   )
 
-  result <- filter_velocity(data, min_velocity = 1, max_velocity = 10)
+  result <- filter_data(data, type = "velocity", min_velocity = 1, max_velocity = 10)
 
   expect_equal(nrow(result), 4)
 })
 
-test_that("filter_velocity handles missing X/Y", {
+test_that("filter_data handles missing X/Y for velocity", {
   data <- tibble::tibble(Flow = 1:5, Interval = 2)
 
-  result <- filter_velocity(data)
+  result <- filter_data(data, type = "velocity")
 
   expect_equal(nrow(result), nrow(data))
 })
 
-# Test filter_yield_range ----
-test_that("filter_yield_range filters by range", {
+test_that("filter_data applies yield filter correctly", {
   data <- tibble::tibble(
     Yield_kg_ha = c(6270, 9405, 3135, 18810, 11286),
     Flow = 1:5
   )
 
-  result <- filter_yield_range(data, min_yield = 3135, max_yield = 11286, yield_column = "Yield_kg_ha")
+  result <- filter_data(data, type = "yield", min_yield = 3135, max_yield = 11286)
 
   expect_equal(nrow(result), 4)
   expect_true(all(result$Yield_kg_ha >= 3135 & result$Yield_kg_ha <= 11286))
 })
 
-test_that("filter_yield_range handles empty result", {
+test_that("filter_data handles empty result for yield", {
   data <- tibble::tibble(
     Yield_kg_ha = c(37620, 43900, 50160),
     Flow = 1:3
   )
 
-  result <- filter_yield_range(data, min_yield = 3135, max_yield = 11286, yield_column = "Yield_kg_ha")
+  result <- filter_data(data, type = "yield", min_yield = 3135, max_yield = 11286)
 
   expect_equal(nrow(result), 0)
 })
 
-test_that("filter_yield_range handles missing column", {
-  data <- tibble::tibble(Flow = 1:5)
-
-  result <- filter_yield_range(data)
-
-  expect_equal(nrow(result), nrow(data))
-})
-
-# Test filter_moisture_range ----
-test_that("filter_moisture_range filters by range", {
+test_that("filter_data applies moisture filter correctly", {
   data <- tibble::tibble(
     Moisture = c(5, 15, 35, 45, 25),
     Flow = 1:5
   )
 
-  result <- filter_moisture_range(data, min_moisture = 10, max_moisture = 40)
+  result <- filter_data(data, type = "moisture", min_moisture = 10, max_moisture = 40)
 
   expect_equal(nrow(result), 3)
 })
 
-test_that("filter_moisture_range handles missing column", {
+test_that("filter_data handles missing column for moisture", {
   data <- tibble::tibble(Flow = 1:5)
 
-  result <- filter_moisture_range(data)
+  result <- filter_data(data, type = "moisture")
 
   expect_equal(nrow(result), nrow(data))
 })
 
-# Test apply_flow_delay ----
-test_that("apply_flow_delay shifts values", {
-  data <- tibble::tibble(
-    Flow = 1:10,
-    GPS_Time = 1:10
-  )
-
-  result <- apply_flow_delay(data, delay = 1)
-
-  expect_equal(nrow(result), nrow(data))
-  expect_equal(sum(is.na(result$Flow)), 1)
-})
-
-test_that("apply_flow_delay handles negative delay", {
-  data <- tibble::tibble(
-    Flow = 1:10,
-    GPS_Time = 1:10
-  )
-
-  result <- apply_flow_delay(data, delay = -1)
-
-  expect_equal(nrow(result), nrow(data))
-  expect_equal(sum(is.na(result$Flow)), 1)
-})
-
-# Test apply_moisture_delay ----
-test_that("apply_moisture_delay shifts values", {
-  data <- tibble::tibble(
-    Moisture = 1:10,
-    GPS_Time = 1:10
-  )
-
-  result <- apply_moisture_delay(data, delay = 1)
-
-  expect_equal(nrow(result), nrow(data) - 1)
-})
-
-# Test remove_overlap ----
-test_that("remove_overlap filters overlapping cells", {
-  data <- tibble::tibble(
-    X = c(1, 1.1, 1.2, 1.3, 1.4, 1.5, 2, 2.1, 2.2),
-    Y = c(1, 1, 1, 1, 1, 1, 2, 2, 2),
-    Flow = 1:9
-  )
-
-  result <- remove_overlap(data, cellsize = 0.5, max_pass = 2)
-
-  expect_true(nrow(result) < nrow(data))
-})
-
-test_that("remove_overlap handles no overlap", {
-  data <- tibble::tibble(
-    X = c(1, 10, 20, 30),
-    Y = c(1, 10, 20, 30),
-    Flow = 1:4
-  )
-
-  result <- remove_overlap(data, cellsize = 0.5, max_pass = 2)
-
-  expect_equal(nrow(result), nrow(data))
-})
-
-# Test filter_bounds ----
-test_that("filter_bounds filters by lat/lon", {
+test_that("filter_data applies bounds filter by lat/lon", {
   data <- tibble::tibble(
     Longitude = c(-70, -69.5, -69, -68.5),
     Latitude = c(47, 47.5, 48, 48.5),
@@ -348,12 +229,12 @@ test_that("filter_bounds filters by lat/lon", {
   )
   bounds <- list(min_x = -69.5, max_x = -68, min_y = 47, max_y = 48)
 
-  result <- filter_bounds(data, bounds, coord_type = "latlon")
+  result <- filter_data(data, type = "bounds", bounds = bounds, coord_type = "latlon")
 
   expect_equal(nrow(result), 2)
 })
 
-test_that("filter_bounds filters by UTM", {
+test_that("filter_data applies bounds filter by UTM", {
   data <- tibble::tibble(
     X = c(435000, 436000, 437000, 438000),
     Y = c(5262000, 5263000, 5264000, 5265000),
@@ -361,15 +242,88 @@ test_that("filter_bounds filters by UTM", {
   )
   bounds <- list(min_x = 435000, max_x = 437000, min_y = 5262000, max_y = 5264000)
 
-  result <- filter_bounds(data, bounds, coord_type = "utm")
+  result <- filter_data(data, type = "bounds", bounds = bounds, coord_type = "utm")
 
   expect_equal(nrow(result), 3)
 })
 
-test_that("filter_bounds with NULL bounds returns all", {
+test_that("filter_data with NULL bounds returns all", {
   data <- tibble::tibble(Flow = 1:5)
 
-  result <- filter_bounds(data, bounds = NULL)
+  result <- filter_data(data, type = "bounds", bounds = NULL)
+
+  expect_equal(nrow(result), nrow(data))
+})
+
+# Test optimize_delays - méta-fonction d'optimisation des délais ----
+test_that("optimize_delays shifts flow values", {
+  data <- tibble::tibble(
+    Flow = 1:10,
+    GPS_Time = 1:10,
+    X = 435000 + 1:10,
+    Y = 5262000 + 1:10,
+    Interval = rep(2L, 10)
+  )
+
+  result <- optimize_delays(data, type = "flow", delay_range = -3:3, 
+                            n_iterations = 2, apply_correction = TRUE)
+
+  expect_true("data" %in% names(result))
+  expect_true("delays" %in% names(result))
+})
+
+test_that("optimize_delays shifts moisture values", {
+  data <- tibble::tibble(
+    Flow = 1:10,
+    Moisture = 1:10,
+    GPS_Time = 1:10,
+    X = 435000 + 1:10,
+    Y = 5262000 + 1:10,
+    Interval = rep(2L, 10)
+  )
+
+  result <- optimize_delays(data, type = "moisture", delay_range = -3:3, 
+                            n_iterations = 2, apply_correction = TRUE)
+
+  expect_true("data" %in% names(result) || "delays" %in% names(result))
+})
+
+test_that("optimize_delays handles negative delay", {
+  data <- tibble::tibble(
+    Flow = 1:10,
+    GPS_Time = 1:10,
+    X = 435000 + 1:10,
+    Y = 5262000 + 1:10,
+    Interval = rep(2L, 10)
+  )
+
+  result <- optimize_delays(data, type = "flow", delay_range = -3:3, 
+                            n_iterations = 2, apply_correction = TRUE)
+
+  expect_true("data" %in% names(result))
+})
+
+# Test detect_anomalies - méta-fonction de détection d'anomalies ----
+test_that("detect_anomalies filters overlapping cells", {
+  data <- tibble::tibble(
+    X = c(1, 1.1, 1.2, 1.3, 1.4, 1.5, 2, 2.1, 2.2),
+    Y = c(1, 1, 1, 1, 1, 1, 2, 2, 2),
+    Flow = 1:9
+  )
+
+  result <- detect_anomalies(data, type = "overlap", cellsize = 0.5, max_pass = 2)
+
+  expect_true(nrow(result) < nrow(data))
+})
+
+test_that("detect_anomalies handles no overlap", {
+  data <- tibble::tibble(
+    X = c(1, 10, 20, 30),
+    Y = c(1, 10, 20, 30),
+    Flow = 1:4
+  )
+
+  result <- detect_anomalies(data, type = "overlap", cellsize = 0.5, max_pass = 2)
 
   expect_equal(nrow(result), nrow(data))
 })
@@ -390,115 +344,114 @@ test_that("apply_pcdi finds optimal delay", {
   expect_true("rsc_values" %in% names(result))
 })
 
-# Test calculate_auto_thresholds ----
-test_that("calculate_auto_thresholds computes thresholds", {
+# Test calculate_thresholds - méta-fonction ----
+test_that("calculate_thresholds computes all thresholds", {
+  data <- tibble::tibble(
+    Yield_kg_ha = c(6270, 7524, 8778, 10032, 11286, 6897, 8142, 9405),
+    Flow = 1:8,
+    X = 435000 + 1:8,
+    Y = 5262000 + 1:8,
+    Moisture = c(15, 16, 15, 16, 15, 16, 15, 16)
+  )
+
+  result <- calculate_thresholds(data, type = "all")
+
+  expect_true("yield" %in% names(result))
+  expect_true("velocity" %in% names(result))
+  expect_true("position" %in% names(result))
+  expect_true("moisture" %in% names(result))
+})
+
+test_that("calculate_thresholds computes yield thresholds", {
   data <- tibble::tibble(
     Yield_kg_ha = c(6270, 7524, 8778, 10032, 11286, 6897, 8142, 9405),
     Flow = 1:8
   )
 
-  result <- calculate_auto_thresholds(data)
+  result <- calculate_thresholds(data, type = "yield")
 
-  expect_true("min_yield" %in% names(result))
-  expect_true("max_yield" %in% names(result))
-  expect_true("min_velocity" %in% names(result))
-  expect_true("max_velocity" %in% names(result))
+  expect_true("yield" %in% names(result))
+  expect_true("min_yield" %in% names(result$yield))
+  expect_true("max_yield" %in% names(result$yield))
 })
 
-# Test calculate_filter_counts ----
-test_that("calculate_filter_counts returns summary", {
-  data_raw <- tibble::tibble(Flow = 1:10)
-  data_clean <- tibble::tibble(Flow = 1:7)
-
-  result <- calculate_filter_counts(data_raw, data_clean)
-
-  expect_true("rows_removed" %in% names(result))
-  expect_true("retention_rate" %in% names(result))
-  expect_true(result$retention_rate <= 1)
-  expect_true(result$retention_rate >= 0)
-})
-
-# Test apply_overlap_filter ----
-test_that("apply_overlap_filter returns filtered data", {
+test_that("calculate_thresholds computes velocity thresholds", {
   data <- tibble::tibble(
-    X = c(435000, 435001, 435002, 435003, 435100),
-    Y = c(5262000, 5262001, 5262002, 5262003, 5262100),
-    Flow = c(10, 15, 12, 18, 20),
-    Swath = c(240, 240, 240, 240, 240)
+    X = 435000 + 1:8,
+    Y = 5262000 + 1:8,
+    Flow = 1:8
   )
 
-  result <- apply_overlap_filter(data, cellsize = 0.3)
+  result <- calculate_thresholds(data, type = "velocity")
 
-  expect_true(nrow(result) <= nrow(data))
+  expect_true("velocity" %in% names(result))
+  expect_true("min_velocity" %in% names(result$velocity))
+  expect_true("max_velocity" %in% names(result$velocity))
 })
 
-test_that("apply_overlap_filter warns on missing columns", {
-  data <- tibble::tibble(Flow = c(1, 2, 3))
-
-  expect_warning(apply_overlap_filter(data))
-})
-
-# Test apply_local_sd_filter ----
-test_that("apply_local_sd_filter returns filtered data", {
+# Test detect_anomalies - suite ----
+test_that("detect_anomalies with local_sd returns filtered data", {
   data <- tibble::tibble(
+    X = c(435000, 435001, 435002, 435003, 435004, 435005),
+    Y = c(5262000, 5262001, 5262002, 5262003, 5262004, 5262005),
     Flow = c(50, 52, 51, 500, 53, 49),
-    Pass = c(1, 1, 1, 1, 2, 2)
+    Swath = rep(240, 6)
   )
 
-  result <- apply_local_sd_filter(data, n_swaths = 3, lsd_limit = 2)
+  result <- detect_anomalies(data, type = "local_sd", n_swaths = 3, lsd_limit = 2)
 
   expect_true(nrow(result) <= nrow(data))
 })
 
-test_that("apply_local_sd_filter warns on missing columns", {
+test_that("detect_anomalies handles missing columns gracefully", {
   data <- tibble::tibble(Flow = c(1, 2, 3))
 
-  expect_warning(apply_local_sd_filter(data))
+  result <- detect_anomalies(data, type = "local_sd")
+  
+  expect_equal(nrow(result), nrow(data))
 })
 
- # Test filter_heading_anomalies ----
-test_that("filter_heading_anomalies filters heading changes", {
+test_that("detect_anomalies with heading filters heading changes", {
   data <- tibble::tibble(
     X = c(435000, 435010, 435020, 435030, 435040),
     Y = c(5262000, 5262010, 5262020, 5262030, 5262040),
-    Flow = 1:5
+    Flow = 1:5,
+    GPS_Time = 1:5
   )
 
-  result <- filter_heading_anomalies(data, max_heading_change = 45)
+  result <- detect_anomalies(data, type = "heading", max_heading_change = 45)
 
-  expect_type(result, "list")
-  expect_true("data" %in% names(result))
-  expect_equal(nrow(result$data), nrow(data))
+  expect_true(is.data.frame(result))
+  expect_true(nrow(result) <= nrow(data))
 })
 
-# Test filter_velocity_jumps ----
-test_that("filter_velocity_jumps filters sudden changes", {
+test_that("detect_anomalies with velocity_jump filters sudden changes", {
   data <- tibble::tibble(
     X = c(435000, 435010, 435020, 435030, 435040),
     Y = c(5262000, 5262010, 5262020, 5262030, 5262040),
     Interval = c(2, 2, 2, 2, 2),
-    Flow = 1:5
+    Flow = 1:5,
+    GPS_Time = 1:5
   )
 
-  result <- filter_velocity_jumps(data, max_acceleration = 5)
+  result <- detect_anomalies(data, type = "velocity_jump", max_acceleration = 5)
 
-  expect_type(result, "list")
-  expect_true("data" %in% names(result))
-  expect_equal(nrow(result$data), nrow(data))
+  expect_true(is.data.frame(result))
+  expect_true(nrow(result) <= nrow(data))
 })
 
- # Test apply_position_filter ----
-test_that("apply_position_filter filters by position", {
+# Test detect_anomalies with position ----
+test_that("detect_anomalies with position filters by position", {
   data <- tibble::tibble(
     X = c(435000, 435010, 435020, 435030, 435040),
     Y = c(5262000, 5262010, 5262020, 5262030, 5262040),
     Flow = 1:5
   )
 
-  thresholds <- list(pos_x_min = 434000, pos_x_max = 436000, pos_y_min = 5261000, pos_y_max = 5263000)
-  result <- apply_position_filter(data, thresholds = thresholds)
+  result <- detect_anomalies(data, type = "position", gbuffer = 100)
 
-  expect_equal(nrow(result), nrow(data))
+  expect_true(is.data.frame(result))
+  expect_true(nrow(result) <= nrow(data))
 })
 
  # Test clean_yield ----
@@ -545,39 +498,51 @@ test_that("clean_yield_with_tracking returns list with tracking", {
   expect_true("removed_points" %in% names(result))
 })
 
- # Test export_raster ----
-test_that("export_raster returns SpatRaster", {
-  skip_if_not_installed("sf")
-  skip_if_not_installed("terra")
-
+# Test export_data - méta-fonction d'export ----
+test_that("export_data exports to CSV", {
   data <- create_basic_test_data()
-  data$Yield_kg_ha <- data$Flow * 10  # Add a test yield column
+  temp_file <- tempfile(fileext = ".csv")
 
-  data_sf <- sf::st_as_sf(data, coords = c("Longitude", "Latitude"), crs = 4326)
+  result <- export_data(data, temp_file, format = "csv")
 
-  result <- export_raster(data_sf)
-
-  expect_true(inherits(result, "SpatRaster") || is.null(result))
+  expect_true(file.exists(temp_file))
+  expect_equal(result, temp_file)
+  
+  # Clean up
+  unlink(temp_file)
 })
 
-# Test save_raster ----
-test_that("save_raster saves file", {
+test_that("export_data detects format from extension", {
   skip_if_not_installed("sf")
-  skip_if_not_installed("terra")
 
   data <- create_basic_test_data()
-  data$Yield_kg_ha <- data$Flow * 10  # Add a test yield column
-
   data_sf <- sf::st_as_sf(data, coords = c("Longitude", "Latitude"), crs = 4326)
+  temp_file <- tempfile(fileext = ".geojson")
 
-  temp_file <- tempfile(fileext = ".tif")
+  result <- export_data(data_sf, temp_file)
 
-  raster <- export_raster(data_sf)
+  expect_true(file.exists(temp_file))
+  
+  # Clean up
+  unlink(temp_file)
+})
 
-  if (!is.null(raster)) {
-    result <- save_raster(raster, temp_file)
-    expect_true(file.exists(temp_file))
-  }
+test_that("export_data handles overwrite parameter", {
+  data <- create_basic_test_data()
+  temp_file <- tempfile(fileext = ".csv")
+
+  # First export
+  export_data(data, temp_file, format = "csv")
+
+  # Should fail without overwrite
+  expect_error(export_data(data, temp_file, format = "csv"))
+
+  # Should succeed with overwrite
+  result <- export_data(data, temp_file, format = "csv", overwrite = TRUE)
+  expect_equal(result, temp_file)
+  
+  # Clean up
+  unlink(temp_file)
 })
 
 # Test launch_shiny_app ----

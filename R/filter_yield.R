@@ -8,19 +8,9 @@
 #' @param delay Nombre d'observations a decaler (positif = vers l'avant)
 #' @param direction Direction du decalage : "forward" ou "backward"
  #' @return Tibble avec valeurs de flux corrigees
- #' @export
- #' @examples
- #' # Creer des donnees d'exemple
- #' data <- tibble::tibble(
- #'   Flow = c(1.5, 2.5, 3.5, 4.5, 5.5, 6.5, 7.5),
- #'   Longitude = 1:7,
- #'   Latitude = 1:7
- #' )
- #'
- #' # Appliquer la correction de delai de flux
- #' data_corrected <- apply_flow_delay(data, delay = 1)
- #' print(data_corrected)
-  apply_flow_delay <- function(data, delay = 2, direction = "forward", value_col = "Flow") {
+ #' @noRd
+ #' @keywords internal
+   apply_flow_delay <- function(data, delay = 2, direction = "forward", value_col = "Flow") {
    n_before <- nrow(data)
 
    if (delay == 0) {
@@ -130,7 +120,8 @@ interpolate_na <- function(data, value_col = "Flow") {
 #' @param delay Nombre d'observations a decaler
 #' @param direction Direction du decalage
  #' @return Tibble avec valeurs d'humidite corrigees
- #' @export
+ #' @noRd
+ #' @keywords internal
  apply_moisture_delay <- function(data, delay = 15, direction = "forward") {
   n_before <- nrow(data)
 

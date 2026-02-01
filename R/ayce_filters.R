@@ -7,19 +7,8 @@
 #' @param cellsize Taille de cellule de grille en metres (defaut 0.3)
 #' @param overlap_threshold Ratio maximal de chevauchement (0-1, defaut 0.5)
  #' @return Tibble filtre sans chevauchement
- #' @export
- #' @examples
- #' # Creer des donnees d'exemple avec chevauchements possibles
- #' data <- tibble::tibble(
- #'   X = c(435000, 435001, 435002, 435003, 435100),
- #'   Y = c(5262000, 5262001, 5262002, 5262003, 5262100),
- #'   Flow = c(10, 15, 12, 18, 20),
- #'   Swath = c(240, 240, 240, 240, 240)
- #' )
- #'
- #' # Appliquer le filtre de chevauchement (cellule 0.3m, max 50%)
- #' data_clean <- apply_overlap_filter(data, cellsize = 0.3, overlap_threshold = 0.5)
- #' print(data_clean)
+ #' @noRd
+ #' @keywords internal
  apply_overlap_filter <- function(data, cellsize = 0.3, overlap_threshold = 0.5) {
 
   rlang::inform("=== Bitmap Overlap Filter ===")
@@ -151,22 +140,8 @@
 #' @param lsd_limit Multiplicateur de l'ET local (defaut 3)
 #' @param min_cells Observations minimales par cellule (defaut 3)
  #' @return Tibble filtre
- #' @export
- #' @examples
- #' # Creer des donnees d'exemple avec outliers locaux
- #' data <- tibble::tibble(
- #'   X = c(435000, 435001, 435002, 435003, 435004, 435005,
- #'         435100, 435101, 435102, 435103, 435104, 435105),
- #'   Y = c(5262000, 5262001, 5262002, 5262003, 5262004, 5262005,
- #'         5262100, 5262101, 5262102, 5262103, 5262104, 5262105),
- #'   Flow = c(50, 55, 52, 58, 300, 54,  # 300 = outlier local
- #'            45, 48, 47, 50, 49, 46),
- #'   Swath = c(240, 240, 240, 240, 240, 240, 240, 240, 240, 240, 240, 240)
- #' )
- #'
- #' # Appliquer le filtre ET local
- #' data_clean <- apply_local_sd_filter(data, n_swaths = 5, lsd_limit = 3)
- #' print(data_clean)
+ #' @noRd
+ #' @keywords internal
  apply_local_sd_filter <- function(data, n_swaths = 5, lsd_limit = 3,
                                    min_cells = 3) {
 

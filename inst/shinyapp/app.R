@@ -1484,11 +1484,20 @@ server <- function(input, output, session) {
       
       # Generer le raster
       cell_size <- input$raster_resolution %||% 1
-      raster_data <- yieldcleanr::export_raster(
+      
+      # Creer un fichier temporaire pour le raster
+      temp_raster_file <- tempfile(fileext = ".tif")
+      
+      # Utiliser la meta-fonction export_data() pour creer le raster
+      yieldcleanr::export_data(
         data = data,
-        cell_size = cell_size,
-        column_colonne = yield_col
+        file = temp_raster_file,
+        format = "raster",
+        resolution = cell_size
       )
+      
+      # Lire le raster genere
+      raster_data <- terra::rast(temp_raster_file)
       
       rv$raster_data <- raster_data
       
@@ -1661,11 +1670,12 @@ server <- function(input, output, session) {
           incProgress(0.1, detail = "Phase 1: Pre-traitement (UTM, PCDI, position)...")
           message("Parametres de pre-traitement changes - recalcul necessaire")
           
-          rv$preprocessed_data <- yieldcleanr::preprocess_yield_data(
-            data = data_df,
-            params = params,
-            metrique = TRUE
-          )
+           rv$preprocessed_data <- yieldcleanr::clean_yield_fast(
+             data = data_df,
+             phase = "preprocess",
+             params = params,
+             metrique = TRUE
+           )
           rv$preprocess_params <- params
           
           message("Pre-traitement termine")
@@ -1677,11 +1687,13 @@ server <- function(input, output, session) {
          # === PHASE 2: APPLICATION DES FILTRES ===
          incProgress(0.3, detail = "Phase 2: Application des filtres...")
          
-         filter_result <- yieldcleanr::apply_yield_filters(
-           preprocessed_data = rv$preprocessed_data,
-           params = params,
-           polygon = TRUE
-         )
+          filter_result <- yieldcleanr::clean_yield_fast(
+            data = rv$preprocessed_data,
+            phase = "filter",
+            preprocessed_data = rv$preprocessed_data,
+            params = params,
+            polygon = TRUE
+          )
          
           # Extraire les donnees et les suppressions
           data_clean <- filter_result$data
@@ -1763,7 +1775,13 @@ server <- function(input, output, session) {
        })
       
        output$status <- renderText({
-         paste("Retenus :", round(rv$result$stats$retention_rate, 1), "% |",
+         retention_rate <- rv$result$stats$retention_rate
+         if (is.null(retention_rate) || is.na(retention_rate)) {
+           retention_str <- "N/A"
+         } else {
+           retention_str <- paste0(round(retention_rate, 1), "%")
+         }
+         paste("Retenus :", retention_str, "|",
                "Supprimes :", rv$result$stats$n_raw - rv$result$stats$n_clean, "points")
        })
       
@@ -1812,7 +1830,13 @@ server <- function(input, output, session) {
   
    output$status <- renderText({
      if (rv$processed && !is.null(rv$result)) {
-       paste("Retenus :", round(rv$result$stats$retention_rate, 1), "% |",
+       retention_rate <- rv$result$stats$retention_rate
+       if (is.null(retention_rate) || is.na(retention_rate)) {
+         retention_str <- "N/A"
+       } else {
+         retention_str <- paste0(round(retention_rate, 1), "%")
+       }
+       paste("Retenus :", retention_str, "|",
              "Supprimes :", rv$result$stats$n_deleted, "points")
      } else if (!is.null(rv$raw_data)) {
        "Traitement en cours..."
@@ -1870,6 +1894,12 @@ server <- function(input, output, session) {
       data_clean <- sf::st_drop_geometry(data_clean)
     }
     
+    # Helper function to safely round values
+    safe_round <- function(x, digits = 1) {
+      if (is.null(x) || is.na(x) || !is.numeric(x)) return("N/A")
+      round(x, digits)
+    }
+    
     data.frame(
       Indicateur = c("Observations brutes", "Observations nettoyees", "Points supprimes",
                      "Taux de retention", "Delai de flux (s)", "Rendement moyen"),
@@ -1877,9 +1907,9 @@ server <- function(input, output, session) {
         rv$result$stats$n_raw,
         rv$result$stats$n_clean,
         rv$result$stats$n_deleted,
-        paste0(round(rv$result$stats$retention_rate, 1), "%"),
-        round(rv$result$stats$flow_delay, 2),
-        paste0(round(mean(data_clean[[yield_col]], na.rm = TRUE), 1), " ", unit_label)
+        paste0(safe_round(rv$result$stats$retention_rate, 1), "%"),
+        safe_round(rv$result$stats$flow_delay, 2),
+        paste0(safe_round(mean(data_clean[[yield_col]], na.rm = TRUE), 1), " ", unit_label)
       )
     )
   }, striped = TRUE, hover = TRUE, bordered = TRUE)
@@ -1900,10 +1930,17 @@ server <- function(input, output, session) {
     thr <- rv$result$stats$thresholds
     yield_factor <- 67.25
     yield_unit <- "kg/ha"
-    cat("Plage de rendement :", round(thr$min_yield * yield_factor, 1), "-",
-        round(thr$max_yield * yield_factor, 1), yield_unit, "\n")
-    cat("Plage de vitesse :", round(thr$min_velocity, 2), "-",
-        round(thr$max_velocity, 2), "m/s\n")
+    
+    # Helper function to safely round values
+    safe_round <- function(x, digits = 1) {
+      if (is.null(x) || is.na(x) || !is.numeric(x)) return("N/A")
+      round(x, digits)
+    }
+    
+    cat("Plage de rendement :", safe_round(thr$min_yield * yield_factor, 1), "-",
+        safe_round(thr$max_yield * yield_factor, 1), yield_unit, "\n")
+    cat("Plage de vitesse :", safe_round(thr$min_velocity, 2), "-",
+        safe_round(thr$max_velocity, 2), "m/s\n")
     cat("Delai de flux :", rv$result$stats$flow_delay, "secondes\n")
   })
   
@@ -1919,7 +1956,7 @@ server <- function(input, output, session) {
       data <- sf::st_drop_geometry(data)
     }
     
-    ggplot(data, aes_string(x = yield_col)) +
+    ggplot(data, aes(x = .data[[yield_col]])) +
       geom_histogram(bins = 50, fill = "#2f6f6d", color = "white") +
       labs(title = "Distribution du rendement (donnees nettoyees)",
            x = paste0("Rendement (", unit_label, ")"),
@@ -2078,12 +2115,14 @@ server <- function(input, output, session) {
         }
         
         tryCatch({
-          raster_data <- yieldcleanr::export_raster(
+          # Utiliser la meta-fonction export_data() pour l'export raster
+          yieldcleanr::export_data(
             data = data,
-            cell_size = 1,
-            column_colonne = yield_col
+            file = file,
+            format = "raster",
+            resolution = 1,
+            overwrite = TRUE
           )
-          yieldcleanr::save_raster(raster_data, file, format = "tif")
           showNotification("Raster exporte avec succes", type = "message")
         }, error = function(e) {
           showNotification(paste("Erreur lors de l'export raster:", e$message), type = "error")

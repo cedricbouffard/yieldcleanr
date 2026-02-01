@@ -78,9 +78,9 @@ data_raw <- read_yield_data(file_path)
 # Préparation complète jusqu'au filtre LSD
 data <- latlon_to_utm(data_raw) %>%
   convert_flow_to_yield() %>%
-  filter_velocity(min_velocity = 0.5, max_velocity = 10) %>%
-  filter_moisture_range(n_std = 3) %>%
-  apply_overlap_filter(cellsize = 0.3, overlap_threshold = 0.5)
+  filter_data(type = "velocity", min_value = 0.5, max_value = 10) %>%
+  filter_data(type = "moisture", n_std = 3) %>%
+  detect_anomalies(type = "overlap", cellsize = 0.3, overlap_threshold = 0.5)
 
 cat("=== Filtre d'écart-type local ===\n")
 cat("Points avant filtrage:", nrow(data), "\n")
@@ -182,9 +182,10 @@ n_before <- nrow(data)
 cat("Points avant filtrage:", n_before, "\n")
 
 # Appliquer le filtre
-data_filtered <- apply_local_sd_filter(data, 
-                                        n_swaths = n_swaths,
-                                        lsd_limit = lsd_limit)
+data_filtered <- detect_anomalies(data, 
+                                  type = "local_sd",
+                                  n_swaths = n_swaths,
+                                  lsd_limit = lsd_limit)
 
 # Après filtrage
 n_after <- nrow(data_filtered)
@@ -344,13 +345,14 @@ if (nrow(detected_outliers) > 0) {
 
 ```{r params-table-lsd, echo=FALSE}
 params_df <- data.frame(
-  Paramètre = c("n_swaths", "lsd_limit", "yield_column"),
+  Paramètre = c("type", "n_swaths", "lsd_limit", "yield_column"),
   Description = c(
+    "Type de détection ('local_sd')",
     "Nombre de passages dans le voisinage",
     "Seuil d'écart-type pour élimination",
     "Nom de la colonne de rendement"
   ),
-  Défaut = c("5", "3", "'Yield_kg_ha'")
+  Défaut = c("'local_sd'", "5", "3", "'Yield_kg_ha'")
 )
 
 knitr::kable(params_df, caption = "Paramètres du filtre d'écart-type local")

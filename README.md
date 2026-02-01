@@ -88,6 +88,154 @@ Longitude,Latitude,Yield_kg_ha,Moisture,Flow,Velocity
 -73.5124,45.1235,8200.3,18.1,12.3,5.1
 ```
 
+## New Simplified API
+
+yieldcleanr now provides 8 meta-functions that replace the individual filter functions:
+
+### 1. Filter Data
+
+Apply one or multiple filters to your data:
+
+```r
+# Filter header status only
+filtered <- filter_data(data, type = "header")
+
+# Apply multiple filters
+filtered <- filter_data(data, type = c("header", "gps", "velocity"))
+
+# Apply all available filters
+filtered <- filter_data(data, type = "all")
+```
+
+**Filter types**: `"header"`, `"gps"`, `"dop"`, `"velocity"`, `"yield"`, `"moisture"`, `"bounds"`, `"all"`
+
+### 2. Detect Anomalies
+
+Detect and filter anomalies in your data:
+
+```r
+# Detect and filter all anomalies
+cleaned <- detect_anomalies(data, type = "all")
+
+# Detect only overlaps with custom parameters
+cleaned <- detect_anomalies(data, type = "overlap", 
+                            cellsize = 0.5, max_pass = 30)
+
+# Mark anomalies without filtering (adds flag columns)
+marked <- detect_anomalies(data, type = c("overlap", "local_sd"), 
+                           action = "detect")
+```
+
+**Anomaly types**: `"overlap"`, `"local_sd"`, `"velocity_jump"`, `"heading"`, `"position"`, `"all"`
+
+**Actions**: `"filter"` (remove points), `"detect"` (mark only), `"report"` (summary only)
+
+### 3. Optimize Delays
+
+Optimize GPS-sensor delays using PCDI method:
+
+```r
+# Optimize both flow and moisture delays
+result <- optimize_delays(data, type = "both")
+data_corrected <- result$data
+
+# Optimize flow delay only
+result <- optimize_delays(data, type = "flow")
+
+# Get optimal delays without applying corrections
+delays <- optimize_delays(data, type = "both", apply_correction = FALSE)
+print(delays$delays$flow)  # Optimal flow delay in seconds
+```
+
+### 4. Calculate Thresholds
+
+Automatically calculate thresholds for filtering:
+
+```r
+# Calculate all thresholds
+thresholds <- calculate_thresholds(data)
+
+# Calculate only yield thresholds with custom quantiles
+thresholds <- calculate_thresholds(data, type = "yield",
+                                   yllim = 0.05, yulim = 0.95, yscale = 1.5)
+
+# Access calculated thresholds
+thresholds$yield$min_yield  # Minimum yield threshold
+thresholds$velocity$max_velocity  # Maximum velocity threshold
+```
+
+**Threshold types**: `"yield"`, `"velocity"`, `"position"`, `"moisture"`, `"all"`
+
+### 5. Convert Coordinates
+
+Convert between coordinate systems:
+
+```r
+# Convert Lat/Lon to UTM
+data_utm <- convert_coordinates(data, from = "latlon", to = "utm")
+
+# Convert UTM to Lat/Lon
+data_latlon <- convert_coordinates(data, from = "utm", to = "latlon")
+```
+
+### 6. Convert Yield Units
+
+Convert yield between different units:
+
+```r
+# Convert flow (lbs/s) to yield (kg/ha)
+data_yield <- convert_yield_units(data, from = "flow_lbs_s", to = "kg_ha")
+
+# Convert kg/ha to bu/acre for corn
+data_imperial <- convert_yield_units(data, from = "kg_ha", to = "bu_acre",
+                                     crop_type = "maize")
+
+# Convert kg/ha to tonnes/ha
+data_tonnes <- convert_yield_units(data, from = "kg_ha", to = "t_ha")
+```
+
+### 7. Anonymize Data
+
+Anonymize sensitive information:
+
+```r
+# Full anonymization (coordinates + attributes)
+data_anon <- anonymize_data(data, type = "full")
+
+# Anonymize only coordinates with rotation method
+data_anon <- anonymize_data(data, type = "coordinates", method = "rotation")
+
+# Anonymize only sensitive attributes
+data_anon <- anonymize_data(data, type = "attributes")
+```
+
+**Types**: `"coordinates"`, `"attributes"`, `"full"`
+
+**Methods for coordinates**: `"translation"`, `"rotation"`, `"noise"`
+
+### 8. Export Data
+
+Export data to various formats:
+
+```r
+# Export to CSV
+export_data(data, "output.csv", format = "csv")
+
+# Export to GeoJSON (format auto-detected from extension)
+export_data(data, "output.geojson")
+
+# Export to Shapefile
+export_data(data, "output.shp", format = "shp", overwrite = TRUE)
+
+# Export to GeoPackage
+export_data(data, "output.gpkg", format = "gpkg")
+
+# Export to raster (GeoTIFF)
+export_data(data, "yield_map.tif", format = "raster", resolution = 5)
+```
+
+**Formats**: `"csv"`, `"geojson"`, `"shp"`, `"gpkg"`, `"raster"`
+
 ## Filtering Pipeline
 
 The cleaning process follows this order:
@@ -106,7 +254,15 @@ The cleaning process follows this order:
 Generate interpolated raster maps:
 
 ```r
-# Export cleaned data to raster
+# Export cleaned data to raster using the new API
+export_data(
+  data = data_clean,
+  file = "output/yield_map.tif",
+  format = "raster",
+  resolution = 1  # 1 meter resolution
+)
+
+# Or use the legacy functions (still available)
 library(sf)
 
 # Load cleaned data

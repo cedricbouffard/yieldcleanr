@@ -94,7 +94,7 @@ Typiquement, $v_{min\_abs} = 0.5$ m/s (environ 1.8 km/h).
 
 ```{r thresholds-calc}
 # Calculer les seuils automatiques
-thresholds <- calculate_auto_thresholds(data_utm)
+thresholds <- calculate_thresholds(data_utm)
 
 cat("=== Seuils de vitesse calculés ===\n")
 cat("Quantile 2%:", round(quantile(data_calc$velocity_manual, 0.02, na.rm = TRUE), 2), "m/s\n")
@@ -155,9 +155,10 @@ cat("Vitesse min-max:", round(min(data_calc$velocity_manual, na.rm = TRUE), 2), 
     round(max(data_calc$velocity_manual, na.rm = TRUE), 2), "m/s\n\n")
 
 # Appliquer le filtre
-data_filtered <- filter_velocity(data_utm, 
-                                  min_velocity = thresholds$min_velocity,
-                                  max_velocity = thresholds$max_velocity)
+data_filtered <- filter_data(data_utm, 
+                             type = "velocity",
+                             min_value = thresholds$min_velocity,
+                             max_value = thresholds$max_velocity)
 
 # Après filtrage
 n_after <- nrow(data_filtered)
@@ -253,9 +254,10 @@ if (nrow(high_vel) > 0) {
 
 ```{r params-table, echo=FALSE}
 params_df <- data.frame(
-  Paramètre = c("min_velocity", "max_velocity", "vllim", "vulim", 
+  Paramètre = c("type", "min_value", "max_value", "vllim", "vulim", 
                 "vscale", "minv_abs"),
   Description = c(
+    "Type de filtre ('velocity')",
     "Vitesse minimale (m/s)",
     "Vitesse maximale (m/s)",
     "Quantile bas pour calcul auto",
@@ -263,7 +265,7 @@ params_df <- data.frame(
     "Facteur d'échelle haut",
     "Minimum absolu (m/s)"
   ),
-  Défaut = c("auto", "auto", "0.02", "0.98", "1.5", "0.5")
+  Défaut = c("'velocity'", "auto", "auto", "0.02", "0.98", "1.5", "0.5")
 )
 
 knitr::kable(params_df, caption = "Paramètres du filtre de vitesse")

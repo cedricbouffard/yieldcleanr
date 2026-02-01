@@ -7,7 +7,8 @@
 #' @param data Donnees brutes (tibble)
 #' @param params Liste des parametres de filtrage
 #' @return Liste avec le nombre de points retires par filtre
-#' @export
+ #' @noRd
+ #' @keywords internal
  calculate_filter_counts <- function(data, params = NULL) {
   if (is.null(data) || nrow(data) == 0) {
     return(list())

@@ -8,22 +8,8 @@
 #' @param cellsize Taille des cellules en metres (defaut 0.3m = 30cm)
 #' @param max_pass Nombre max de passages avant chevauchement (defaut 50)
  #' @return Tibble filtre sans chevauchement
- #' @export
- #' @examples
- #' \dontrun{
- #' # Creer des donnees d'exemple en UTM
- #' data <- tibble::tibble(
- #'   X = c(435000, 435050, 435100, 435000, 435050),
- #'   Y = c(5262000, 5262050, 5262100, 5262150, 5262200),
- #'   Flow = c(2.5, 3.1, 2.8, 3.0, 2.9)
- #' )
- #'
- #' # Parametres par defaut (methode USDA)
- #' data_clean <- remove_overlap(data, cellsize = 0.3, max_pass = 50)
- #'
- #' # Pour des donnees avec beaucoup de chevauchement
- #' data_clean <- remove_overlap(data, cellsize = 0.3, max_pass = 30)
- #' }
+ #' @noRd
+ #' @keywords internal
  remove_overlap <- function(data, cellsize = 0.3, max_pass = 50) {
   if (!all(c("X", "Y") %in% names(data))) {
     rlang::abort("Les colonnes X et Y (UTM) sont requises pour le filtrage overlap")
@@ -73,11 +59,8 @@
 #' @param std_limit Nombre maximal d'ecarts-types depuis la moyenne locale
 #' @param yield_col Nom de la colonne de rendement (defaut "Flow")
  #' @return Tibble filtre avec outliers supprimes
- #' @export
- #' @examples
- #' \dontrun{
- #' data_clean <- filter_local_std(data, swath_window = 5, std_limit = 3)
- #' }
+ #' @noRd
+ #' @keywords internal
  filter_local_std <- function(data, swath_window = 5, std_limit = 3,
                               yield_col = "Flow") {
   if (!"Pass" %in% names(data)) {
@@ -150,7 +133,8 @@
 #' @param n_std Nombre d'ecarts-types pour le seuil
 #' @param yield_col Nom de la colonne de rendement
  #' @return Tibble filtre
- #' @export
+ #' @noRd
+ #' @keywords internal
  filter_sliding_window <- function(data, window_size = 11, n_std = 3,
                                    yield_col = "Flow") {
   n_before <- nrow(data)

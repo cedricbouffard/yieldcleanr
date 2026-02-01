@@ -8,7 +8,8 @@
 #' @param max_acceleration Acceleration maximale autorisee (m/s, defaut: 5)
 #' @param max_deceleration Deceleration maximale autorisee (m/s, defaut: -8)
 #' @return Liste avec data (donnees filtrees) et removed (points supprimes)
-#' @export
+ #' @noRd
+ #' @keywords internal
  filter_velocity_jumps <- function(data, max_acceleration = 5, max_deceleration = -8) {
   if (!all(c("X", "Y", "Interval") %in% names(data))) {
     rlang::warn("Colonnes X, Y ou Interval manquantes - saut du filtre de changements de vitesse")
@@ -70,8 +71,9 @@
  #' @param max_heading_change Variation maximale de direction entre 3 points consecutifs (degrés, défaut: 60)
  #' @param window_size Taille de la fenetre pour detecter les anomalies (defaut: 3)
  #' @return Liste avec data (donnees filtrees) et removed (points supprimes)
- #' @export
-  filter_heading_anomalies <- function(data, max_heading_change = 60, window_size = 3) {
+ #' @noRd
+ #' @keywords internal
+   filter_heading_anomalies <- function(data, max_heading_change = 60, window_size = 3) {
   if (!all(c("X", "Y") %in% names(data))) {
     rlang::warn("Colonnes X ou Y manquantes - saut du filtre de direction")
     return(list(data = data, removed = data[0, ]))
@@ -130,8 +132,9 @@
  #' @param min_points_cell Nombre minimum de points par cellule pour qu'une zone soit valide (defaut: 5)
  #' @param grid_size Taille de la grille pour l'analyse en metres (defaut: 20)
  #' @return Liste avec data (donnees filtrees) et removed (points supprimes)
- #' @export
- filter_position_outliers <- function(data, buffer_radius = 50, min_points_cell = 5, grid_size = 20) {
+ #' @noRd
+ #' @keywords internal
+  filter_position_outliers <- function(data, buffer_radius = 50, min_points_cell = 5, grid_size = 20) {
    if (!all(c("X", "Y") %in% names(data))) {
      rlang::warn("Colonnes X ou Y manquantes - saut du filtre de position")
      return(list(data = data, removed = data[0, ]))

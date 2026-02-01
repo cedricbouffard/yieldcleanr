@@ -98,7 +98,7 @@ cat("  Écart-type:", round(sd(data$Yield_kg_ha, na.rm = TRUE), 1), "\n")
 
 ```{r auto-thresholds}
 # Calculer les seuils automatiques
-thresholds <- calculate_auto_thresholds(data)
+thresholds <- calculate_thresholds(data)
 
 cat("\n=== Seuils calculés automatiquement ===\n")
 cat("Quantile 5%:", round(quantile(data$Yield_kg_ha, 0.05, na.rm = TRUE), 1), "kg/ha\n")
@@ -150,10 +150,11 @@ max_yield_manual <- 15000  # ~238 bu/acre
 cat("Seuils manuels:", min_yield_manual, "-", max_yield_manual, "kg/ha\n")
 
 # Appliquer le filtre
-data_manual <- filter_yield_range(data, 
-                                   min_yield = min_yield_manual,
-                                   max_yield = max_yield_manual,
-                                   yield_column = "Yield_kg_ha")
+data_manual <- filter_data(data, 
+                           type = "yield",
+                           min_value = min_yield_manual,
+                           max_value = max_yield_manual,
+                           yield_column = "Yield_kg_ha")
 
 cat("Points après filtrage manuel:", nrow(data_manual), "\n")
 cat("Points retirés:", nrow(data) - nrow(data_manual), "\n")
@@ -165,10 +166,11 @@ cat("Points retirés:", nrow(data) - nrow(data_manual), "\n")
 cat("\n=== Filtrage avec seuils automatiques ===\n")
 
 # Appliquer avec les seuils calculés
-data_auto <- filter_yield_range(data,
-                                 min_yield = thresholds$min_yield,
-                                 max_yield = thresholds$max_yield,
-                                 yield_column = "Yield_kg_ha")
+data_auto <- filter_data(data,
+                         type = "yield",
+                         min_value = thresholds$min_yield,
+                         max_value = thresholds$max_yield,
+                         yield_column = "Yield_kg_ha")
 
 cat("Points après filtrage auto:", nrow(data_auto), "\n")
 cat("Points retirés:", nrow(data) - nrow(data_auto), "\n")
@@ -274,8 +276,9 @@ if (nrow(high_yield) > 0) {
 
 ```{r params-table, echo=FALSE}
 params_df <- data.frame(
-  Paramètre = c("min_yield", "max_yield", "yield_column", "yllim", "yulim", "yscale"),
+  Paramètre = c("type", "min_value", "max_value", "yield_column", "yllim", "yulim", "yscale"),
   Description = c(
+    "Type de filtre ('yield')",
     "Rendement minimum",
     "Rendement maximum",
     "Nom de la colonne de rendement",
@@ -283,7 +286,7 @@ params_df <- data.frame(
     "Quantile haut pour calcul auto",
     "Facteur d'échelle"
   ),
-  Défaut = c("0", "Inf", "'Yield_buacre'", "0.05", "0.95", "1.5")
+  Défaut = c("'yield'", "0", "Inf", "'Yield_buacre'", "0.05", "0.95", "1.5")
 )
 
 knitr::kable(params_df, caption = "Paramètres du filtre de rendement")

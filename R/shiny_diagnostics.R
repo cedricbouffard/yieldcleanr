@@ -254,11 +254,12 @@ create_diagnostic_plot <- function(diag_data, step_name, base_size = 11) {
  #' @param max_points_tps Nombre maximum de points pour TPS (defaut: 5000)
  #'   Si plus de points, echantillonnage aleatoire ou switch vers IDW
  #' @return Objet SpatRaster
- #' @export
-export_raster <- function(data, cell_size = 1, column_colonne = "Yield_kg_ha",
-                            fun = mean, crs_code = NULL, 
-                            method = c("auto", "tps", "idw", "nearest"),
-                            max_points_tps = 5000) {
+ #' @noRd
+ #' @keywords internal
+ export_raster <- function(data, cell_size = 1, column_colonne = "Yield_kg_ha",
+                             fun = mean, crs_code = NULL, 
+                             method = c("auto", "tps", "idw", "nearest"),
+                             max_points_tps = 5000) {
   
   method <- match.arg(method)
   # Charger les packages necessaires
@@ -546,8 +547,9 @@ export_raster <- function(data, cell_size = 1, column_colonne = "Yield_kg_ha",
 #' @param raster Objet SpatRaster
 #' @param file_path Chemin du fichier de sortie
 #' @param format Format de sortie ("tif", "asc", "grd")
-#' @export
-save_raster <- function(raster, file_path, format = "tif") {
+ #' @noRd
+ #' @keywords internal
+ save_raster <- function(raster, file_path, format = "tif") {
   if (!requireNamespace("terra", quietly = TRUE)) {
     stop("Le package 'terra' est requis pour cette fonction")
   }

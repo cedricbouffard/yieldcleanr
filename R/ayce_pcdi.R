@@ -455,16 +455,13 @@ apply_pcdi <- function(data, delay_range = -25:25, n_iterations = 5,
 #' @param miny_abs Seuil minimal absolu de rendement (defaut 0)
 #' @param gbuffer Marge pour le filtre de position en metres (defaut 100)
  #' @return Liste avec tous les seuils calcules
- #' @export
- #' @examples
- #' \dontrun{
- #' thresholds <- calculate_auto_thresholds(data)
- #' }
+ #' @noRd
+ #' @keywords internal
  calculate_auto_thresholds <- function(data,
-                                       yllim = 0.05, yulim = 0.95, yscale = 1.5,
-                                       vllim = 0.02, vulim = 0.98, vscale = 1.5,
-                                       minv_abs = 0.5, miny_abs = 0,
-                                       gbuffer = 100) {
+                                        yllim = 0.05, yulim = 0.95, yscale = 1.5,
+                                        vllim = 0.02, vulim = 0.98, vscale = 1.5,
+                                        minv_abs = 0.5, miny_abs = 0,
+                                        gbuffer = 100) {
 
    rlang::inform("=== Automatic Threshold Calculation (AYCE) ===")
 
@@ -578,7 +575,8 @@ apply_pcdi <- function(data, delay_range = -25:25, n_iterations = 5,
  #' @param data Tibble avec coordonnees X, Y
  #' @param thresholds Liste des seuils de position
  #' @return Tibble filtre
- #' @export
+ #' @noRd
+ #' @keywords internal
  apply_position_filter <- function(data, thresholds) {
    if (!all(c("X", "Y") %in% names(data))) {
      rlang::warn("Colonnes X, Y requises pour filtre de position")

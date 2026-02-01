@@ -5,22 +5,13 @@
 #' Header Status: 1 = harvesting (actif), 33 = header down (abaisse).
 #' Les deux valeurs indiquent une recolte active.
 #'
- #' @param data Tibble avec donnees de rendement
- #' @param header_values Valeurs indiquant une recolte active (defaut c(1, 33))
- #'   1 = harvesting, 33 = header bas
- #' @return Tibble filtre avec header actif
-  #' @export
-  #' @examples
-  #' # Creer des donnees d'exemple avec header mixte
-  #' data <- tibble::tibble(
-  #'   Flow = c(1.53, 3.7, 7.56, 10.36, 15.48),
-  #'   HeaderStatus = c(1, 33, 33, 0, 33)  # 1=actif, 33=header bas, 0=header haut
-  #' )
-  #'
-  #' # Filtrer pour ne garder que la recolte active (defaut: 1 et 33)
-  #' data_filtered <- filter_header_status(data)
-  #' print(data_filtered)
-  filter_header_status <- function(data, header_values = c(1, 33)) {
+#' @param data Tibble avec donnees de rendement
+#' @param header_values Valeurs indiquant une recolte active (defaut c(1, 33))
+#'   1 = harvesting, 33 = header bas
+#' @return Tibble filtre avec header actif
+#' @noRd
+#' @keywords internal
+filter_header_status <- function(data, header_values = c(1, 33)) {
   if (!"HeaderStatus" %in% names(data)) {
     rlang::warn("Colonne HeaderStatus non trouvee, saut du filtrage")
     return(data)
@@ -51,9 +42,10 @@
 #'
 #' @param data Tibble avec donnees de rendement
 #' @param min_gps_status Statut GPS minimal (defaut 4 = bon)
- #' @return Tibble filtre avec GPS valide
- #' @export
- filter_gps_status <- function(data, min_gps_status = 4) {
+#' @return Tibble filtre avec GPS valide
+#' @noRd
+#' @keywords internal
+filter_gps_status <- function(data, min_gps_status = 4) {
   if (!"GPSStatus" %in% names(data)) {
     rlang::warn("Colonne GPSStatus non trouvee, saut du filtrage")
     return(data)
@@ -85,9 +77,10 @@
 #'
 #' @param data Tibble avec donnees de rendement
 #' @param max_dop Valeur maximale acceptable du DOP (defaut 10)
- #' @return Tibble filtre avec DOP valide
- #' @export
- filter_dop <- function(data, max_dop = 10) {
+#' @return Tibble filtre avec DOP valide
+#' @noRd
+#' @keywords internal
+filter_dop <- function(data, max_dop = 10) {
   if (!"DOP" %in% names(data)) {
     rlang::warn("Colonne DOP non trouvee, saut du filtrage")
     return(data)
@@ -121,22 +114,23 @@
 #' @param data Tibble avec donnees de rendement
 #' @param min_velocity Vitesse minimale en m/s (defaut 0.5)
 #' @param max_velocity Vitesse maximale en m/s (defaut 10)
- #' @return Tibble filtre avec vitesses valides
- #' @export
- filter_velocity <- function(data, min_velocity = 0.5, max_velocity = 10) {
-   if (!"X" %in% names(data) || !"Y" %in% names(data)) {
-     rlang::warn("Coordonnees X,Y non trouvees, calcul de velocite ignore")
-     return(data)
-   }
+#' @return Tibble filtre avec vitesses valides
+#' @noRd
+#' @keywords internal
+filter_velocity <- function(data, min_velocity = 0.5, max_velocity = 10) {
+  if (!"X" %in% names(data) || !"Y" %in% names(data)) {
+    rlang::warn("Coordonnees X,Y non trouvees, calcul de velocite ignore")
+    return(data)
+  }
 
-   if (!".row_id" %in% names(data)) {
-     data <- data |> dplyr::mutate(.row_id = dplyr::row_number())
-   }
+  if (!".row_id" %in% names(data)) {
+    data <- data |> dplyr::mutate(.row_id = dplyr::row_number())
+  }
 
-   # Calcul de la vitesse basee sur la distance euclidienne
-   data <- data |>
-     dplyr::arrange(.row_id) |>
-     dplyr::mutate(
+  # Calcul de la vitesse basee sur la distance euclidienne
+  data <- data |>
+    dplyr::arrange(.row_id) |>
+    dplyr::mutate(
       dist_eucl = sqrt((X - dplyr::lag(X))^2 + (Y - dplyr::lag(Y))^2),
       velocity = dist_eucl / Interval
     )
@@ -170,9 +164,10 @@
 #' @param data Tibble avec donnees de rendement
 #' @param bounds Liste avec min/max des coordonnees x et y
 #' @param coord_type Type de coordonnees : "utm" ou "latlon"
- #' @return Tibble filtre dans les limites
- #' @export
- filter_bounds <- function(data, bounds = NULL, coord_type = "latlon") {
+#' @return Tibble filtre dans les limites
+#' @noRd
+#' @keywords internal
+filter_bounds <- function(data, bounds = NULL, coord_type = "latlon") {
   if (is.null(bounds)) {
     rlang::warn("Bounds non fournis, saut du filtrage")
     return(data)
@@ -213,25 +208,11 @@
 #' @param max_yield Rendement maximal acceptable. Si NULL, calcule automatiquement.
 #' @param yield_column Nom de la colonne de rendement (defaut "Yield_buacre")
 #' @param n_std Nombre d'ecarts-types pour auto-detection (defaut 3)
- #' @return Tibble filtre dans la plage de rendement
- #' @export
- #' @examples
- #' # Creer des donnees d'exemple avec rendements
- #' data <- tibble::tibble(
- #'   Yield_buacre = c(50, 100, 150, 300, 180),
- #'   Flow = c(1.53, 3.7, 7.56, 10.36, 15.48)
- #' )
- #'
- #' # Valeurs explicites
- #' data_filtered <- filter_yield_range(data, min_yield = 50, max_yield = 200)
- #'
- #' # Auto-detection basee sur l'ecart-type (moyenne +/- 3*ET)
- #' data_filtered <- filter_yield_range(data)
- #'
- #' # Auto-detection avec plage plus large (moyenne +/- 4*ET)
- #' data_filtered <- filter_yield_range(data, n_std = 4)
- filter_yield_range <- function(data, min_yield = NULL, max_yield = NULL,
-                                yield_column = "Yield_buacre", n_std = 3) {
+#' @return Tibble filtre dans la plage de rendement
+#' @noRd
+#' @keywords internal
+filter_yield_range <- function(data, min_yield = NULL, max_yield = NULL,
+                               yield_column = "Yield_buacre", n_std = 3) {
 
   if (!yield_column %in% names(data)) {
     rlang::warn(paste("Colonne", yield_column, "non trouvee, saut du filtrage"))
@@ -286,18 +267,10 @@
 #' @param min_moisture Humidite minimale acceptable. Si NULL, calcule automatiquement.
 #' @param max_moisture Humidite maximale acceptable. Si NULL, calcule automatiquement.
 #' @param n_std Nombre d'ecarts-types pour auto-detection (defaut 3)
- #' @return Tibble filtre dans la plage d'humidite
- #' @export
- #' @examples
- #' # Valeurs explicites
- #' data_clean <- filter_moisture_range(data, min_moisture = 8, max_moisture = 15)
- #'
- #' # Auto-detection basee sur l'ecart-type (mean +/- 3*sd)
- #' data_clean <- filter_moisture_range(data)
- #'
- #' # Auto-detection avec plage plus large (mean +/- 4*sd)
- #' data_clean <- filter_moisture_range(data, n_std = 4)
- filter_moisture_range <- function(data, min_moisture = NULL, max_moisture = NULL, n_std = 3) {
+#' @return Tibble filtre dans la plage d'humidite
+#' @noRd
+#' @keywords internal
+filter_moisture_range <- function(data, min_moisture = NULL, max_moisture = NULL, n_std = 3) {
 
   if (!"Moisture" %in% names(data)) {
     rlang::warn("Colonne Moisture non trouvee, saut du filtrage")

@@ -206,7 +206,7 @@ p1
 data_before <- data
 
 # Données après correction
-data_after <- apply_flow_delay(data, delay = pcdi_result$optimal_delay)
+data_after <- optimize_delays(data, type = "flow", delay = pcdi_result$optimal_delay)
 
 # Créer les objets sf
 sf_before <- sf::st_as_sf(data_before, coords = c("Longitude", "Latitude"), crs = 4326)

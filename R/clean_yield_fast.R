@@ -41,8 +41,9 @@ clean_yield_fast <- function(data, phase = "full", preprocessed_data = NULL,
 #' @param params Liste des paramètres
 #' @param metrique Booléen pour conversion métrique
 #' @return Données pré-traitées avec tous les calculs coûteux effectués
-#' @export
-preprocess_yield_data <- function(data, params = list(), metrique = TRUE) {
+ #' @noRd
+ #' @keywords internal
+ preprocess_yield_data <- function(data, params = list(), metrique = TRUE) {
   rlang::inform("=== Phase 1: Pré-traitement ===")
   
   # Étape 1: Conversion UTM
@@ -146,8 +147,9 @@ preprocess_yield_data <- function(data, params = list(), metrique = TRUE) {
 #' @param params Liste des paramètres des filtres
 #' @param polygon Booléen pour création de polygones
 #' @return Données filtrées
-#' @export
-apply_yield_filters <- function(preprocessed_data, params = list(), polygon = TRUE) {
+ #' @noRd
+ #' @keywords internal
+ apply_yield_filters <- function(preprocessed_data, params = list(), polygon = TRUE) {
   rlang::inform("=== Phase 2: Application des filtres ===")
   
   data <- preprocessed_data
