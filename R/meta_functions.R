@@ -510,9 +510,10 @@ detect_anomalies <- function(data, type = "all", action = "filter", ...) {
     dplyr::filter(n >= min_cells)
 
   # Ensure cell_stats has data - if no cells meet min_cells, use all data
-  if (nrow(cell_stats) == 0) {
+  if (nrow(cell_stats) == 0 && nrow(data_clean) > 0) {
     cell_stats <- data_clean |>
       dplyr::summarise(
+        .cell_id = "global",
         local_median = stats::median(Flow, na.rm = TRUE),
         local_mad = stats::mad(Flow, na.rm = TRUE),
         local_mean = mean(Flow, na.rm = TRUE),
@@ -520,6 +521,9 @@ detect_anomalies <- function(data, type = "all", action = "filter", ...) {
         n = dplyr::n(),
         .groups = "drop"
       )
+  } else if (nrow(data_clean) == 0) {
+    # If all data is NA, create empty result
+    return(data[0, ])
   }
 
   # Statistiques globales pour les cellules avec peu de points
