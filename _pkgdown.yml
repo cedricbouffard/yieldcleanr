@@ -112,6 +112,9 @@ reference:
       - apply_pcdi
       - optimize_delays
       - calculate_thresholds
+      - calculate_auto_thresholds
+      - apply_moisture_delay
+      - calculate_filter_counts
 
   - title: "Conversion et Import/Export"
     desc: "Fonctions de conversion et manipulation des données"

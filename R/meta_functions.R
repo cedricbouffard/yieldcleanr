@@ -5,8 +5,6 @@
 #' filter_gps_status(), filter_velocity(), filter_yield_range(), filter_moisture_range(),
 #' filter_dop() et filter_bounds().
 #'
-#' @param data Tibble avec données de rendement
-#' @param type Type de filtre à appliquer. Peut être un vecteur pour appliquer
 #'   plusieurs filtres en séquence. Options: "header", "gps", "dop", "velocity",
 #'   "yield", "moisture", "bounds", "all"
 #' @param ... Paramètres spécifiques au type de filtre:
@@ -493,7 +491,11 @@ detect_anomalies <- function(data, type = "all", action = "filter", ...) {
     )
 
   # Calculer les statistiques locales
-  cell_stats <- data |>
+  # Remove NA values before grouping to avoid issues
+  data_clean <- data |>
+dplyr::filter(!is.na(X) && !is.na(Y) && !is.na(Flow))
+
+  cell_stats <- data_clean |>
     dplyr::group_by(.cell_id) |>
     dplyr::summarise(
       local_median = stats::median(Flow, na.rm = TRUE),
@@ -504,6 +506,19 @@ detect_anomalies <- function(data, type = "all", action = "filter", ...) {
       .groups = "drop"
     ) |>
     dplyr::filter(n >= min_cells)
+
+  # Ensure cell_stats has data - if no cells meet min_cells, use all data
+  if (nrow(cell_stats) == 0) {
+    cell_stats <- data_clean |>
+      dplyr::summarise(
+        local_median = stats::median(Flow, na.rm = TRUE),
+        local_mad = stats::mad(Flow, na.rm = TRUE),
+        local_mean = mean(Flow, na.rm = TRUE),
+        local_sd = stats::sd(Flow, na.rm = TRUE),
+        n = dplyr::n(),
+        .groups = "drop"
+      )
+  }
 
   # Statistiques globales pour les cellules avec peu de points
   global_median <- stats::median(data$Flow, na.rm = TRUE)
@@ -544,9 +559,21 @@ detect_anomalies <- function(data, type = "all", action = "filter", ...) {
   }
 
   return(list(data = data, count = n_anomalies))
-}
 
-#' @noRd
+  if (action == "filter") {
+    data <- data |>
+      dplyr::filter(!.is_outlier) |>
+      dplyr::select(-.cell_x, -.cell_y, -.cell_id, -local_median, -local_mad, -local_mean, -local_sd, -n, -upper_limit, -lower_limit, -.is_outlier)
+  } else if (action == "detect") {
+    data <- data |>
+      dplyr::rename(local_sd_outlier = .is_outlier) |>
+      dplyr::select(-.cell_x, -.cell_y, -.cell_id, -local_median, -local_mad, -local_mean, -local_sd, -n, -upper_limit, -lower_limit)
+  } else {
+    data <- data |>
+      dplyr::select(-.cell_x, -.cell_y, -.cell_id, -local_median, -local_mad, -local_mean, -local_sd, -n, -upper_limit, -lower_limit, -.is_outlier)
+  }
+
+  return(list(data = data, count = n_anomalies))
 .detect_velocity_jump_internal <- function(data, max_acceleration = 5, max_deceleration = -8, action = "filter") {
   if (!all(c("X", "Y", "Interval") %in% names(data))) {
     return(list(data = data, count = 0))
@@ -882,36 +909,43 @@ calculate_thresholds <- function(data, type = "all", ...) {
     }
   }
 
-  if (is.null(yield_col)) {
-    rlang::warn("Colonne de rendement non trouvée pour le calcul des seuils")
-    return(list(min_yield = 0, max_yield = Inf))
-  }
+if (is.null(yield_col)) {
+  rlang::warn("Colonne de rendement non trouvée pour le calcul des seuils")
+  return(list(min_yield = 0, max_yield = Inf))
+}
 
-  yield_vals <- data[[yield_col]]
-  yield_vals <- yield_vals[is.finite(yield_vals) & yield_vals > 0]
+yield_vals <- data[[yield_col]]
+yield_vals <- yield_vals[is.finite(yield_vals) & yield_vals > 0]
 
-  if (length(yield_vals) == 0) {
-    return(list(min_yield = 0, max_yield = Inf))
-  }
+if (length(yield_vals) == 0) {
+  return(list(min_yield = 0, max_yield = Inf))
+}
 
-  yllim <- params$yllim %||% 0.10
-  yulim <- params$yulim %||% 0.90
-  yscale <- params$yscale %||% 1.1
-  min_yield_abs <- params$min_yield_abs %||% 0
+yllim <- params$yllim %||% 0.10
+yulim <- params$yulim %||% 0.90
+yscale <- params$yscale %||% 1.1
+min_yield_abs <- params$min_yield_abs %||% 0
 
-  q_low <- quantile(yield_vals, yllim, na.rm = TRUE)
-  q_high <- quantile(yield_vals, yulim, na.rm = TRUE)
-  iqr <- q_high - q_low
+q_low <- quantile(yield_vals, yllim, na.rm = TRUE)
+q_high <- quantile(yield_vals, yulim, na.rm = TRUE)
+iqr <- q_high - q_low
 
-  min_yield <- max(min_yield_abs, q_low - yscale * iqr)
-  max_yield <- q_high + yscale * iqr
+min_yield <- max(min_yield_abs, q_low - yscale * iqr)
+max_yield <- q_high + yscale * iqr
 
-  return(list(
-    min_yield = min_yield,
-    max_yield = max_yield,
-    mean_yield = mean(yield_vals, na.rm = TRUE),
-    sd_yield = stats::sd(yield_vals, na.rm = TRUE)
-  ))
+return(list(
+  min_yield = min_yield,
+  max_yield = max_yield,
+  mean_yield = mean(yield_vals, na.rm = TRUE),
+  sd_yield = stats::sd(yield_vals, na.rm = TRUE)
+))
+}
+
+# Fin des fonctions internes
+# =============================================================================
+
+# Export des fonctions principales
+# =============================================================================
 }
 
 #' @noRd
@@ -1630,27 +1664,3 @@ export_data <- function(data, file, format = NULL, ...) {
   }
 
   if (is.null(yield_col)) {
-    rlang::abort("Colonne de rendement non trouvée pour l'export raster")
-  }
-
-  # Créer le raster
-  resolution <- params$resolution %||% 5  # 5m par défaut
-
-  # Rasterize
-  r <- terra::rast(extent = terra::ext(data), resolution = resolution)
-  terra::crs(r) <- sf::st_crs(data)$wkt
-
-  yield_raster <- terra::rasterize(
-    terra::vect(data),
-    r,
-    field = yield_col,
-    fun = mean
-  )
-
-  # Sauvegarder
-  terra::writeRaster(yield_raster, file, overwrite = TRUE)
-}
-
-
-# Helper pour l'opérateur %||%
-`%||%` <- function(x, y) if (is.null(x)) y else x
