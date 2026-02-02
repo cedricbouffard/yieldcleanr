@@ -1,14 +1,16 @@
-#' Méta-fonction de filtrage des données de rendement
+#' Méta-fonction de filtrage unifiée
 #'
 #' Cette fonction unifiée permet d'appliquer un ou plusieurs filtres sur les données
 #' de rendement. Elle remplace les fonctions individuelles filter_header_status(),
 #' filter_gps_status(), filter_velocity(), filter_yield_range(), filter_moisture_range(),
 #' filter_dop() et filter_bounds().
 #'
+#' @param data Tibble avec données de rendement
+#' @param type Type de filtre à appliquer. Peut être un vecteur pour appliquer
 #'   plusieurs filtres en séquence. Options: "header", "gps", "dop", "velocity",
 #'   "yield", "moisture", "bounds", "all"
 #' @param ... Paramètres spécifiques au type de filtre:
- #'   - header: header_values (défaut: c(1, 33))
+#'   - header: header_values (défaut: c(1, 33))
 #'   - gps: min_gps_status (défaut: 4)
 #'   - dop: max_dop (défaut: 10)
 #'   - velocity: min_velocity, max_velocity (défaut: auto-calculé)
@@ -493,7 +495,7 @@ detect_anomalies <- function(data, type = "all", action = "filter", ...) {
   # Calculer les statistiques locales
   # Remove NA values before grouping to avoid issues
   data_clean <- data |>
-dplyr::filter(!is.na(X) && !is.na(Y) && !is.na(Flow))
+    dplyr::filter(!is.na(X) && !is.na(Y) && !is.na(Flow))
 
   cell_stats <- data_clean |>
     dplyr::group_by(.cell_id) |>
@@ -559,21 +561,9 @@ dplyr::filter(!is.na(X) && !is.na(Y) && !is.na(Flow))
   }
 
   return(list(data = data, count = n_anomalies))
+}
 
-  if (action == "filter") {
-    data <- data |>
-      dplyr::filter(!.is_outlier) |>
-      dplyr::select(-.cell_x, -.cell_y, -.cell_id, -local_median, -local_mad, -local_mean, -local_sd, -n, -upper_limit, -lower_limit, -.is_outlier)
-  } else if (action == "detect") {
-    data <- data |>
-      dplyr::rename(local_sd_outlier = .is_outlier) |>
-      dplyr::select(-.cell_x, -.cell_y, -.cell_id, -local_median, -local_mad, -local_mean, -local_sd, -n, -upper_limit, -lower_limit)
-  } else {
-    data <- data |>
-      dplyr::select(-.cell_x, -.cell_y, -.cell_id, -local_median, -local_mad, -local_mean, -local_sd, -n, -upper_limit, -lower_limit, -.is_outlier)
-  }
-
-  return(list(data = data, count = n_anomalies))
+#' @noRd
 .detect_velocity_jump_internal <- function(data, max_acceleration = 5, max_deceleration = -8, action = "filter") {
   if (!all(c("X", "Y", "Interval") %in% names(data))) {
     return(list(data = data, count = 0))
@@ -909,43 +899,36 @@ calculate_thresholds <- function(data, type = "all", ...) {
     }
   }
 
-if (is.null(yield_col)) {
-  rlang::warn("Colonne de rendement non trouvée pour le calcul des seuils")
-  return(list(min_yield = 0, max_yield = Inf))
-}
+  if (is.null(yield_col)) {
+    rlang::warn("Colonne de rendement non trouvée pour le calcul des seuils")
+    return(list(min_yield = 0, max_yield = Inf))
+  }
 
-yield_vals <- data[[yield_col]]
-yield_vals <- yield_vals[is.finite(yield_vals) & yield_vals > 0]
+  yield_vals <- data[[yield_col]]
+  yield_vals <- yield_vals[is.finite(yield_vals) & yield_vals > 0]
 
-if (length(yield_vals) == 0) {
-  return(list(min_yield = 0, max_yield = Inf))
-}
+  if (length(yield_vals) == 0) {
+    return(list(min_yield = 0, max_yield = Inf))
+  }
 
-yllim <- params$yllim %||% 0.10
-yulim <- params$yulim %||% 0.90
-yscale <- params$yscale %||% 1.1
-min_yield_abs <- params$min_yield_abs %||% 0
+  yllim <- params$yllim %||% 0.10
+  yulim <- params$yulim %||% 0.90
+  yscale <- params$yscale %||% 1.1
+  min_yield_abs <- params$min_yield_abs %||% 0
 
-q_low <- quantile(yield_vals, yllim, na.rm = TRUE)
-q_high <- quantile(yield_vals, yulim, na.rm = TRUE)
-iqr <- q_high - q_low
+  q_low <- quantile(yield_vals, yllim, na.rm = TRUE)
+  q_high <- quantile(yield_vals, yulim, na.rm = TRUE)
+  iqr <- q_high - q_low
 
-min_yield <- max(min_yield_abs, q_low - yscale * iqr)
-max_yield <- q_high + yscale * iqr
+  min_yield <- max(min_yield_abs, q_low - yscale * iqr)
+  max_yield <- q_high + yscale * iqr
 
-return(list(
-  min_yield = min_yield,
-  max_yield = max_yield,
-  mean_yield = mean(yield_vals, na.rm = TRUE),
-  sd_yield = stats::sd(yield_vals, na.rm = TRUE)
-))
-}
-
-# Fin des fonctions internes
-# =============================================================================
-
-# Export des fonctions principales
-# =============================================================================
+  return(list(
+    min_yield = min_yield,
+    max_yield = max_yield,
+    mean_yield = mean(yield_vals, na.rm = TRUE),
+    sd_yield = stats::sd(yield_vals, na.rm = TRUE)
+  ))
 }
 
 #' @noRd
@@ -1132,156 +1115,6 @@ convert_yield_units <- function(data, from = "flow_lbs_s", to = "kg_ha",
   }
 
   # Déterminer l'humidité standard selon la culture
-  if (is.null(moisture_std)) {
-    if (is.null(crop_type)) {
-      moisture_std <- 13  # default
-    } else {
-      moisture_std <- switch(crop_type[1],
-        "maize" = 15.5,
-        "corn" = 15.5,
-        "soybean" = 13,
-        "wheat" = 13.5,
-        "barley" = 14.8,
-        "canola" = 10,
-        13 # default
-      )
-    }
-  }
-  if (is.null(moisture_std)) {
-    if (is.null(crop_type)) {
-      moisture_std <- 13  # default
-    } else {
-      moisture_std <- switch(crop_type[1],
-        "maize" = 15.5,
-        "corn" = 15.5,
-        "soybean" = 13,
-        "wheat" = 13.5,
-        "barley" = 14.8,
-        "canola" = 10,
-        13 # default
-      )
-    }
-  }
-  if (is.null(moisture_std)) {
-    if (is.null(crop_type)) {
-      moisture_std <- 13  # default
-    } else {
-      moisture_std <- switch(crop_type[1],
-        "maize" = 15.5,
-        "corn" = 15.5,
-        "soybean" = 13,
-        "wheat" = 13.5,
-        "barley" = 14.8,
-        "canola" = 10,
-        13 # default
-      )
-    }
-  }
-  if (is.null(moisture_std)) {
-    if (is.null(crop_type)) {
-      moisture_std <- 13  # default
-    } else {
-      moisture_std <- switch(crop_type[1],
-        "maize" = 15.5,
-        "corn" = 15.5,
-        "soybean" = 13,
-        "wheat" = 13.5,
-        "barley" = 14.8,
-        "canola" = 10,
-        13 # default
-      )
-    }
-  }
-  if (is.null(moisture_std)) {
-    if (is.null(crop_type)) {
-      moisture_std <- 13  # default
-    } else {
-      moisture_std <- switch(crop_type[1],
-        "maize" = 15.5,
-        "corn" = 15.5,
-        "soybean" = 13,
-        "wheat" = 13.5,
-        "barley" = 14.8,
-        "canola" = 10,
-        13 # default
-      )
-    }
-  }
-  if (is.null(moisture_std)) {
-    if (is.null(crop_type)) {
-      moisture_std <- 13  # default
-    } else {
-      moisture_std <- switch(crop_type[1],
-        "maize" = 15.5,
-        "corn" = 15.5,
-        "soybean" = 13,
-        "wheat" = 13.5,
-        "barley" = 14.8,
-        "canola" = 10,
-        13 # default
-      )
-    }
-  }
-  if (is.null(moisture_std)) {
-    if (is.null(crop_type)) {
-      moisture_std <- 13  # default
-    } else {
-      moisture_std <- switch(crop_type[1],
-        "maize" = 15.5,
-        "corn" = 15.5,
-        "soybean" = 13,
-        "wheat" = 13.5,
-        "barley" = 14.8,
-        "canola" = 10,
-        13 # default
-      )
-    }
-  }
-  if (is.null(moisture_std)) {
-    if (is.null(crop_type)) {
-      moisture_std <- 13  # default
-    } else {
-      moisture_std <- switch(crop_type[1],
-        "maize" = 15.5,
-        "corn" = 15.5,
-        "soybean" = 13,
-        "wheat" = 13.5,
-        "barley" = 14.8,
-        "canola" = 10,
-        13 # default
-      )
-    }
-  }
-  if (is.null(moisture_std)) {
-    if (is.null(crop_type)) {
-      moisture_std <- 13  # default
-    } else {
-      moisture_std <- switch(crop_type[1],
-        "maize" = 15.5,
-        "corn" = 15.5,
-        "soybean" = 13,
-        "wheat" = 13.5,
-        "barley" = 14.8,
-        "canola" = 10,
-        13 # default
-      )
-    }
-  }
-  if (is.null(moisture_std)) {
-    if (is.null(crop_type)) {
-      moisture_std <- 13  # default
-    } else {
-      moisture_std <- switch(crop_type[1],
-        "maize" = 15.5,
-        "corn" = 15.5,
-        "soybean" = 13,
-        "wheat" = 13.5,
-        "barley" = 14.8,
-        "canola" = 10,
-        13 # default
-      )
-    }
-  }
   if (is.null(moisture_std)) {
     if (is.null(crop_type)) {
       moisture_std <- 13  # default
@@ -1591,76 +1424,3 @@ export_data <- function(data, file, format = NULL, ...) {
   rlang::inform(paste("Données exportées vers:", file))
   return(invisible(file))
 }
-
-#' @noRd
-.export_csv_internal <- function(data, file, params) {
-  # Convertir sf en tibble si nécessaire
-  if (inherits(data, "sf")) {
-    data <- sf::st_drop_geometry(data)
-  }
-
-  write.csv(data, file, row.names = FALSE)
-}
-
-#' @noRd
-.export_geojson_internal <- function(data, file, params) {
-  # Convertir en sf si nécessaire
-  if (!inherits(data, "sf")) {
-    if (all(c("Longitude", "Latitude") %in% names(data))) {
-      data <- sf::st_as_sf(data, coords = c("Longitude", "Latitude"), crs = 4326)
-    } else if (all(c("X", "Y") %in% names(data))) {
-      data <- sf::st_as_sf(data, coords = c("X", "Y"), crs = params$crs %||% 4326)
-    } else {
-      rlang::abort("Coordonnées non trouvées pour l'export GeoJSON")
-    }
-  }
-
-  sf::st_write(data, file, driver = "GeoJSON", delete_dsn = TRUE)
-}
-
-#' @noRd
-.export_shapefile_internal <- function(data, file, params) {
-  if (!inherits(data, "sf")) {
-    rlang::abort("Les données doivent être au format sf pour l'export Shapefile")
-  }
-
-  sf::st_write(data, file, driver = "ESRI Shapefile", delete_layer = TRUE)
-}
-
-#' @noRd
-.export_geopackage_internal <- function(data, file, params) {
-  if (!inherits(data, "sf")) {
-    rlang::abort("Les données doivent être au format sf pour l'export GeoPackage")
-  }
-
-  layer_name <- params$layer %||% "yield_data"
-  sf::st_write(data, file, layer = layer_name, driver = "GPKG", delete_layer = TRUE)
-}
-
-#' @noRd
-.export_raster_internal <- function(data, file, params) {
-  if (!requireNamespace("terra", quietly = TRUE)) {
-    rlang::abort("Package 'terra' requis pour l'export raster")
-  }
-
-  # Convertir en sf si nécessaire
-  if (!inherits(data, "sf")) {
-    if (all(c("Longitude", "Latitude") %in% names(data))) {
-      data <- sf::st_as_sf(data, coords = c("Longitude", "Latitude"), crs = 4326)
-    } else if (all(c("X", "Y") %in% names(data))) {
-      data <- sf::st_as_sf(data, coords = c("X", "Y"), crs = params$crs %||% 4326)
-    } else {
-      rlang::abort("Coordonnées non trouvées pour l'export raster")
-    }
-  }
-
-  # Déterminer la colonne de rendement
-  yield_col <- NULL
-  for (col in c("Yield_kg_ha", "Yield", "Flow")) {
-    if (col %in% names(data)) {
-      yield_col <- col
-      break
-    }
-  }
-
-  if (is.null(yield_col)) {

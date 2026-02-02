@@ -2,7 +2,7 @@
 % Please edit documentation in R/meta_functions.R
 \name{filter_data}
 \alias{filter_data}
-\title{Méta-fonction de filtrage des données de rendement}
+\title{Méta-fonction de filtrage unifiée}
 \usage{
 filter_data(data, type = "all", ...)
 }
