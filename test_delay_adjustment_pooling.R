@@ -1,13 +1,13 @@
 #!/usr/bin/env Rscript
 
-# Test du PCDI avec pooling sur 5 iterations (version legacy)
+# Test du Delay Adjustment avec pooling sur 5 iterations (version legacy)
 
 library(devtools)
 load_all()
 library(yieldcleanr)
 library(dplyr)
 
-cat("=== Test PCDI avec pooling (5 iterations, legacy method) ===\n\n")
+cat("=== Test Delay Adjustment avec pooling (5 iterations, legacy method) ===\n\n")
 
 file_path <- system.file("extdata", "sample2.txt", package = "yieldcleanr")
 data_raw <- read_yield_data(file_path)
@@ -17,7 +17,7 @@ cat("Donnees:", nrow(data_utm), "points\n\n")
 
 start_time <- Sys.time()
 
-result <- apply_pcdi(
+result <- apply_delay_adjustment(
   data = data_utm,
   delay_range = -25:25,
   n_iterations = 5,

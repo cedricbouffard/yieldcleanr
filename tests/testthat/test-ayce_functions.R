@@ -1,4 +1,4 @@
-# Test suite for ayce_clean.R and ayce_pcdi.R ----
+# Test suite for ayce_clean.R and ayce_delay_adjustment.R ----
 library(dplyr)
 library(yieldcleanr)
 
@@ -100,11 +100,11 @@ test_that("calculate_rsc calculates coherence correctly", {
   expect_true(result >= 0 && result <= 1)
 })
 
-# Test apply_pcdi (exported) ----
-test_that("apply_pcdi handles missing columns", {
+# Test apply_delay_adjustment (exported) ----
+test_that("apply_delay_adjustment handles missing columns", {
   data <- tibble::tibble(Flow = 1:10)
 
-  result <- apply_pcdi(data)
+  result <- apply_delay_adjustment(data)
 
   expect_type(result, "list")
   expect_true("optimal_delay" %in% names(result))
@@ -112,23 +112,23 @@ test_that("apply_pcdi handles missing columns", {
   expect_false(is.null(result$warning))
 })
 
-test_that("apply_pcdi returns reasonable delay", {
+test_that("apply_delay_adjustment returns reasonable delay", {
   data <- create_test_data(100) |>
     latlon_to_utm()
 
-  result <- apply_pcdi(data, delay_range = -10:10)
+  result <- apply_delay_adjustment(data, delay_range = -10:10)
 
   expect_type(result, "list")
   expect_true("optimal_delay" %in% names(result))
   expect_true(result$optimal_delay >= -10 && result$optimal_delay <= 10)
 })
 
-test_that("apply_pcdi with different value column", {
+test_that("apply_delay_adjustment with different value column", {
   data <- create_test_data(100) |>
     mutate(CustomFlow = Flow * 2) |>
     latlon_to_utm()
 
-  result <- apply_pcdi(data, value_col = "CustomFlow")
+  result <- apply_delay_adjustment(data, value_col = "CustomFlow")
 
   expect_type(result, "list")
   expect_true("optimal_delay" %in% names(result))

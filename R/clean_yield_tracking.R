@@ -128,17 +128,17 @@ clean_yield_with_tracking <- function(file_path = NULL, data = NULL, metrique = 
      rlang::inform("Etape 2b : filtre position saute")
    }
    
-   # Etape 3 : PCDI - optimisation du delai de flux
+   # Etape 3 : Delay Adjustment - optimisation du delai de flux
    # Verifier si les donnees contiennent deja des colonnes de rendement (sans Flow)
    has_yield_cols <- "Yield_kg_ha" %in% names(data)
   has_flow_col <- "Flow" %in% names(data) && !all(is.na(data$Flow))
   
-  # PCDI flux - optionnel
+  # Delay Adjustment flux - optionnel
   flow_delay <- 0
-   if (isTRUE(params$apply_pcdi_flow)) {
+   if (isTRUE(params$apply_delay_adjustment_flow)) {
      if (has_yield_cols && !has_flow_col) {
-       # Donnees John Deere : calculer Flow a partir de Yield pour PCDI
-       report_progress("PCDI", "calcul du flux a partir du rendement...", 0.08)
+       # Donnees John Deere : calculer Flow a partir de Yield pour Delay Adjustment
+       report_progress("Delay Adjustment", "calcul du flux a partir du rendement...", 0.08)
        rlang::inform("Etape 3 : calcul du flux a partir du rendement (John Deere)...")
       
       # Verifier les colonnes necessaires
@@ -169,29 +169,29 @@ clean_yield_with_tracking <- function(file_path = NULL, data = NULL, metrique = 
       valid_flow <- sum(!is.na(data$Flow) & data$Flow > 0)
       rlang::inform(paste("  Flux calcule:", valid_flow, "valeurs valides"))
       
-      # Si aucun flux valide, on ne peut pas faire PCDI
+      # Si aucun flux valide, on ne peut pas faire Delay Adjustment
        if (valid_flow == 0) {
-         rlang::warn("Aucun flux valide calcule - PCDI saute")
+         rlang::warn("Aucun flux valide calcule - Delay Adjustment saute")
          flow_delay <- 0
        } else {
-         # Etape 3 : PCDI
-         report_progress("PCDI", "optimisation du delai de flux...", 0.10)
-         rlang::inform("Etape 3 : PCDI - optimisation du delai de flux...")
-         pcdi_result <- apply_pcdi(data,
+         # Etape 3 : Delay Adjustment
+         report_progress("Delay Adjustment", "optimisation du delai de flux...", 0.10)
+         rlang::inform("Etape 3 : Delay Adjustment - optimisation du delai de flux...")
+         delay_adjustment_result <- apply_delay_adjustment(data,
            delay_range = params$delay_range %||% -25:25,
            n_iterations = params$n_iterations %||% 10,
            noise_level = params$noise_level %||% 0.03,
            sample_fraction = params$sample_fraction %||% 1,
            method = "Moran"
          )
-        flow_delay <- pcdi_result$optimal_delay
+        flow_delay <- delay_adjustment_result$optimal_delay
         rlang::inform(paste("  Delai optimal :", flow_delay, "secondes"))
       }
      } else {
-       # Donnees avec Flow existant : PCDI normal
-       report_progress("PCDI", "optimisation du delai de flux...", 0.10)
-       rlang::inform("Etape 3 : PCDI - optimisation du delai de flux...")
-       pcdi_result <- apply_pcdi(data,
+       # Donnees avec Flow existant : Delay Adjustment normal
+       report_progress("Delay Adjustment", "optimisation du delai de flux...", 0.10)
+       rlang::inform("Etape 3 : Delay Adjustment - optimisation du delai de flux...")
+       delay_adjustment_result <- apply_delay_adjustment(data,
          delay_range = params$delay_range %||% -25:25,
          n_iterations = params$n_iterations %||% 10,
          noise_level = params$noise_level %||% 0.03,
@@ -199,19 +199,19 @@ clean_yield_with_tracking <- function(file_path = NULL, data = NULL, metrique = 
          sample_fraction = params$sample_fraction %||% 1,
          method = "Moran"
        )
-      flow_delay <- pcdi_result$optimal_delay
+      flow_delay <- delay_adjustment_result$optimal_delay
       rlang::inform(paste("  Delai optimal flux:", flow_delay, "secondes"))
     }
   } else {
-    rlang::inform("Etape 3 : PCDI flux saute (desactive)")
+    rlang::inform("Etape 3 : Delay Adjustment flux saute (desactive)")
   }
   
-   # Etape 3b : PCDI sur l'humidite si disponible - optionnel
+   # Etape 3b : Delay Adjustment sur l'humidite si disponible - optionnel
    moisture_delay <- 0
-   if (isTRUE(params$apply_pcdi_moisture) && "Moisture" %in% names(data) && !all(is.na(data$Moisture))) {
-     report_progress("PCDI", "optimisation du delai d'humidite...", 0.12)
-     rlang::inform("Etape 3b : PCDI - optimisation du delai d'humidite...")
-     pcdi_moisture <- apply_pcdi(data,
+   if (isTRUE(params$apply_delay_adjustment_moisture) && "Moisture" %in% names(data) && !all(is.na(data$Moisture))) {
+     report_progress("Delay Adjustment", "optimisation du delai d'humidite...", 0.12)
+     rlang::inform("Etape 3b : Delay Adjustment - optimisation du delai d'humidite...")
+     delay_adjustment_moisture <- apply_delay_adjustment(data,
        delay_range = params$delay_range %||% -25:25,
        n_iterations = params$n_iterations %||% 10,
        noise_level = params$noise_level %||% 0.03,
@@ -219,10 +219,10 @@ clean_yield_with_tracking <- function(file_path = NULL, data = NULL, metrique = 
        sample_fraction = params$sample_fraction %||% 1,
        method = "Moran"
      )
-    moisture_delay <- pcdi_moisture$optimal_delay
+    moisture_delay <- delay_adjustment_moisture$optimal_delay
     rlang::inform(paste("  Delai optimal humidite:", moisture_delay, "secondes"))
   } else {
-    rlang::inform("Etape 3b : PCDI humidite saute (desactive ou donnees non disponibles)")
+    rlang::inform("Etape 3b : Delay Adjustment humidite saute (desactive ou donnees non disponibles)")
   }
 
     # Etape 3c : calcul du rendement initial

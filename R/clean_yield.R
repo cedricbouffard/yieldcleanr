@@ -44,7 +44,7 @@
 
   # ----- Parametres AYCE par defaut -----
   default_params <- list(
-    # Parametres PCDI
+    # Parametres Delay Adjustment
     delay_range = -25:25,   # Plage de delai a tester (secondes) - plus large pour sample2
     n_iterations = 10,      # Plus d'iterations pour stabilite
     noise_level = 0.03,     # Moins de bruit pour plus de precision
@@ -168,30 +168,30 @@
     rlang::inform("Etape 2b : filtre position saute")
   }
 
-  # ----- Etape 3 : PCDI sur le flux -----
-  rlang::inform("Etape 3 : PCDI - optimisation du delai de flux...")
-  pcdi_result <- apply_pcdi(data,
+  # ----- Etape 3 : Delay Adjustment sur le flux -----
+  rlang::inform("Etape 3 : Delay Adjustment - optimisation du delai de flux...")
+  delay_adjustment_result <- apply_delay_adjustment(data,
     delay_range = params$delay_range,
     n_iterations = params$n_iterations,
     noise_level = params$noise_level,
     value_col = "Flow",
     sample_fraction = params$sample_fraction %||% 1
   )
-  flow_delay <- pcdi_result$optimal_delay
+  flow_delay <- delay_adjustment_result$optimal_delay
   rlang::inform(paste("  Delai optimal flux:", flow_delay, "secondes"))
   
-  # ----- Etape 3b : PCDI sur l'humidite -----
+  # ----- Etape 3b : Delay Adjustment sur l'humidite -----
   moisture_delay <- 0
   if ("Moisture" %in% names(data) && !all(is.na(data$Moisture))) {
-    rlang::inform("Etape 3b : PCDI - optimisation du delai d'humidite...")
-    pcdi_moisture <- apply_pcdi(data,
+    rlang::inform("Etape 3b : Delay Adjustment - optimisation du delai d'humidite...")
+    delay_adjustment_moisture <- apply_delay_adjustment(data,
       delay_range = params$delay_range,
       n_iterations = params$n_iterations,
       noise_level = params$noise_level,
       value_col = "Moisture",
       sample_fraction = params$sample_fraction %||% 1
     )
-    moisture_delay <- pcdi_moisture$optimal_delay
+    moisture_delay <- delay_adjustment_moisture$optimal_delay
     rlang::inform(paste("  Delai optimal humidite:", moisture_delay, "secondes"))
   }
 
@@ -411,7 +411,7 @@
 
   # ----- Etape 21 : validation -----
   rlang::inform("Etape 21 : validation et controle qualite...")
-  validation <- ayce_validate(data, data_raw, pcdi_result, thresholds)
+  validation <- ayce_validate(data, data_raw, delay_adjustment_result, thresholds)
   rlang::inform(paste("  Retention rate:", round(validation$retention_rate * 100, 1), "%"))
 
   # ----- Etape 22 : formatage de la sortie -----
@@ -616,7 +616,7 @@
       # ----- Etape 18 : generation du journal -----
       if (!is.null(log_file)) {
         rlang::inform("Etape 18 : generation du journal...")
-        generate_clean_yield_log(sf_output, data_raw, params, pcdi_result,
+        generate_clean_yield_log(sf_output, data_raw, params, delay_adjustment_result,
                                 thresholds, validation, log_file, file_path)
       }
 
@@ -665,7 +665,7 @@
     # ----- Etape 18 : generation du journal -----
     if (!is.null(log_file)) {
       rlang::inform("Etape 18 : generation du journal...")
-      generate_clean_yield_log(data_output, data_raw, params, pcdi_result,
+      generate_clean_yield_log(data_output, data_raw, params, delay_adjustment_result,
                               thresholds, validation, log_file, file_path)
     }
 
@@ -677,7 +677,7 @@
 
     # Ajouter des attributs pour compatibilite
     attr(data_output, "ayce_params") <- params
-    attr(data_output, "pcdi_result") <- pcdi_result
+    attr(data_output, "delay_adjustment_result") <- delay_adjustment_result
     attr(data_output, "thresholds") <- thresholds
     attr(data_output, "validation") <- validation
 
@@ -688,7 +688,7 @@
 
 #' Generer le journal pour clean_yield
 #' @noRd
-generate_clean_yield_log <- function(data_clean, data_raw, params, pcdi_result,
+generate_clean_yield_log <- function(data_clean, data_raw, params, delay_adjustment_result,
                                      thresholds, validation, log_file,
                                      source_file = "unknown") {
 
@@ -715,7 +715,7 @@ generate_clean_yield_log <- function(data_clean, data_raw, params, pcdi_result,
 
   # Recuperer la valeur RSC
   rsc_value <- tryCatch({
-    pcdi_result$rsc_values$mean_rsc[pcdi_result$rsc_values$delay == pcdi_result$optimal_delay][1]
+    delay_adjustment_result$rsc_values$mean_rsc[delay_adjustment_result$rsc_values$delay == delay_adjustment_result$optimal_delay][1]
   }, error = function(e) NA)
 
   log_lines <- c(
@@ -731,10 +731,10 @@ generate_clean_yield_log <- function(data_clean, data_raw, params, pcdi_result,
     paste0("Points supprimes : ", n_removed, " (", round(n_removed/n_raw*100, 1), "%)"),
     paste0("Taux de retention : ", round(validation$retention_rate * 100, 1), "%"),
     "",
-    "--- RESULTATS PCDI (Delai de flux) ---",
-    paste0("Delai optimal : ", pcdi_result$optimal_delay, " secondes"),
+    "--- RESULTATS Delay Adjustment (Delai de flux) ---",
+    paste0("Delai optimal : ", delay_adjustment_result$optimal_delay, " secondes"),
     paste0("RSC a l'optimal : ", round(rsc_value, 4) %||% "NA"),
-    paste0("Stabilite (CV) : ", round(pcdi_result$stability, 4) %||% "NA"),
+    paste0("Stabilite (CV) : ", round(delay_adjustment_result$stability, 4) %||% "NA"),
     "",
     "--- SEUILS AUTOMATIQUES ---",
     paste0("Plage rendement : [", round(thresholds$min_yield, 2), " - ", round(thresholds$max_yield, 2), "]"),

@@ -74,12 +74,12 @@ cat("\n📊 APRÈS CONVERSION\n")
 cat("Rendement moyen:", round(mean(data_s1$Yield_kg_ha, na.rm = TRUE), 1), "kg/ha\n")
 cat("CV:", round(sd(data_s1$Yield_kg_ha, na.rm = TRUE) / mean(data_s1$Yield_kg_ha, na.rm = TRUE) * 100, 1), "%\n")
 
-# Étape 2: PCDI
-pcdi_s1 <- apply_pcdi(data_s1, delay_range = -25:25, n_iterations = 10)
-cat("\n🔧 PCDI - Délai optimal:", pcdi_s1$optimal_delay, "secondes\n")
+# Étape 2: Delay Adjustment
+delay_adjustment_s1 <- apply_delay_adjustment(data_s1, delay_range = -25:25, n_iterations = 10)
+cat("\n🔧 Delay Adjustment - Délai optimal:", delay_adjustment_s1$optimal_delay, "secondes\n")
 
-if (pcdi_s1$optimal_delay != 0) {
-  data_s1 <- optimize_delays(data_s1, type = "flow", delay = pcdi_s1$optimal_delay)
+if (delay_adjustment_s1$optimal_delay != 0) {
+  data_s1 <- optimize_delays(data_s1, type = "flow", delay = delay_adjustment_s1$optimal_delay)
   cat("Points après correction délai:", nrow(data_s1), "\n")
 }
 
@@ -164,15 +164,15 @@ cat("  Écart-type:", round(sd(data_raw_s2$Flow, na.rm = TRUE), 2), "\n")
 data_s2 <- latlon_to_utm(data_raw_s2)
 data_s2 <- convert_flow_to_yield(data_s2)
 
-# PCDI avec délai important
-pcdi_s2 <- apply_pcdi(data_s2, delay_range = -25:25, n_iterations = 10)
-cat("🔧 PCDI - Délai optimal:", pcdi_s2$optimal_delay, "secondes\n")
+# Delay Adjustment avec délai important
+delay_adjustment_s2 <- apply_delay_adjustment(data_s2, delay_range = -25:25, n_iterations = 10)
+cat("🔧 Delay Adjustment - Délai optimal:", delay_adjustment_s2$optimal_delay, "secondes\n")
 
-if (pcdi_s2$optimal_delay != 0) {
+if (delay_adjustment_s2$optimal_delay != 0) {
   n_before <- nrow(data_s2)
-  data_s2 <- optimize_delays(data_s2, type = "flow", delay = pcdi_s2$optimal_delay)
-  removed_pcdi <- n_before - nrow(data_s2)
-  cat("Points retirés par PCDI:", removed_pcdi, "\n")
+  data_s2 <- optimize_delays(data_s2, type = "flow", delay = delay_adjustment_s2$optimal_delay)
+  removed_delay_adjustment <- n_before - nrow(data_s2)
+  cat("Points retirés par Delay Adjustment:", removed_delay_adjustment, "\n")
 }
 
 thresholds_s2 <- calculate_thresholds(data_s2)
@@ -232,8 +232,8 @@ cat("Points bruts:", nrow(data_raw_s3), "\n")
 data_s3 <- latlon_to_utm(data_raw_s3) %>%
   convert_flow_to_yield()
 
-pcdi_s3 <- apply_pcdi(data_s3, delay_range = -25:25, n_iterations = 10)
-cat("PCDI - Délai optimal:", pcdi_s3$optimal_delay, "secondes\n")
+delay_adjustment_s3 <- apply_delay_adjustment(data_s3, delay_range = -25:25, n_iterations = 10)
+cat("Delay Adjustment - Délai optimal:", delay_adjustment_s3$optimal_delay, "secondes\n")
 
 thresholds_s3 <- calculate_thresholds(data_s3)
 
@@ -278,8 +278,8 @@ cat("Points bruts:", nrow(data_raw_s4), "\n")
 data_s4 <- latlon_to_utm(data_raw_s4) %>%
   convert_flow_to_yield()
 
-pcdi_s4 <- apply_pcdi(data_s4, delay_range = -25:25, n_iterations = 10)
-cat("PCDI - Délai optimal:", pcdi_s4$optimal_delay, "secondes\n")
+delay_adjustment_s4 <- apply_delay_adjustment(data_s4, delay_range = -25:25, n_iterations = 10)
+cat("Delay Adjustment - Délai optimal:", delay_adjustment_s4$optimal_delay, "secondes\n")
 
 thresholds_s4 <- calculate_thresholds(data_s4)
 
@@ -316,7 +316,7 @@ plot(sf_clean_s4["Yield_kg_ha"], main = "APRÈS - Sample 4 (Maïs blanc)",
 
 ## Points retirés par filtre
 
-| Sample | PCDI | Vitesse | Humidité | Chevauchement | Écart-type local | **Total** |
+| Sample | Delay Adjustment | Vitesse | Humidité | Chevauchement | Écart-type local | **Total** |
 |--------|------|---------|----------|---------------|------------------|-----------|
 | **Sample 1 (Soja)** | 12 | 29 | 303 | 1 | 561 | **906** |
 | **Sample 2 (Maïs)** | 3,265 | 366 | 153 | 0 | 13 | **3,797** |
@@ -469,9 +469,9 @@ ggplot(retention_data, aes(x = Sample, y = Retention)) +
 
 # Analyse des filtres
 
-## Filtre PCDI (Position-Coordinate Delay Identification)
+## Filtre Delay Adjustment
 
-Le filtre PCDI corrige le délai entre la mesure du flux et la position GPS. Voici les délais optimaux détectés :
+Le filtre Delay Adjustment corrige le délai entre la mesure du flux et la position GPS. Voici les délais optimaux détectés :
 
 - **Sample 1 (Soja)** : 2 secondes
 - **Sample 2 (Maïs)** : 13 secondes
@@ -508,14 +508,14 @@ L'analyse des 4 échantillons montre l'efficacité du pipeline AYCE :
 
 1. **Taux de rétention élevé** : 89.7% à 96.1% des points conservés
 2. **Réduction significative du CV** : Diminution de 24% à 54% selon les échantillons
-3. **Détection automatique des problèmes** : PCDI identifie les délais de synchronisation
+3. **Détection automatique des problèmes** : Delay Adjustment identifie les délais de synchronisation
 4. **Filtrage ciblé** : Chaque filtre cible un type spécifique d'anomalie
 
-Le Sample 2 (maïs) présente le taux de rejet le plus élevé (10.3%) en raison d'un délai PCDI important (13 secondes) et de nombreuses anomalies de vitesse. Les autres échantillons montrent une qualité de données initiale meilleure avec des taux de rétention supérieurs à 94%.
+Le Sample 2 (maïs) présente le taux de rejet le plus élevé (10.3%) en raison d'un délai de delay adjustment important (13 secondes) et de nombreuses anomalies de vitesse. Les autres échantillons montrent une qualité de données initiale meilleure avec des taux de rétention supérieurs à 94%.
 
 Pour plus de détails sur les filtres individuels, consultez les articles mathématiques dédiés :
 
-- `vignettes("filtre-pcdi")` - Théorie et mathématiques du PCDI
+- `vignettes("filtre-delai")` - Théorie et mathématiques du Delay Adjustment
 - `vignettes("filtre-vitesse")` - Filtre de vitesse
 - `vignettes("filtre-rendement")` - Filtre de plage de rendement
 - `vignettes("filtre-humidite")` - Filtre d'humidité

@@ -7,7 +7,7 @@
 optimize_delays(
   data,
   type = "both",
-  method = "PCDI",
+  method = "delay_adjustment",
   delay_range = -25:25,
   n_iterations = 10,
   noise_level = 0.03,
@@ -20,7 +20,7 @@ optimize_delays(
 \item{type}{Type de délai à optimiser: "flow" (flux), "moisture" (humidité),
 ou "both" (les deux). Défaut: "both"}
 
-\item{method}{Méthode d'optimisation. Défaut: "PCDI"}
+\item{method}{Méthode d'optimisation. Défaut: "delay_adjustment"}
 
 \item{delay_range}{Plage de délais à tester en secondes. Défaut: -25:25}
 
@@ -36,12 +36,12 @@ Liste contenant:
 \itemize{
 \item data: Données corrigées (si apply_correction = TRUE)
 \item delays: Délai(s) optimal(aux) trouvé(s)
-\item pcdi_results: Résultats détaillés de l'optimisation
+\item delay_adjustment_results: Résultats détaillés de l'optimisation
 }
 }
 \description{
 Cette fonction optimise les délais temporels entre les capteurs (flux et humidité)
-en utilisant la méthode PCDI (Phase Correlation Delay Identification).
+en utilisant la méthode de delay adjustment (Delay Adjustment).
 }
 \examples{
 \dontrun{

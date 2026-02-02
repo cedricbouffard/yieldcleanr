@@ -1,13 +1,13 @@
 #!/usr/bin/env Rscript
 
-# Debug PCDI
+# Debug Delay Adjustment
 
 library(devtools)
 load_all()
 library(yieldcleanr)
 library(dplyr)
 
-cat("=== Debug PCDI ===\n")
+cat("=== Debug Delay Adjustment ===\n")
 
 file_path <- system.file("extdata", "sample2.txt", package = "yieldcleanr")
 data_raw <- read_yield_data(file_path)
@@ -15,7 +15,7 @@ data_utm <- latlon_to_utm(data_raw)
 
 cat("Donnees:", nrow(data_utm), "points\n")
 
-# Preparer les donnees comme dans apply_pcdi
+# Preparer les donnees comme dans apply_delay_adjustment
 data <- data_utm
 max_points <- 10000
 

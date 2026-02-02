@@ -1,6 +1,6 @@
 #!/usr/bin/env Rscript
 
-# Test du nouveau PCDI rapide sur sample2
+# Test du nouveau Delay Adjustment rapide sur sample2
 # Devrait trouver un delai de 15 secondes
 
 library(yieldcleanr)
@@ -10,7 +10,7 @@ library(dplyr)
 file_path <- system.file("extdata", "sample2.txt", package = "yieldcleanr")
 data_raw <- read_yield_data(file_path)
 
-cat("=== Test PCDI Rapide sur sample2 ===\n")
+cat("=== Test Delay Adjustment Rapide sur sample2 ===\n")
 cat("Donnees brutes:", nrow(data_raw), "points\n")
 
 # Convertir en UTM
@@ -20,11 +20,11 @@ cat("Apres conversion UTM:", nrow(data_utm), "points\n")
 cat("Range X:", round(min(data_utm$X, na.rm = TRUE), 1), "a", round(max(data_utm$X, na.rm = TRUE), 1), "\n")
 cat("Range Y:", round(min(data_utm$Y, na.rm = TRUE), 1), "a", round(max(data_utm$Y, na.rm = TRUE), 1), "\n")
 
-# Tester le PCDI
-cat("\n=== Execution PCDI ===\n")
+# Tester le Delay Adjustment
+cat("\n=== Execution Delay Adjustment ===\n")
 start_time <- Sys.time()
 
-result <- apply_pcdi(
+result <- apply_delay_adjustment(
   data = data_utm,
   delay_range = -25:25,
   coarse_step = 2,

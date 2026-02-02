@@ -328,8 +328,8 @@ test_that("detect_anomalies handles no overlap", {
   expect_equal(nrow(result), nrow(data))
 })
 
-# Test apply_pcdi ----
-test_that("apply_pcdi finds optimal delay", {
+# Test apply_delay_adjustment ----
+test_that("apply_delay_adjustment finds optimal delay", {
   data <- tibble::tibble(
     Flow = c(10, 15, 12, 18, 14, 16, 13, 17, 11, 19),
     GPS_Time = 1:10,
@@ -338,7 +338,7 @@ test_that("apply_pcdi finds optimal delay", {
     Interval = rep(2L, 10)
   )
 
-  result <- apply_pcdi(data, delay_range = -3:3, n_iterations = 2)
+  result <- apply_delay_adjustment(data, delay_range = -3:3, n_iterations = 2)
 
   expect_true("optimal_delay" %in% names(result))
   expect_true("rsc_values" %in% names(result))

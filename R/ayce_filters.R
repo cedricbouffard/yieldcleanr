@@ -209,11 +209,11 @@
 #'
 #' @param data_clean Tibble des donnees nettoyees
 #' @param data_raw Tibble des donnees brutes
-#' @param pcdi_result Resultat de l'analyse PCDI
+#' @param delay_adjustment_result Resultat de l'analyse Delay Adjustment
 #' @param thresholds Seuils utilises
 #' @return Liste avec metriques de validation et avertissements
 #' @noRd
-ayce_validate <- function(data_clean, data_raw, pcdi_result = NULL,
+ayce_validate <- function(data_clean, data_raw, delay_adjustment_result = NULL,
                           thresholds = NULL) {
 
   rlang::inform("=== AYCE Validation & Quality Control ===")
@@ -236,14 +236,14 @@ ayce_validate <- function(data_clean, data_raw, pcdi_result = NULL,
     rlang::warn(validation$warning)
   }
 
-  # Verification de la stabilite PCDI
-  if (!is.null(pcdi_result) && !is.null(pcdi_result$warning)) {
-    validation$pcdi_stable <- is.null(pcdi_result$warning) || pcdi_result$warning == "None"
-    if (!validation$pcdi_stable) {
-      rlang::warn(paste("PCDI warning:", pcdi_result$warning))
+  # Verification de la stabilite Delay Adjustment
+  if (!is.null(delay_adjustment_result) && !is.null(delay_adjustment_result$warning)) {
+    validation$delay_adjustment_stable <- is.null(delay_adjustment_result$warning) || delay_adjustment_result$warning == "None"
+    if (!validation$delay_adjustment_stable) {
+      rlang::warn(paste("Delay Adjustment warning:", delay_adjustment_result$warning))
     }
   } else {
-    validation$pcdi_stable <- TRUE
+    validation$delay_adjustment_stable <- TRUE
   }
 
   # Comparaison des statistiques de rendement

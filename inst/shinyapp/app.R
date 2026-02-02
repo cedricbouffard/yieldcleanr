@@ -369,8 +369,8 @@ ui <- fluidPage(
 
         # Section Filtres avec checkboxes statiques
         div(class = "section-title", "3. Filtres a appliquer"),
-         checkboxInput("apply_pcdi_flow", "PCDI flux", value = TRUE),
-         checkboxInput("apply_pcdi_moisture", "PCDI humidite", value = TRUE),
+         checkboxInput("apply_delay_adjustment_flow", "Delay adjustment flux", value = TRUE),
+         checkboxInput("apply_delay_adjustment_moisture", "Delay adjustment humidite", value = TRUE),
          checkboxInput("apply_position", "Filtre position (hors champ)", value = TRUE),
          checkboxInput("apply_header", "Filtre header", value = TRUE),
          checkboxInput("apply_gps", "Filtre GPS", value = TRUE),
@@ -505,12 +505,12 @@ server <- function(input, output, session) {
      deletions_sf = NULL,  # Pour stocker les points supprimes avec raisons
      progress_step = "",  # Pour afficher l'etape actuelle
      progress_detail = "",  # Pour afficher le detail de l'etape
-     # Stockage des resultats intermediaires pour eviter de recalculer
-     pcdi_result = NULL,  # Resultat du PCDI (delai optimal)
-     pcdi_params = NULL,  # Parametres utilises pour le PCDI
-     overlap_result = NULL,  # Resultat de l'analyse d'overlap
-     overlap_params = NULL,  # Parametres utilises pour l'overlap
-     preprocessed_data = NULL  # Donnees pretraitees (apres UTM, position, PCDI)
+      # Stockage des resultats intermediaires pour eviter de recalculer
+      delay_adjustment_result = NULL,  # Resultat du delay adjustment (delai optimal)
+      delay_adjustment_params = NULL,  # Parametres utilises pour le delay adjustment
+      overlap_result = NULL,  # Resultat de l'analyse d'overlap
+      overlap_params = NULL,  # Parametres utilises pour l'overlap
+      preprocessed_data = NULL  # Donnees pretraitees (apres UTM, position, delay adjustment)
    )
   
   output$map <- renderLeaflet({
@@ -553,14 +553,14 @@ server <- function(input, output, session) {
       size = "l",
       
       tabsetPanel(
-        tabPanel("PCDI",
+        tabPanel("Delay Adjustment",
           div(class = "param-label", "Plage de delai (secondes)"),
           fluidRow(
             column(6, sliderInput("delay_min", "Min :", -50, 0, -25, 1)),
             column(6, sliderInput("delay_max", "Max :", 0, 50, 20, 1))
           ),
           div(class = "param-label", "Iterations"),
-          sliderInput("n_iterations", "Iterations PCDI :", 1, 20, 10, 1),
+          sliderInput("n_iterations", "Iterations delay adjustment :", 1, 20, 10, 1),
           div(class = "param-label", "Niveau de bruit"),
           sliderInput("noise_level", "Bruit :", 0, 0.2, 0.03, 0.01),
           div(class = "param-label", "Echantillonnage (pour grandes donnees)"),
@@ -1325,9 +1325,9 @@ server <- function(input, output, session) {
       lsd_limit = if (!is.null(input$lsd_limit)) input$lsd_limit else 2.4,
       min_cells = if (!is.null(input$min_cells)) input$min_cells else 3,
       n_std = if (!is.null(input$nstd)) input$nstd else 3,
-       # PCDI
-       apply_pcdi_flow = if (!is.null(input$apply_pcdi_flow)) input$apply_pcdi_flow else TRUE,
-       apply_pcdi_moisture = if (!is.null(input$apply_pcdi_moisture)) input$apply_pcdi_moisture else TRUE,
+       # Delay Adjustment
+       apply_delay_adjustment_flow = if (!is.null(input$apply_delay_adjustment_flow)) input$apply_delay_adjustment_flow else TRUE,
+       apply_delay_adjustment_moisture = if (!is.null(input$apply_delay_adjustment_moisture)) input$apply_delay_adjustment_moisture else TRUE,
        # Filtres optionnels - utiliser TRUE/FALSE explicites
        apply_position = if (!is.null(input$apply_position)) input$apply_position else TRUE,
        apply_header = if (!is.null(input$apply_header)) input$apply_header else TRUE,
@@ -1351,8 +1351,8 @@ server <- function(input, output, session) {
   resetCheckboxLabels <- function() {
     # Labels par defaut
     default_labels <- list(
-      "apply_pcdi_flow" = "PCDI flux",
-      "apply_pcdi_moisture" = "PCDI humidite",
+      "apply_delay_adjustment_flow" = "Delay adjustment flux",
+      "apply_delay_adjustment_moisture" = "Delay adjustment humidite",
       "apply_position" = "Filtre position (hors champ)",
       "apply_header" = "Filtre header",
       "apply_gps" = "Filtre GPS",
@@ -1383,8 +1383,8 @@ server <- function(input, output, session) {
     
     # Mapping des noms de filtres avec leurs labels par defaut
     filter_mapping <- list(
-      "PCDI flux" = "apply_pcdi_flow",
-      "PCDI humidite" = "apply_pcdi_moisture",
+      "Delay adjustment flux" = "apply_delay_adjustment_flow",
+      "Delay adjustment humidite" = "apply_delay_adjustment_moisture",
       "Filtre position" = "apply_position",
       "Filtre header" = "apply_header",
       "Filtre GPS" = "apply_gps",
@@ -1400,8 +1400,8 @@ server <- function(input, output, session) {
     
     # Labels par defaut
     default_labels <- list(
-      "PCDI flux" = "PCDI flux",
-      "PCDI humidite" = "PCDI humidite",
+      "Delay adjustment flux" = "Delay adjustment flux",
+      "Delay adjustment humidite" = "Delay adjustment humidite",
       "Filtre position" = "Filtre position (hors champ)",
       "Filtre header" = "Filtre header",
       "Filtre GPS" = "Filtre GPS",
@@ -1617,7 +1617,7 @@ server <- function(input, output, session) {
     if (is.null(rv$preprocess_params)) return(TRUE)
     
     # Parametres qui affectent le pre-traitement
-    preprocess_keys <- c("apply_position", "apply_pcdi_flow", "apply_pcdi_moisture",
+    preprocess_keys <- c("apply_position", "apply_delay_adjustment_flow", "apply_delay_adjustment_moisture",
                          "delay_range", "n_iterations", "noise_level", "sample_fraction")
     
     for (key in preprocess_keys) {
@@ -1667,7 +1667,7 @@ server <- function(input, output, session) {
         
         # === PHASE 1: PRE-TRAITEMENT (si necessaire) ===
         if (has_preprocess_params_changed(params)) {
-          incProgress(0.1, detail = "Phase 1: Pre-traitement (UTM, PCDI, position)...")
+          incProgress(0.1, detail = "Phase 1: Pre-traitement (UTM, delay adjustment, position)...")
           message("Parametres de pre-traitement changes - recalcul necessaire")
           
            rv$preprocessed_data <- yieldcleanr::clean_yield_fast(

@@ -61,7 +61,7 @@ articles:
       - filtre-vitesse
       - filtre-ecart-type-local
       - filtre-chevauchement
-      - filtre-pcdi
+      - filtre-delai
 
   - title: "Guides et Exemples"
     desc: "Guides d'utilisation et exemples"
@@ -109,7 +109,7 @@ reference:
     contents:
       - filter_data
       - detect_anomalies
-      - apply_pcdi
+      - apply_delay_adjustment
       - optimize_delays
       - calculate_thresholds
       - calculate_auto_thresholds

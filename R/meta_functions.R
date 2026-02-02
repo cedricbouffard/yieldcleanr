@@ -495,7 +495,7 @@ detect_anomalies <- function(data, type = "all", action = "filter", ...) {
   # Calculer les statistiques locales
   # Remove NA values before grouping to avoid issues
   data_clean <- data |>
-    dplyr::filter(!is.na(X) && !is.na(Y) && !is.na(Flow))
+    dplyr::filter(!is.na(X) & !is.na(Y) & !is.na(Flow))
 
   cell_stats <- data_clean |>
     dplyr::group_by(.cell_id) |>
@@ -699,12 +699,12 @@ detect_anomalies <- function(data, type = "all", action = "filter", ...) {
 #' Méta-fonction d'optimisation des délais
 #'
 #' Cette fonction optimise les délais temporels entre les capteurs (flux et humidité)
-#' en utilisant la méthode PCDI (Phase Correlation Delay Identification).
+#' en utilisant la méthode de delay adjustment (Delay Adjustment).
 #'
 #' @param data Tibble avec données de rendement
 #' @param type Type de délai à optimiser: "flow" (flux), "moisture" (humidité),
 #'   ou "both" (les deux). Défaut: "both"
-#' @param method Méthode d'optimisation. Défaut: "PCDI"
+#' @param method Méthode d'optimisation. Défaut: "delay_adjustment"
 #' @param delay_range Plage de délais à tester en secondes. Défaut: -25:25
 #' @param n_iterations Nombre d'itérations pour la stabilité. Défaut: 10
 #' @param noise_level Niveau de bruit ajouté. Défaut: 0.03
@@ -713,7 +713,7 @@ detect_anomalies <- function(data, type = "all", action = "filter", ...) {
 #' @return Liste contenant:
 #'   - data: Données corrigées (si apply_correction = TRUE)
 #'   - delays: Délai(s) optimal(aux) trouvé(s)
-#'   - pcdi_results: Résultats détaillés de l'optimisation
+#'   - delay_adjustment_results: Résultats détaillés de l'optimisation
 #' @export
 #' @examples
 #' \dontrun{
@@ -725,11 +725,11 @@ detect_anomalies <- function(data, type = "all", action = "filter", ...) {
 #' result <- optimize_delays(data, type = "flow", apply_correction = FALSE)
 #' print(result$delays$flow)
 #' }
-optimize_delays <- function(data, type = "both", method = "PCDI",
+optimize_delays <- function(data, type = "both", method = "delay_adjustment",
                             delay_range = -25:25, n_iterations = 10,
                             noise_level = 0.03, apply_correction = TRUE) {
 
-  if (!method %in% c("PCDI")) {
+  if (!method %in% c("delay_adjustment")) {
     rlang::abort(paste("Méthode non supportée:", method))
   }
 
@@ -741,7 +741,7 @@ optimize_delays <- function(data, type = "both", method = "PCDI",
   )
 
   delays <- list()
-  pcdi_results <- list()
+  delay_adjustment_results <- list()
 
   for (t in types_to_process) {
     value_col <- switch(t,
@@ -756,8 +756,8 @@ optimize_delays <- function(data, type = "both", method = "PCDI",
 
     rlang::inform(paste("Optimisation du délai de", t, "..."))
 
-    # Utiliser la fonction PCDI existante
-    pcdi_result <- apply_pcdi(
+    # Utiliser la fonction delay adjustment existante
+    delay_adjustment_result <- apply_delay_adjustment(
       data,
       delay_range = delay_range,
       n_iterations = n_iterations,
@@ -765,20 +765,20 @@ optimize_delays <- function(data, type = "both", method = "PCDI",
       value_col = value_col
     )
 
-    delays[[t]] <- pcdi_result$optimal_delay
-    pcdi_results[[t]] <- pcdi_result
+    delays[[t]] <- delay_adjustment_result$optimal_delay
+    delay_adjustment_results[[t]] <- delay_adjustment_result
 
-    rlang::inform(paste("  Délai optimal", t, ":", pcdi_result$optimal_delay, "secondes"))
+    rlang::inform(paste("  Délai optimal", t, ":", delay_adjustment_result$optimal_delay, "secondes"))
 
     # Appliquer la correction si demandé
-    if (apply_correction && isTRUE(pcdi_result$optimal_delay != 0)) {
-      data <- .apply_delay_correction_internal(data, pcdi_result$optimal_delay, value_col)
+    if (apply_correction && isTRUE(delay_adjustment_result$optimal_delay != 0)) {
+      data <- .apply_delay_correction_internal(data, delay_adjustment_result$optimal_delay, value_col)
     }
   }
 
   result <- list(
     delays = delays,
-    pcdi_results = pcdi_results
+    delay_adjustment_results = delay_adjustment_results
   )
 
   if (apply_correction) {

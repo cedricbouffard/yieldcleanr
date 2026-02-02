@@ -8,7 +8,7 @@
 ## Features
 
 - **Interactive Shiny Application**: Visual interface for data cleaning with real-time preview
-- **PCDI (Pulse Count Delay Integration)**: Automatic optimization of GPS-sensor delay compensation
+- **Delay Adjustment**: Automatic optimization of GPS-sensor delay compensation
 - **Multiple Filter Types**:
   - Header status filtering (eliminates points when header is raised)
   - GPS quality filtering (GPS status, DOP values)
@@ -132,7 +132,7 @@ marked <- detect_anomalies(data, type = c("overlap", "local_sd"),
 
 ### 3. Optimize Delays
 
-Optimize GPS-sensor delays using PCDI method:
+Optimize GPS-sensor delays using delay adjustment method:
 
 ```r
 # Optimize both flow and moisture delays
@@ -240,7 +240,7 @@ export_data(data, "yield_map.tif", format = "raster", resolution = 5)
 
 The cleaning process follows this order:
 
-1. **PCDI (Optional)**: Optimize GPS-sensor delay for flow and moisture
+1. **Delay Adjustment (Optional)**: Optimize GPS-sensor delay for flow and moisture
 2. **Header Status**: Remove points when header is raised
 3. **GPS Quality**: Filter by GPS status and DOP values
 4. **Velocity**: Remove stationary and high-speed points

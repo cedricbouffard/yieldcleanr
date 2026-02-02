@@ -4,7 +4,7 @@
 #' sans intervention humaine ou avec intervention minimale.
 #'
 #' @name ayce
-#' @aliases ayce_clean calculate_auto_thresholds apply_pcdi
+#' @aliases ayce_clean calculate_auto_thresholds apply_delay_adjustment
 #' @noRd
 "_PACKAGE"
 
@@ -14,7 +14,7 @@
 # Implementation basee sur la methode USDA Yield Editor AYCE
 # ============================================================================== 
 
-#' Calculer le RSC (Relative Spatial Coherence) pour la methode PCDI
+#' Calculer le RSC (Relative Spatial Coherence) pour la methode de delay adjustment
 #'
 #' Mesure la coherence spatiale relative du rendement pour optimiser les delais.
 #' Plus le RSC est eleve, meilleur est l'alignement spatial.
@@ -266,7 +266,7 @@ calculate_moran_legacy <- function(x, y, value, k = 5) {
 }
 
 
-#' PCDI : Phase Correlation Delay Identification (Version Rapide)
+#' Delay Adjustment : Delay Adjustment (Version Rapide)
 #'
 #' Determine automatiquement le delai optimal entre le flux et la position GPS
 #' en utilisant une recherche en deux etapes (grossiere + fine) avec rgeoda.
@@ -281,22 +281,22 @@ calculate_moran_legacy <- function(x, y, value, k = 5) {
 #' @export
 #' @examples
 #' \dontrun{
-#' result <- apply_pcdi(data, delay_range = -25:25)
+#' result <- apply_delay_adjustment(data, delay_range = -25:25)
 #' }
-apply_pcdi <- function(data, delay_range = -25:25, n_iterations = 5,
+apply_delay_adjustment <- function(data, delay_range = -25:25, n_iterations = 5,
                        noise_level = NULL, value_col = "Flow",
                        sample_fraction = NULL, method = NULL,
                        coarse_step = 2, max_points = 10000,
                        bandwidth = 30) {
 
-  rlang::inform(paste("=== PCDI: Phase Correlation Delay Identification (", value_col, ") ==="))
+  rlang::inform(paste("=== Delay Adjustment (", value_col, ") ==="))
   rlang::inform(paste("  Iterations:", n_iterations, "| Grid sampling avec pooling des resultats"))
 
   # Valider l'entree
   required_cols <- c("X", "Y", "GPS_Time", "Interval", value_col)
   if (!all(required_cols %in% names(data))) {
     missing <- setdiff(required_cols, names(data))
-    rlang::warn(paste("Colonnes requises manquantes pour PCDI:", paste(missing, collapse = ", ")))
+    rlang::warn(paste("Colonnes requises manquantes pour delay adjustment:", paste(missing, collapse = ", ")))
     return(list(
       optimal_delay = 0,
       score_values = NULL,
@@ -309,11 +309,11 @@ apply_pcdi <- function(data, delay_range = -25:25, n_iterations = 5,
   valid_values <- data[[value_col]][!is.na(data[[value_col]]) & is.finite(data[[value_col]])]
 
   # Debug: afficher les statistiques
-  rlang::inform(paste("  PCDI Debug -", value_col, "values:", length(valid_values)))
-  rlang::inform(paste("  PCDI Debug -", value_col, "range:", round(min(valid_values, na.rm = TRUE), 4), "to", round(max(valid_values, na.rm = TRUE), 4)))
+  rlang::inform(paste("  Delay Adjustment Debug -", value_col, "values:", length(valid_values)))
+  rlang::inform(paste("  Delay Adjustment Debug -", value_col, "range:", round(min(valid_values, na.rm = TRUE), 4), "to", round(max(valid_values, na.rm = TRUE), 4)))
 
   if (length(valid_values) < 10) {
-    rlang::warn(paste("Pas assez de valeurs valides pour PCDI sur", value_col))
+    rlang::warn(paste("Pas assez de valeurs valides pour delay adjustment sur", value_col))
     return(list(
       optimal_delay = 0,
       score_values = NULL,
@@ -324,7 +324,7 @@ apply_pcdi <- function(data, delay_range = -25:25, n_iterations = 5,
   
   value_sd <- stats::sd(valid_values)
   if (!is.finite(value_sd) || value_sd == 0) {
-    rlang::warn(paste("Statistiques invalides pour PCDI sur", value_col))
+    rlang::warn(paste("Statistiques invalides pour delay adjustment sur", value_col))
     return(list(
       optimal_delay = 0,
       score_values = NULL,
@@ -338,7 +338,7 @@ apply_pcdi <- function(data, delay_range = -25:25, n_iterations = 5,
   need_sampling <- n_points > max_points
   
   # === ITERATIONS AVEC GRID SAMPLING ===
-  rlang::inform(paste("  PCDI - Lancement de", n_iterations, "iterations avec grid sampling different..."))
+  rlang::inform(paste("  Delay Adjustment - Lancement de", n_iterations, "iterations avec grid sampling different..."))
   
   # Delais a tester
   all_delays <- min(delay_range):max(delay_range)
@@ -388,13 +388,13 @@ apply_pcdi <- function(data, delay_range = -25:25, n_iterations = 5,
   opt_idx <- which.max(mean_scores)
   optimal_delay <- all_delays[opt_idx]
   
-  rlang::inform(paste("  PCDI - Delai optimal (moyenne sur", n_iterations, "iterations):", optimal_delay, "sec"))
-  rlang::inform(paste("  PCDI - Score Moran moyen:", round(mean_scores[opt_idx], 4), 
+  rlang::inform(paste("  Delay Adjustment - Delai optimal (moyenne sur", n_iterations, "iterations):", optimal_delay, "sec"))
+  rlang::inform(paste("  Delay Adjustment - Score Moran moyen:", round(mean_scores[opt_idx], 4), 
                       "(+/-", round(sd_scores[opt_idx], 4), ")"))
   
   # Afficher les top 5 delais pour debug
   top_idx <- order(mean_scores, decreasing = TRUE)[1:5]
-  rlang::inform("  PCDI - Top 5 delais:")
+  rlang::inform("  Delay Adjustment - Top 5 delais:")
   for (i in 1:5) {
     idx <- top_idx[i]
     rlang::inform(paste("    Delay", all_delays[idx], "sec: Moran =", round(mean_scores[idx], 4), 
@@ -409,7 +409,7 @@ apply_pcdi <- function(data, delay_range = -25:25, n_iterations = 5,
   # Avertir si la stabilite est faible
   warning_msg <- NULL
   if (!is.na(stability) && stability > 0.2) {
-    warning_msg <- paste("PCDI stability issue - CV =", round(stability, 3))
+    warning_msg <- paste("Delay adjustment stability issue - CV =", round(stability, 3))
     rlang::warn(warning_msg)
   }
 

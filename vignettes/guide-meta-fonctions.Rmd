@@ -180,7 +180,7 @@ thresholds_custom <- calculate_thresholds(data, type = "yield",
 
 ## 4. `optimize_delays()` - Optimisation des délais unifiée
 
-Cette fonction remplace `apply_flow_delay()` et `apply_moisture_delay()` et offre une interface plus simple pour l'optimisation PCDI.
+Cette fonction remplace `apply_flow_delay()` et `apply_moisture_delay()` et offre une interface plus simple pour l'optimisation du delay adjustment.
 
 ### Exemples d'utilisation
 

@@ -1,7 +1,7 @@
 #' Nettoyage rapide des données de rendement avec mise en cache
 #'
 #' Cette fonction permet de nettoyer les données en plusieurs phases :
-#' 1. Pré-traitement (polygones, overlap, PCDI) - calculé une fois
+#' 1. Pré-traitement (polygones, overlap, Delay Adjustment) - calculé une fois
 #' 2. Filtres de rendement - peuvent être réappliqués sans recalculer le pré-traitement
 #'
 #' @param data Données brutes
@@ -35,7 +35,7 @@ clean_yield_fast <- function(data, phase = "full", preprocessed_data = NULL,
 #' Pré-traitement des données de rendement
 #'
 #' Cette fonction effectue les calculs coûteux qui ne dépendent pas
-#' des filtres de rendement : UTM, position, PCDI, polygones, overlap
+#' des filtres de rendement : UTM, position, Delay Adjustment, polygones, overlap
 #'
 #' @param data Données brutes
 #' @param params Liste des paramètres
@@ -58,33 +58,33 @@ clean_yield_fast <- function(data, phase = "full", preprocessed_data = NULL,
     rlang::inform(paste("  Points conservés:", nrow(data)))
   }
   
-  # Étape 3: PCDI flux (calcul du délai optimal)
-  if (isTRUE(params$apply_pcdi_flow)) {
-    rlang::inform("Étape 3: PCDI - optimisation du délai de flux...")
-    pcdi_result <- apply_pcdi(data, 
+  # Étape 3: Delay Adjustment flux (calcul du délai optimal)
+  if (isTRUE(params$apply_delay_adjustment_flow)) {
+    rlang::inform("Étape 3: Delay Adjustment - optimisation du délai de flux...")
+    delay_adjustment_result <- apply_delay_adjustment(data, 
                               delay_range = params$delay_range %||% -25:25,
                               n_iterations = params$n_iterations %||% 5,
                               value_col = "Flow")
-    flow_delay <- pcdi_result$optimal_delay
+    flow_delay <- delay_adjustment_result$optimal_delay
     rlang::inform(paste("  Délai optimal flux:", flow_delay, "secondes"))
     
-    # Stocker le résultat PCDI pour référence
-    attr(data, "pcdi_flow") <- pcdi_result
+    # Stocker le résultat Delay Adjustment pour référence
+    attr(data, "delay_adjustment_flow") <- delay_adjustment_result
   } else {
     flow_delay <- 0
   }
   
-  # Étape 4: PCDI humidité
+  # Étape 4: Delay Adjustment humidité
   moisture_delay <- 0
-  if (isTRUE(params$apply_pcdi_moisture) && "Moisture" %in% names(data)) {
-    rlang::inform("Étape 4: PCDI - optimisation du délai d'humidité...")
-    pcdi_moisture <- apply_pcdi(data,
+  if (isTRUE(params$apply_delay_adjustment_moisture) && "Moisture" %in% names(data)) {
+    rlang::inform("Étape 4: Delay Adjustment - optimisation du délai d'humidité...")
+    delay_adjustment_moisture <- apply_delay_adjustment(data,
                                 delay_range = params$delay_range %||% -25:25,
                                 n_iterations = params$n_iterations %||% 5,
                                 value_col = "Moisture")
-    moisture_delay <- pcdi_moisture$optimal_delay
+    moisture_delay <- delay_adjustment_moisture$optimal_delay
     rlang::inform(paste("  Délai optimal humidité:", moisture_delay, "secondes"))
-    attr(data, "pcdi_moisture") <- pcdi_moisture
+    attr(data, "delay_adjustment_moisture") <- delay_adjustment_moisture
   }
   
   # Étape 5: Calcul initial du rendement (pour les seuils)

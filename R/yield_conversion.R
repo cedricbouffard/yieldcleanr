@@ -256,15 +256,15 @@ ayce_with_yield_conversion <- function(file_path, output_file = NULL,
       velocity = sqrt((X - dplyr::lag(X))^2 + (Y - dplyr::lag(Y))^2) / Interval
     )
 
-  # Etape 4 : PCDI
-  rlang::inform("Step 4: PCDI - Flow Delay Optimization...")
-   pcdi_result <- apply_pcdi(data,
+  # Etape 4 : Delay Adjustment
+  rlang::inform("Step 4: Delay Adjustment - Flow Delay Optimization...")
+   delay_adjustment_result <- apply_delay_adjustment(data,
      delay_range = params$delay_range,
      n_iterations = params$n_iterations,
      noise_level = params$noise_level,
      sample_fraction = params$sample_fraction %||% 1
    )
-  rlang::inform(paste("  Optimal delay:", pcdi_result$optimal_delay, "seconds"))
+  rlang::inform(paste("  Optimal delay:", delay_adjustment_result$optimal_delay, "seconds"))
 
   # Etape 5 : seuils automatiques
   rlang::inform("Step 5: Calculating auto thresholds...")
@@ -283,9 +283,9 @@ ayce_with_yield_conversion <- function(file_path, output_file = NULL,
   rlang::inform(paste("  Rows:", nrow(data)))
    
    # Etape 7 : correction du delai de flux
-   if (pcdi_result$optimal_delay != 0) {
-     rlang::inform(paste("Step 7: Flow delay correction (", pcdi_result$optimal_delay, "s)..."))
-     data <- apply_flow_delay(data, delay = pcdi_result$optimal_delay)
+   if (delay_adjustment_result$optimal_delay != 0) {
+     rlang::inform(paste("Step 7: Flow delay correction (", delay_adjustment_result$optimal_delay, "s)..."))
+     data <- apply_flow_delay(data, delay = delay_adjustment_result$optimal_delay)
      rlang::inform(paste("  Rows:", nrow(data)))
    }
 
@@ -338,7 +338,7 @@ ayce_with_yield_conversion <- function(file_path, output_file = NULL,
   # Etape 15 : journal
   if (!is.null(log_file)) {
     rlang::inform("Step 15: Generating log...")
-    generate_yield_log(data_output, data_raw, params, pcdi_result, thresholds, log_file)
+    generate_yield_log(data_output, data_raw, params, delay_adjustment_result, thresholds, log_file)
   }
 
   rlang::inform("")
@@ -353,7 +353,7 @@ ayce_with_yield_conversion <- function(file_path, output_file = NULL,
 
 #' Generer le journal pour la conversion de rendement
 #' @noRd
-generate_yield_log <- function(data_clean, data_raw, params, pcdi_result,
+generate_yield_log <- function(data_clean, data_raw, params, delay_adjustment_result,
                                thresholds, log_file) {
 
   n_raw <- nrow(data_raw)
@@ -395,9 +395,9 @@ generate_yield_log <- function(data_clean, data_raw, params, pcdi_result,
     paste0("Formula: Flow_buacre = Flow_lbssec x 43560 / (56 x Swath_ft x Velocity)"),
     paste0("Conversion factor: 1 bushel = 56 lbs (corn)"),
     "",
-    "--- PCDI ---",
-    paste0("Optimal delay: ", pcdi_result$optimal_delay, " seconds"),
-    paste0("RSC: ", round(pcdi_result$rsc_values$mean_rsc[pcdi_result$rsc_values$delay == pcdi_result$optimal_delay], 4)),
+    "--- Delay Adjustment ---",
+    paste0("Optimal delay: ", delay_adjustment_result$optimal_delay, " seconds"),
+    paste0("RSC: ", round(delay_adjustment_result$rsc_values$mean_rsc[delay_adjustment_result$rsc_values$delay == delay_adjustment_result$optimal_delay], 4)),
     "",
     "--- STATISTICS (Bushels/acre) ---",
     paste0("Raw:    Mean=", round(stats_raw$mean, 1),

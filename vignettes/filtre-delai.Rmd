@@ -1,9 +1,9 @@
 ---
-title: "Filtre PCDI - Position-Coordinate Delay Identification"
+title: "Filtre Delay Adjustment - Position-Coordinate Delay Identification"
 subtitle: "Théorie mathématique et implémentation"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Filtre PCDI - Théorie mathématique}
+  %\VignetteIndexEntry{Filtre Delay Adjustment - Théorie mathématique}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -21,7 +21,7 @@ knitr::opts_chunk$set(
 
 # Introduction
 
-Le **PCDI (Position-Coordinate Delay Identification)** est un algorithme sophistiqué qui détecte et corrige le délai temporel entre la mesure du flux de grain et l'enregistrement de la position GPS. Ce délai, typiquement de 2 à 15 secondes, peut créer des bandes obliques artificielles dans les cartes de rendement.
+Le **Delay Adjustment (Position-Coordinate Delay Identification)** est un algorithme sophistiqué qui détecte et corrige le délai temporel entre la mesure du flux de grain et l'enregistrement de la position GPS. Ce délai, typiquement de 2 à 15 secondes, peut créer des bandes obliques artificielles dans les cartes de rendement.
 
 ## Problématique
 
@@ -37,7 +37,7 @@ Ces étapes créent un **délai mécanique** entre le moment où le grain est co
 
 ## 1. Autocorrélation spatiale
 
-Le PCDI utilise l'**indice de Moran** pour mesurer l'autocorrélation spatiale du rendement. L'autocorrélation spatiale mesure dans quelle mesure des points proches géographiquement ont des valeurs de rendement similaires.
+Le Delay Adjustment utilise l'**indice de Moran** pour mesurer l'autocorrélation spatiale du rendement. L'autocorrélation spatiale mesure dans quelle mesure des points proches géographiquement ont des valeurs de rendement similaires.
 
 ### Formule de l'indice de Moran
 
@@ -58,7 +58,7 @@ Où :
 | $I \approx 0$ | Pas d'autocorrélation (distribution aléatoire) |
 | $I < 0$ | Autocorrélation négative (zones contrastées) |
 
-**Objectif du PCDI** : Maximiser l'indice de Moran en trouvant le délai optimal qui aligne le flux avec la position.
+**Objectif du Delay Adjustment** : Maximiser l'indice de Moran en trouvant le délai optimal qui aligne le flux avec la position.
 
 ## 2. Matrice de poids spatiaux
 
@@ -99,12 +99,12 @@ $$\delta^* = \arg\max_{\delta \in \Delta} RSC(\delta)$$
 
 Où $\Delta$ est la plage de délais testés (typiquement -25 à +25 secondes).
 
-# Algorithme PCDI
+# Algorithme Delay Adjustment
 
 ## Pseudo-code
 
 ```
-PCDI(data, delay_range, n_iterations):
+Delay Adjustment(data, delay_range, n_iterations):
     
     # 1. Conversion en grille spatiale
     grid = create_spatial_grid(data, cell_size=10m)
@@ -142,7 +142,7 @@ PCDI(data, delay_range, n_iterations):
 
 ## Implémentation dans yieldcleanr
 
-```{r pcdi-demo}
+```{r delay_adjustment-demo}
 library(yieldcleanr)
 library(ggplot2)
 library(dplyr)
@@ -155,12 +155,12 @@ data_raw <- read_yield_data(file_path)
 data <- latlon_to_utm(data_raw) %>%
   convert_flow_to_yield()
 
-# Appliquer PCDI avec plage étendue
-cat("=== Application du PCDI ===\n")
-pcdi_result <- apply_pcdi(data, delay_range = -25:25, n_iterations = 10)
+# Appliquer Delay Adjustment avec plage étendue
+cat("=== Application du Delay Adjustment ===\n")
+delay_adjustment_result <- apply_delay_adjustment(data, delay_range = -25:25, n_iterations = 10)
 
-cat("Délai optimal détecté:", pcdi_result$optimal_delay, "secondes\n")
-optimal_rsc <- pcdi_result$rsc_values$mean_score[pcdi_result$rsc_values$delay == pcdi_result$optimal_delay]
+cat("Délai optimal détecté:", delay_adjustment_result$optimal_delay, "secondes\n")
+optimal_rsc <- delay_adjustment_result$rsc_values$mean_score[delay_adjustment_result$rsc_values$delay == delay_adjustment_result$optimal_delay]
 if (length(optimal_rsc) > 0 && !is.na(optimal_rsc[1])) {
   cat("Score Moran moyen au délai optimal:", round(optimal_rsc[1], 4), "\n")
 } else {
@@ -168,27 +168,27 @@ if (length(optimal_rsc) > 0 && !is.na(optimal_rsc[1])) {
 }
 ```
 
-# Visualisation des résultats PCDI
+# Visualisation des résultats Delay Adjustment
 
 ## Courbe de score Moran
 
-```{r pcdi-plot, fig.width=12, fig.height=6}
+```{r delay_adjustment-plot, fig.width=12, fig.height=6}
 # Créer le dataframe pour le graphique
-rsc_data <- pcdi_result$rsc_values
+rsc_data <- delay_adjustment_result$rsc_values
 
 # Graphique des scores Moran
 p1 <- ggplot(rsc_data, aes(x = delay, y = mean_score)) +
   geom_line(color = "#2c3e50", size = 1) +
-  geom_point(data = rsc_data %>% filter(delay == pcdi_result$optimal_delay),
+  geom_point(data = rsc_data %>% filter(delay == delay_adjustment_result$optimal_delay),
              aes(x = delay, y = mean_score),
              color = "#e74c3c", size = 4) +
   geom_errorbar(aes(ymin = mean_score - sd_score, ymax = mean_score + sd_score),
                 alpha = 0.3, width = 0.5) +
-  geom_vline(xintercept = pcdi_result$optimal_delay,
+  geom_vline(xintercept = delay_adjustment_result$optimal_delay,
              linetype = "dashed", color = "#e74c3c") +
-  annotate("text", x = pcdi_result$optimal_delay + 2,
+  annotate("text", x = delay_adjustment_result$optimal_delay + 2,
            y = max(rsc_data$mean_score) - 0.02,
-           label = paste("Optimal:", pcdi_result$optimal_delay, "s"),
+           label = paste("Optimal:", delay_adjustment_result$optimal_delay, "s"),
            color = "#e74c3c", hjust = 0) +
   labs(title = "Score d'autocorrélation spatiale (Moran I) selon le délai",
        subtitle = "Le pic indique le délai optimal de synchronisation",
@@ -201,12 +201,12 @@ p1
 
 ## Comparaison avant/après correction
 
-```{r pcdi-comparison, fig.width=14, fig.height=6}
+```{r delay_adjustment-comparison, fig.width=14, fig.height=6}
 # Données avant correction
 data_before <- data
 
 # Données après correction
-data_after <- optimize_delays(data, type = "flow", delay = pcdi_result$optimal_delay)
+data_after <- optimize_delays(data, type = "flow", delay = delay_adjustment_result$optimal_delay)
 
 # Créer les objets sf
 sf_before <- sf::st_as_sf(data_before, coords = c("Longitude", "Latitude"), crs = 4326)
@@ -215,9 +215,9 @@ sf_after <- sf::st_as_sf(data_after, coords = c("Longitude", "Latitude"), crs = 
 # Graphique comparatif
 par(mfrow = c(1, 2))
 
-plot(sf_before["Yield_kg_ha"], main = "AVANT correction PCDI", 
+plot(sf_before["Yield_kg_ha"], main = "AVANT correction Delay Adjustment", 
      pch = 19, cex = 0.3, breaks = "jenks", key.pos = NULL)
-plot(sf_after["Yield_kg_ha"], main = "APRÈS correction PCDI", 
+plot(sf_after["Yield_kg_ha"], main = "APRÈS correction Delay Adjustment", 
      pch = 19, cex = 0.3, breaks = "jenks", key.pos = NULL)
 ```
 
@@ -227,7 +227,7 @@ plot(sf_after["Yield_kg_ha"], main = "APRÈS correction PCDI",
 
 Pour comprendre l'effet du délai, créons une simulation simple :
 
-```{r pcdi-simulation, fig.width=12, fig.height=8}
+```{r delay_adjustment-simulation, fig.width=12, fig.height=8}
 # Créer des données simulées avec un délai connu
 set.seed(42)
 n_points <- 200
@@ -272,7 +272,7 @@ gridExtra::grid.arrange(p2, p3, ncol = 2)
 
 ## Effet du délai sur l'autocorrélation
 
-```{r pcdi-moran-effect, fig.width=10, fig.height=6}
+```{r delay_adjustment-moran-effect, fig.width=10, fig.height=6}
 # Calculer Moran I pour différents délais simulés
 calculate_moran_simple <- function(yield, x, y, threshold = 10) {
   n <- length(yield)
@@ -350,7 +350,7 @@ Si le délai optimal varie beaucoup entre les itérations (écart-type élevé),
 - Des patterns spatiaux faibles
 - Un besoin de plus d'itérations
 
-# Paramètres du PCDI
+# Paramètres du Delay Adjustment
 
 ## Paramètres principaux
 
@@ -382,7 +382,7 @@ Si le délai optimal varie beaucoup entre les itérations (écart-type élevé),
 
 # Conclusion
 
-Le PCDI est un outil puissant qui utilise l'autocorrélation spatiale pour détecter et corriger les délais de synchronisation. En maximisant l'indice de Moran, il aligne automatiquement le flux de grain avec la position GPS, éliminant les artefacts visuels et améliorant la qualité des cartes de rendement.
+Le Delay Adjustment est un outil puissant qui utilise l'autocorrélation spatiale pour détecter et corriger les délais de synchronisation. En maximisant l'indice de Moran, il aligne automatiquement le flux de grain avec la position GPS, éliminant les artefacts visuels et améliorant la qualité des cartes de rendement.
 
 **Points clés à retenir :**
 - L'indice de Moran mesure l'homogénéité spatiale
