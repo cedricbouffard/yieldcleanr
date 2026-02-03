@@ -99,8 +99,8 @@ thresholds <- calculate_thresholds(data_utm)
 cat("=== Seuils de vitesse calculés ===\n")
 cat("Quantile 2%:", round(quantile(data_calc$velocity_manual, 0.02, na.rm = TRUE), 2), "m/s\n")
 cat("Quantile 98%:", round(quantile(data_calc$velocity_manual, 0.98, na.rm = TRUE), 2), "m/s\n")
-cat("\nSeuil minimum:", round(thresholds$min_velocity, 2), "m/s\n")
-cat("Seuil maximum:", round(thresholds$max_velocity, 2), "m/s\n")
+cat("\nSeuil minimum:", round(thresholds$velocity$min_velocity, 2), "m/s\n")
+cat("Seuil maximum:", round(thresholds$velocity$max_velocity, 2), "m/s\n")
 ```
 
 # Distribution des vitesses
@@ -114,13 +114,13 @@ df_vel <- data.frame(velocity = velocities)
 
 p1 <- ggplot(df_vel, aes(x = velocity)) +
   geom_histogram(bins = 50, fill = "#3498db", alpha = 0.7, color = "white") +
-  geom_vline(xintercept = thresholds$min_velocity, color = "#e74c3c", 
+  geom_vline(xintercept = thresholds$velocity$min_velocity, color = "#e74c3c", 
              linetype = "dashed", size = 1) +
-  geom_vline(xintercept = thresholds$max_velocity, color = "#e74c3c", 
+  geom_vline(xintercept = thresholds$velocity$max_velocity, color = "#e74c3c", 
              linetype = "dashed", size = 1) +
-  annotate("text", x = thresholds$min_velocity, y = Inf, 
+  annotate("text", x = thresholds$velocity$min_velocity, y = Inf, 
            label = "Min", vjust = 2, color = "#e74c3c") +
-  annotate("text", x = thresholds$max_velocity, y = Inf, 
+  annotate("text", x = thresholds$velocity$max_velocity, y = Inf, 
            label = "Max", vjust = 2, color = "#e74c3c") +
   labs(title = "Distribution des vitesses",
        subtitle = "Seuils de filtrage indiqués en rouge",
@@ -157,8 +157,8 @@ cat("Vitesse min-max:", round(min(data_calc$velocity_manual, na.rm = TRUE), 2), 
 # Appliquer le filtre
 data_filtered <- filter_data(data_utm, 
                              type = "velocity",
-                             min_value = thresholds$min_velocity,
-                             max_value = thresholds$max_velocity)
+                             min_value = thresholds$velocity$min_velocity,
+                             max_value = thresholds$velocity$max_velocity)
 
 # Après filtrage
 n_after <- nrow(data_filtered)

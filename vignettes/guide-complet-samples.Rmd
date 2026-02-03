@@ -86,8 +86,8 @@ if (delay_adjustment_s1$optimal_delay != 0) {
 # Étape 3: Seuils automatiques
 thresholds_s1 <- calculate_thresholds(data_s1)
 cat("\n📈 Seuils calculés:\n")
-cat("  Vitesse:", round(thresholds_s1$min_velocity, 2), "-", round(thresholds_s1$max_velocity, 2), "m/s\n")
-cat("  Rendement:", round(thresholds_s1$min_yield, 1), "-", round(thresholds_s1$max_yield, 1), "kg/ha\n")
+cat("  Vitesse:", round(thresholds_s1$velocity$min_velocity, 2), "-", round(thresholds_s1$velocity$max_velocity, 2), "m/s\n")
+cat("  Rendement:", round(thresholds_s1$yield$min_yield, 1), "-", round(thresholds_s1$yield$max_yield, 1), "kg/ha\n")
 
 # Étape 4-7: Filtres successifs
 cat("\n🔧 FILTRES APPLIQUÉS:\n")
@@ -95,8 +95,8 @@ cat("\n🔧 FILTRES APPLIQUÉS:\n")
 # Filtre vitesse
 n_before <- nrow(data_s1)
 data_s1 <- filter_data(data_s1, type = "velocity", 
-                       min_value = thresholds_s1$min_velocity, 
-                       max_value = thresholds_s1$max_velocity)
+                       min_value = thresholds_s1$velocity$min_velocity, 
+                       max_value = thresholds_s1$velocity$max_velocity)
 removed_vel <- n_before - nrow(data_s1)
 cat("  Vitesse:", removed_vel, "points retirés (", round(removed_vel/n_before*100, 1), "%)\n")
 
@@ -182,8 +182,8 @@ cat("\n🔧 FILTRES APPLIQUÉS:\n")
 
 n_before <- nrow(data_s2)
 data_s2 <- filter_data(data_s2, type = "velocity", 
-                       min_value = thresholds_s2$min_velocity, 
-                       max_value = thresholds_s2$max_velocity)
+                       min_value = thresholds_s2$velocity$min_velocity, 
+                       max_value = thresholds_s2$velocity$max_velocity)
 cat("  Vitesse:", n_before - nrow(data_s2), "points\n")
 
 n_before <- nrow(data_s2)
@@ -239,8 +239,8 @@ thresholds_s3 <- calculate_thresholds(data_s3)
 
 data_s3 <- data_s3 %>%
   filter_data(type = "velocity", 
-              min_value = thresholds_s3$min_velocity, 
-              max_value = thresholds_s3$max_velocity) %>%
+              min_value = thresholds_s3$velocity$min_velocity, 
+              max_value = thresholds_s3$velocity$max_velocity) %>%
   filter_data(type = "moisture", n_std = 3) %>%
   detect_anomalies(type = "overlap", cellsize = 0.3, overlap_threshold = 0.5) %>%
   detect_anomalies(type = "local_sd", n_swaths = 5, lsd_limit = 3)
@@ -285,8 +285,8 @@ thresholds_s4 <- calculate_thresholds(data_s4)
 
 data_s4 <- data_s4 %>%
   filter_data(type = "velocity", 
-              min_value = thresholds_s4$min_velocity, 
-              max_value = thresholds_s4$max_velocity) %>%
+              min_value = thresholds_s4$velocity$min_velocity, 
+              max_value = thresholds_s4$velocity$max_velocity) %>%
   filter_data(type = "moisture", n_std = 3) %>%
   detect_anomalies(type = "overlap", cellsize = 0.3, overlap_threshold = 0.5) %>%
   detect_anomalies(type = "local_sd", n_swaths = 5, lsd_limit = 3)
