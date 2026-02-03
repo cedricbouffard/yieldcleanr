@@ -32,7 +32,7 @@ Liste avec données nettoyées et métadonnées
 \description{
 Cette fonction permet de nettoyer les données en plusieurs phases :
 \enumerate{
-\item Pré-traitement (polygones, overlap, delay adjustment) - calculé une fois
+\item Pré-traitement (polygones, overlap, Delay Adjustment) - calculé une fois
 \item Filtres de rendement - peuvent être réappliqués sans recalculer le pré-traitement
 }
 }

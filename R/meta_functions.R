@@ -494,8 +494,8 @@ detect_anomalies <- function(data, type = "all", action = "filter", ...) {
 
   # Calculer les statistiques locales
   # Remove NA values before grouping to avoid issues
-  data_clean <- data |>
-    dplyr::filter(!is.na(X) & !is.na(Y) & !is.na(Flow))
+  valid_rows <- !is.na(data$X) & !is.na(data$Y) & !is.na(data$Flow)
+  data_clean <- data[valid_rows, , drop = FALSE]
 
   cell_stats <- data_clean |>
     dplyr::group_by(.cell_id) |>

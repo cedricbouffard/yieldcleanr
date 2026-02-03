@@ -182,8 +182,8 @@ cat("Seuils manuels (soja):", min_manual, "-", max_manual, "%\n")
 
 data_manual <- filter_data(data, 
                            type = "moisture",
-                           min_value = min_manual,
-                           max_value = max_manual)
+                           min_moisture = min_manual,
+                           max_moisture = max_manual)
 
 cat("Points après filtrage manuel:", nrow(data_manual), "\n")
 cat("Points retirés:", nrow(data) - nrow(data_manual), "\n")

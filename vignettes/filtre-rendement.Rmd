@@ -152,9 +152,8 @@ cat("Seuils manuels:", min_yield_manual, "-", max_yield_manual, "kg/ha\n")
 # Appliquer le filtre
 data_manual <- filter_data(data, 
                            type = "yield",
-                           min_value = min_yield_manual,
-                           max_value = max_yield_manual,
-                           yield_column = "Yield_kg_ha")
+                           min_yield = min_yield_manual,
+                           max_yield = max_yield_manual)
 
 cat("Points après filtrage manuel:", nrow(data_manual), "\n")
 cat("Points retirés:", nrow(data) - nrow(data_manual), "\n")
@@ -168,9 +167,8 @@ cat("\n=== Filtrage avec seuils automatiques ===\n")
 # Appliquer avec les seuils calculés
 data_auto <- filter_data(data,
                          type = "yield",
-                         min_value = thresholds$yield$min_yield,
-                         max_value = thresholds$yield$max_yield,
-                         yield_column = "Yield_kg_ha")
+                         min_yield = thresholds$yield$min_yield,
+                         max_yield = thresholds$yield$max_yield)
 
 cat("Points après filtrage auto:", nrow(data_auto), "\n")
 cat("Points retirés:", nrow(data) - nrow(data_auto), "\n")

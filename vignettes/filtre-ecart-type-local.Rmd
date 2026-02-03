@@ -78,7 +78,7 @@ data_raw <- read_yield_data(file_path)
 # Préparation complète jusqu'au filtre LSD
 data <- latlon_to_utm(data_raw) %>%
   convert_flow_to_yield() %>%
-  filter_data(type = "velocity", min_value = 0.5, max_value = 10) %>%
+  filter_data(type = "velocity", min_velocity = 0.5, max_velocity = 10) %>%
   filter_data(type = "moisture", n_std = 3) %>%
   detect_anomalies(type = "overlap", cellsize = 0.3, overlap_threshold = 0.5)
 

@@ -157,10 +157,10 @@ data <- latlon_to_utm(data_raw) %>%
 
 # Appliquer Delay Adjustment avec plage étendue
 cat("=== Application du Delay Adjustment ===\n")
-delay_adjustment_result <- apply_delay_adjustment(data, delay_range = -25:25, n_iterations = 10)
+delay_result <- optimize_delays(data, type = "flow", delay_range = -25:25, n_iterations = 10)
 
-cat("Délai optimal détecté:", delay_adjustment_result$optimal_delay, "secondes\n")
-optimal_rsc <- delay_adjustment_result$rsc_values$mean_score[delay_adjustment_result$rsc_values$delay == delay_adjustment_result$optimal_delay]
+cat("Délai optimal détecté:", delay_result$delays$flow, "secondes\n")
+optimal_rsc <- delay_result$delay_adjustment_results$flow$rsc_values$mean_score[delay_result$delay_adjustment_results$flow$rsc_values$delay == delay_result$delays$flow]
 if (length(optimal_rsc) > 0 && !is.na(optimal_rsc[1])) {
   cat("Score Moran moyen au délai optimal:", round(optimal_rsc[1], 4), "\n")
 } else {
@@ -169,35 +169,6 @@ if (length(optimal_rsc) > 0 && !is.na(optimal_rsc[1])) {
 ```
 
 # Visualisation des résultats Delay Adjustment
-
-## Courbe de score Moran
-
-```{r delay_adjustment-plot, fig.width=12, fig.height=6}
-# Créer le dataframe pour le graphique
-rsc_data <- delay_adjustment_result$rsc_values
-
-# Graphique des scores Moran
-p1 <- ggplot(rsc_data, aes(x = delay, y = mean_score)) +
-  geom_line(color = "#2c3e50", size = 1) +
-  geom_point(data = rsc_data %>% filter(delay == delay_adjustment_result$optimal_delay),
-             aes(x = delay, y = mean_score),
-             color = "#e74c3c", size = 4) +
-  geom_errorbar(aes(ymin = mean_score - sd_score, ymax = mean_score + sd_score),
-                alpha = 0.3, width = 0.5) +
-  geom_vline(xintercept = delay_adjustment_result$optimal_delay,
-             linetype = "dashed", color = "#e74c3c") +
-  annotate("text", x = delay_adjustment_result$optimal_delay + 2,
-           y = max(rsc_data$mean_score) - 0.02,
-           label = paste("Optimal:", delay_adjustment_result$optimal_delay, "s"),
-           color = "#e74c3c", hjust = 0) +
-  labs(title = "Score d'autocorrélation spatiale (Moran I) selon le délai",
-       subtitle = "Le pic indique le délai optimal de synchronisation",
-       x = "Délai (secondes)",
-       y = "Indice de Moran") +
-  theme_minimal()
-
-p1
-```
 
 ## Comparaison avant/après correction
 

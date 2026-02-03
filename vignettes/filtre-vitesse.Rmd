@@ -157,8 +157,8 @@ cat("Vitesse min-max:", round(min(data_calc$velocity_manual, na.rm = TRUE), 2), 
 # Appliquer le filtre
 data_filtered <- filter_data(data_utm, 
                              type = "velocity",
-                             min_value = thresholds$velocity$min_velocity,
-                             max_value = thresholds$velocity$max_velocity)
+                             min_velocity = thresholds$velocity$min_velocity,
+                             max_velocity = thresholds$velocity$max_velocity)
 
 # Après filtrage
 n_after <- nrow(data_filtered)

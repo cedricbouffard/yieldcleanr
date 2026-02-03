@@ -75,11 +75,11 @@ cat("Rendement moyen:", round(mean(data_s1$Yield_kg_ha, na.rm = TRUE), 1), "kg/h
 cat("CV:", round(sd(data_s1$Yield_kg_ha, na.rm = TRUE) / mean(data_s1$Yield_kg_ha, na.rm = TRUE) * 100, 1), "%\n")
 
 # Étape 2: Delay Adjustment
-delay_adjustment_s1 <- apply_delay_adjustment(data_s1, delay_range = -25:25, n_iterations = 10)
-cat("\n🔧 Delay Adjustment - Délai optimal:", delay_adjustment_s1$optimal_delay, "secondes\n")
+delay_result_s1 <- optimize_delays(data_s1, type = "flow", delay_range = -25:25, n_iterations = 10)
+cat("\n🔧 Delay Adjustment - Délai optimal:", delay_result_s1$delays$flow, "secondes\n")
 
-if (delay_adjustment_s1$optimal_delay != 0) {
-  data_s1 <- optimize_delays(data_s1, type = "flow", delay = delay_adjustment_s1$optimal_delay)
+if (!is.null(delay_result_s1$data)) {
+  data_s1 <- delay_result_s1$data
   cat("Points après correction délai:", nrow(data_s1), "\n")
 }
 
@@ -95,8 +95,8 @@ cat("\n🔧 FILTRES APPLIQUÉS:\n")
 # Filtre vitesse
 n_before <- nrow(data_s1)
 data_s1 <- filter_data(data_s1, type = "velocity", 
-                       min_value = thresholds_s1$velocity$min_velocity, 
-                       max_value = thresholds_s1$velocity$max_velocity)
+                       min_velocity = thresholds_s1$velocity$min_velocity, 
+                       max_velocity = thresholds_s1$velocity$max_velocity)
 removed_vel <- n_before - nrow(data_s1)
 cat("  Vitesse:", removed_vel, "points retirés (", round(removed_vel/n_before*100, 1), "%)\n")
 
@@ -165,12 +165,12 @@ data_s2 <- latlon_to_utm(data_raw_s2)
 data_s2 <- convert_flow_to_yield(data_s2)
 
 # Delay Adjustment avec délai important
-delay_adjustment_s2 <- apply_delay_adjustment(data_s2, delay_range = -25:25, n_iterations = 10)
-cat("🔧 Delay Adjustment - Délai optimal:", delay_adjustment_s2$optimal_delay, "secondes\n")
+delay_result_s2 <- optimize_delays(data_s2, type = "flow", delay_range = -25:25, n_iterations = 10)
+cat("🔧 Delay Adjustment - Délai optimal:", delay_result_s2$delays$flow, "secondes\n")
 
-if (delay_adjustment_s2$optimal_delay != 0) {
+if (!is.null(delay_result_s2$data)) {
   n_before <- nrow(data_s2)
-  data_s2 <- optimize_delays(data_s2, type = "flow", delay = delay_adjustment_s2$optimal_delay)
+  data_s2 <- delay_result_s2$data
   removed_delay_adjustment <- n_before - nrow(data_s2)
   cat("Points retirés par Delay Adjustment:", removed_delay_adjustment, "\n")
 }
@@ -182,8 +182,8 @@ cat("\n🔧 FILTRES APPLIQUÉS:\n")
 
 n_before <- nrow(data_s2)
 data_s2 <- filter_data(data_s2, type = "velocity", 
-                       min_value = thresholds_s2$velocity$min_velocity, 
-                       max_value = thresholds_s2$velocity$max_velocity)
+                       min_velocity = thresholds_s2$velocity$min_velocity, 
+                       max_velocity = thresholds_s2$velocity$max_velocity)
 cat("  Vitesse:", n_before - nrow(data_s2), "points\n")
 
 n_before <- nrow(data_s2)
@@ -232,15 +232,19 @@ cat("Points bruts:", nrow(data_raw_s3), "\n")
 data_s3 <- latlon_to_utm(data_raw_s3) %>%
   convert_flow_to_yield()
 
-delay_adjustment_s3 <- apply_delay_adjustment(data_s3, delay_range = -25:25, n_iterations = 10)
-cat("Delay Adjustment - Délai optimal:", delay_adjustment_s3$optimal_delay, "secondes\n")
+delay_result_s3 <- optimize_delays(data_s3, type = "flow", delay_range = -25:25, n_iterations = 10)
+cat("Delay Adjustment - Délai optimal:", delay_result_s3$delays$flow, "secondes\n")
+
+if (!is.null(delay_result_s3$data)) {
+  data_s3 <- delay_result_s3$data
+}
 
 thresholds_s3 <- calculate_thresholds(data_s3)
 
 data_s3 <- data_s3 %>%
-  filter_data(type = "velocity", 
-              min_value = thresholds_s3$velocity$min_velocity, 
-              max_value = thresholds_s3$velocity$max_velocity) %>%
+  filter_data(type = "velocity",
+              min_velocity = thresholds_s3$velocity$min_velocity,
+              max_velocity = thresholds_s3$velocity$max_velocity) %>%
   filter_data(type = "moisture", n_std = 3) %>%
   detect_anomalies(type = "overlap", cellsize = 0.3, overlap_threshold = 0.5) %>%
   detect_anomalies(type = "local_sd", n_swaths = 5, lsd_limit = 3)
@@ -278,15 +282,19 @@ cat("Points bruts:", nrow(data_raw_s4), "\n")
 data_s4 <- latlon_to_utm(data_raw_s4) %>%
   convert_flow_to_yield()
 
-delay_adjustment_s4 <- apply_delay_adjustment(data_s4, delay_range = -25:25, n_iterations = 10)
-cat("Delay Adjustment - Délai optimal:", delay_adjustment_s4$optimal_delay, "secondes\n")
+delay_result_s4 <- optimize_delays(data_s4, type = "flow", delay_range = -25:25, n_iterations = 10)
+cat("Delay Adjustment - Délai optimal:", delay_result_s4$delays$flow, "secondes\n")
+
+if (!is.null(delay_result_s4$data)) {
+  data_s4 <- delay_result_s4$data
+}
 
 thresholds_s4 <- calculate_thresholds(data_s4)
 
 data_s4 <- data_s4 %>%
-  filter_data(type = "velocity", 
-              min_value = thresholds_s4$velocity$min_velocity, 
-              max_value = thresholds_s4$velocity$max_velocity) %>%
+  filter_data(type = "velocity",
+              min_velocity = thresholds_s4$velocity$min_velocity,
+              max_velocity = thresholds_s4$velocity$max_velocity) %>%
   filter_data(type = "moisture", n_std = 3) %>%
   detect_anomalies(type = "overlap", cellsize = 0.3, overlap_threshold = 0.5) %>%
   detect_anomalies(type = "local_sd", n_swaths = 5, lsd_limit = 3)
