@@ -91,6 +91,12 @@ library(dplyr)
 file_path <- system.file("extdata", "sample1.txt", package = "yieldcleanr")
 data_raw <- read_yield_data(file_path)
 
+# Réduire la taille pour accélérer le build (échantillon représentatif)
+set.seed(42)
+if (nrow(data_raw) > 3000) {
+  data_raw <- data_raw[sample(nrow(data_raw), 3000), ]
+}
+
 # Préparation
 data <- latlon_to_utm(data_raw) %>%
   convert_flow_to_yield()
