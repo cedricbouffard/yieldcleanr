@@ -103,8 +103,8 @@ thresholds <- calculate_thresholds(data, type = "yield")
 cat("\n=== Seuils calculés automatiquement ===\n")
 cat("Quantile 5%:", round(quantile(data$Yield_kg_ha, 0.05, na.rm = TRUE), 1), "kg/ha\n")
 cat("Quantile 95%:", round(quantile(data$Yield_kg_ha, 0.95, na.rm = TRUE), 1), "kg/ha\n")
-cat("\nSeuil minimum:", round(thresholds$min_yield, 1), "kg/ha\n")
-cat("Seuil maximum:", round(thresholds$max_yield, 1), "kg/ha\n")
+cat("\nSeuil minimum:", round(thresholds$yield$min_yield, 1), "kg/ha\n")
+cat("Seuil maximum:", round(thresholds$yield$max_yield, 1), "kg/ha\n")
 ```
 
 ## Distribution du rendement
