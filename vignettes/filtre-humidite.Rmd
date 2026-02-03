@@ -219,15 +219,24 @@ if (nrow(removed) > 0) {
 ## Variation au cours de la récolte
 
 ```{r moisture-temporal, fig.width=12, fig.height=6}
-# Trier par temps
+# Trier par temps et échantillonner pour la ligne de tendance (LOESS est lent avec beaucoup de points)
 data_time <- data %>%
   arrange(GPS_Time) %>%
   mutate(time_normalized = (GPS_Time - min(GPS_Time)) / 3600)  # En heures
 
+# Échantillon pour la ligne de tendance (max 5000 points)
+n_points <- nrow(data_time)
+if (n_points > 5000) {
+  set.seed(42)
+  data_sample <- data_time[sample(n_points, 5000), ]
+} else {
+  data_sample <- data_time
+}
+
 # Graphique temporel
 p2 <- ggplot(data_time, aes(x = time_normalized, y = Moisture)) +
   geom_point(alpha = 0.3, size = 0.5, color = "#3498db") +
-  geom_smooth(method = "loess", color = "#e74c3c", se = TRUE) +
+  geom_smooth(data = data_sample, method = "loess", color = "#e74c3c", se = TRUE, span = 0.5) +
   geom_hline(yintercept = min_moisture_auto, color = "#27ae60", 
              linetype = "dashed", alpha = 0.7) +
   geom_hline(yintercept = max_moisture_auto, color = "#27ae60", 

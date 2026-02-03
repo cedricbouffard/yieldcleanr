@@ -75,7 +75,7 @@ cat("Rendement moyen:", round(mean(data_s1$Yield_kg_ha, na.rm = TRUE), 1), "kg/h
 cat("CV:", round(sd(data_s1$Yield_kg_ha, na.rm = TRUE) / mean(data_s1$Yield_kg_ha, na.rm = TRUE) * 100, 1), "%\n")
 
 # Étape 2: Delay Adjustment
-delay_result_s1 <- optimize_delays(data_s1, type = "flow", delay_range = -25:25, n_iterations = 10)
+delay_result_s1 <- optimize_delays(data_s1, type = "flow", delay_range = -25:25, n_iterations = 3)
 cat("\n🔧 Delay Adjustment - Délai optimal:", delay_result_s1$delays$flow, "secondes\n")
 
 if (!is.null(delay_result_s1$data)) {
@@ -165,7 +165,7 @@ data_s2 <- latlon_to_utm(data_raw_s2)
 data_s2 <- convert_flow_to_yield(data_s2)
 
 # Delay Adjustment avec délai important
-delay_result_s2 <- optimize_delays(data_s2, type = "flow", delay_range = -25:25, n_iterations = 10)
+delay_result_s2 <- optimize_delays(data_s2, type = "flow", delay_range = -25:25, n_iterations = 3)
 cat("🔧 Delay Adjustment - Délai optimal:", delay_result_s2$delays$flow, "secondes\n")
 
 if (!is.null(delay_result_s2$data)) {
@@ -232,7 +232,7 @@ cat("Points bruts:", nrow(data_raw_s3), "\n")
 data_s3 <- latlon_to_utm(data_raw_s3) %>%
   convert_flow_to_yield()
 
-delay_result_s3 <- optimize_delays(data_s3, type = "flow", delay_range = -25:25, n_iterations = 10)
+delay_result_s3 <- optimize_delays(data_s3, type = "flow", delay_range = -25:25, n_iterations = 3)
 cat("Delay Adjustment - Délai optimal:", delay_result_s3$delays$flow, "secondes\n")
 
 if (!is.null(delay_result_s3$data)) {
@@ -282,7 +282,7 @@ cat("Points bruts:", nrow(data_raw_s4), "\n")
 data_s4 <- latlon_to_utm(data_raw_s4) %>%
   convert_flow_to_yield()
 
-delay_result_s4 <- optimize_delays(data_s4, type = "flow", delay_range = -25:25, n_iterations = 10)
+delay_result_s4 <- optimize_delays(data_s4, type = "flow", delay_range = -25:25, n_iterations = 3)
 cat("Delay Adjustment - Délai optimal:", delay_result_s4$delays$flow, "secondes\n")
 
 if (!is.null(delay_result_s4$data)) {

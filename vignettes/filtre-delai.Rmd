@@ -157,7 +157,7 @@ data <- latlon_to_utm(data_raw) %>%
 
 # Appliquer Delay Adjustment avec plage étendue
 cat("=== Application du Delay Adjustment ===\n")
-delay_result <- optimize_delays(data, type = "flow", delay_range = -25:25, n_iterations = 10)
+delay_result <- optimize_delays(data, type = "flow", delay_range = -25:25, n_iterations = 3)
 
 cat("Délai optimal détecté:", delay_result$delays$flow, "secondes\n")
 optimal_rsc <- delay_result$delay_adjustment_results$flow$rsc_values$mean_score[delay_result$delay_adjustment_results$flow$rsc_values$delay == delay_result$delays$flow]
