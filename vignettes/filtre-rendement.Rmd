@@ -168,8 +168,8 @@ cat("\n=== Filtrage avec seuils automatiques ===\n")
 # Appliquer avec les seuils calculés
 data_auto <- filter_data(data,
                          type = "yield",
-                         min_value = thresholds$min_yield,
-                         max_value = thresholds$max_yield,
+                         min_value = thresholds$yield$min_yield,
+                         max_value = thresholds$yield$max_yield,
                          yield_column = "Yield_kg_ha")
 
 cat("Points après filtrage auto:", nrow(data_auto), "\n")
@@ -181,14 +181,14 @@ cat("Points retirés:", nrow(data) - nrow(data_auto), "\n")
 ```{r removed-points, fig.width=14, fig.height=6}
 # Identifier les points éliminés
 removed <- data %>%
-  filter(Yield_kg_ha < thresholds$min_yield | 
-         Yield_kg_ha > thresholds$max_yield |
+  filter(Yield_kg_ha < thresholds$yield$min_yield | 
+         Yield_kg_ha > thresholds$yield$max_yield |
          !is.finite(Yield_kg_ha))
 
 cat("\nPoints éliminés:", nrow(removed), "\n")
 cat("Détails:\n")
-cat("  Sous le minimum:", sum(removed$Yield_kg_ha < thresholds$min_yield, na.rm = TRUE), "\n")
-cat("  Au-dessus du maximum:", sum(removed$Yield_kg_ha > thresholds$max_yield, na.rm = TRUE), "\n")
+cat("  Sous le minimum:", sum(removed$Yield_kg_ha < thresholds$yield$min_yield, na.rm = TRUE), "\n")
+cat("  Au-dessus du maximum:", sum(removed$Yield_kg_ha > thresholds$yield$max_yield, na.rm = TRUE), "\n")
 cat("  Valeurs infinies/NaN:", sum(!is.finite(removed$Yield_kg_ha)), "\n")
 
 # Visualiser les points éliminés sur la carte
