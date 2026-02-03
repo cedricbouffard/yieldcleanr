@@ -189,7 +189,7 @@ sont appliqués :</p>
 m/s (environ 1.8 km/h).</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Calculer les seuils automatiques</span></span>
-<span><span class="va">thresholds</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/calculate_auto_thresholds.html">calculate_auto_thresholds</a></span><span class="op">(</span><span class="va">data_utm</span><span class="op">)</span></span>
+<span><span class="va">thresholds</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/calculate_thresholds.html">calculate_thresholds</a></span><span class="op">(</span><span class="va">data_utm</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"=== Seuils de vitesse calculés ===\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; === Seuils de vitesse calculés ===</span></span>
@@ -197,11 +197,11 @@ m/s (environ 1.8 km/h).</p>
 <span><span class="co">#&gt; Quantile 2%: 0.95 m/s</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Quantile 98%:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/quantile.html" class="external-link">quantile</a></span><span class="op">(</span><span class="va">data_calc</span><span class="op">$</span><span class="va">velocity_manual</span>, <span class="fl">0.98</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>, <span class="fl">2</span><span class="op">)</span>, <span class="st">"m/s\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Quantile 98%: 1.72 m/s</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"\nSeuil minimum:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">thresholds</span><span class="op">$</span><span class="va">min_velocity</span>, <span class="fl">2</span><span class="op">)</span>, <span class="st">"m/s\n"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"\nSeuil minimum:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">thresholds</span><span class="op">$</span><span class="va">velocity</span><span class="op">$</span><span class="va">min_velocity</span>, <span class="fl">2</span><span class="op">)</span>, <span class="st">"m/s\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Seuil minimum: 0.5 m/s</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Seuil maximum:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">thresholds</span><span class="op">$</span><span class="va">max_velocity</span>, <span class="fl">2</span><span class="op">)</span>, <span class="st">"m/s\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Seuil maximum: 2.89 m/s</span></span></code></pre></div>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Seuil maximum:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">thresholds</span><span class="op">$</span><span class="va">velocity</span><span class="op">$</span><span class="va">max_velocity</span>, <span class="fl">2</span><span class="op">)</span>, <span class="st">"m/s\n"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Seuil maximum: 2.52 m/s</span></span></code></pre></div>
 </div>
 </div>
 <div class="section level2">
@@ -216,13 +216,13 @@ m/s (environ 1.8 km/h).</p>
 <span></span>
 <span><span class="va">p1</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="va">df_vel</span>, <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>x <span class="op">=</span> <span class="va">velocity</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_histogram.html" class="external-link">geom_histogram</a></span><span class="op">(</span>bins <span class="op">=</span> <span class="fl">50</span>, fill <span class="op">=</span> <span class="st">"#3498db"</span>, alpha <span class="op">=</span> <span class="fl">0.7</span>, color <span class="op">=</span> <span class="st">"white"</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_abline.html" class="external-link">geom_vline</a></span><span class="op">(</span>xintercept <span class="op">=</span> <span class="va">thresholds</span><span class="op">$</span><span class="va">min_velocity</span>, color <span class="op">=</span> <span class="st">"#e74c3c"</span>, </span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_abline.html" class="external-link">geom_vline</a></span><span class="op">(</span>xintercept <span class="op">=</span> <span class="va">thresholds</span><span class="op">$</span><span class="va">velocity</span><span class="op">$</span><span class="va">min_velocity</span>, color <span class="op">=</span> <span class="st">"#e74c3c"</span>, </span>
 <span>             linetype <span class="op">=</span> <span class="st">"dashed"</span>, size <span class="op">=</span> <span class="fl">1</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_abline.html" class="external-link">geom_vline</a></span><span class="op">(</span>xintercept <span class="op">=</span> <span class="va">thresholds</span><span class="op">$</span><span class="va">max_velocity</span>, color <span class="op">=</span> <span class="st">"#e74c3c"</span>, </span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_abline.html" class="external-link">geom_vline</a></span><span class="op">(</span>xintercept <span class="op">=</span> <span class="va">thresholds</span><span class="op">$</span><span class="va">velocity</span><span class="op">$</span><span class="va">max_velocity</span>, color <span class="op">=</span> <span class="st">"#e74c3c"</span>, </span>
 <span>             linetype <span class="op">=</span> <span class="st">"dashed"</span>, size <span class="op">=</span> <span class="fl">1</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/annotate.html" class="external-link">annotate</a></span><span class="op">(</span><span class="st">"text"</span>, x <span class="op">=</span> <span class="va">thresholds</span><span class="op">$</span><span class="va">min_velocity</span>, y <span class="op">=</span> <span class="cn">Inf</span>, </span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/annotate.html" class="external-link">annotate</a></span><span class="op">(</span><span class="st">"text"</span>, x <span class="op">=</span> <span class="va">thresholds</span><span class="op">$</span><span class="va">velocity</span><span class="op">$</span><span class="va">min_velocity</span>, y <span class="op">=</span> <span class="cn">Inf</span>, </span>
 <span>           label <span class="op">=</span> <span class="st">"Min"</span>, vjust <span class="op">=</span> <span class="fl">2</span>, color <span class="op">=</span> <span class="st">"#e74c3c"</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/annotate.html" class="external-link">annotate</a></span><span class="op">(</span><span class="st">"text"</span>, x <span class="op">=</span> <span class="va">thresholds</span><span class="op">$</span><span class="va">max_velocity</span>, y <span class="op">=</span> <span class="cn">Inf</span>, </span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/annotate.html" class="external-link">annotate</a></span><span class="op">(</span><span class="st">"text"</span>, x <span class="op">=</span> <span class="va">thresholds</span><span class="op">$</span><span class="va">velocity</span><span class="op">$</span><span class="va">max_velocity</span>, y <span class="op">=</span> <span class="cn">Inf</span>, </span>
 <span>           label <span class="op">=</span> <span class="st">"Max"</span>, vjust <span class="op">=</span> <span class="fl">2</span>, color <span class="op">=</span> <span class="st">"#e74c3c"</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">labs</a></span><span class="op">(</span>title <span class="op">=</span> <span class="st">"Distribution des vitesses"</span>,</span>
 <span>       subtitle <span class="op">=</span> <span class="st">"Seuils de filtrage indiqués en rouge"</span>,</span>
@@ -264,17 +264,18 @@ est conservé si :</p>
 <span><span class="co">#&gt; Vitesse min-max: 0 - 64.36 m/s</span></span>
 <span></span>
 <span><span class="co"># Appliquer le filtre</span></span>
-<span><span class="va">data_filtered</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/filter_velocity.html">filter_velocity</a></span><span class="op">(</span><span class="va">data_utm</span>, </span>
-<span>                                  min_velocity <span class="op">=</span> <span class="va">thresholds</span><span class="op">$</span><span class="va">min_velocity</span>,</span>
-<span>                                  max_velocity <span class="op">=</span> <span class="va">thresholds</span><span class="op">$</span><span class="va">max_velocity</span><span class="op">)</span></span>
+<span><span class="va">data_filtered</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/filter_data.html">filter_data</a></span><span class="op">(</span><span class="va">data_utm</span>, </span>
+<span>                             type <span class="op">=</span> <span class="st">"velocity"</span>,</span>
+<span>                             min_velocity <span class="op">=</span> <span class="va">thresholds</span><span class="op">$</span><span class="va">velocity</span><span class="op">$</span><span class="va">min_velocity</span>,</span>
+<span>                             max_velocity <span class="op">=</span> <span class="va">thresholds</span><span class="op">$</span><span class="va">velocity</span><span class="op">$</span><span class="va">max_velocity</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Après filtrage</span></span>
 <span><span class="va">n_after</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">data_filtered</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Points après filtrage:"</span>, <span class="va">n_after</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Points après filtrage: 21889</span></span>
+<span><span class="co">#&gt; Points après filtrage: 21884</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Points retirés:"</span>, <span class="va">n_before</span> <span class="op">-</span> <span class="va">n_after</span>, <span class="st">"("</span>, </span>
 <span>    <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="op">(</span><span class="va">n_before</span> <span class="op">-</span> <span class="va">n_after</span><span class="op">)</span><span class="op">/</span><span class="va">n_before</span><span class="op">*</span><span class="fl">100</span>, <span class="fl">1</span><span class="op">)</span>, <span class="st">"%)\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Points retirés: 28 ( 0.1 %)</span></span></code></pre></div>
+<span><span class="co">#&gt; Points retirés: 33 ( 0.2 %)</span></span></code></pre></div>
 </div>
 </div>
 <div class="section level2">
@@ -415,31 +416,36 @@ est conservé si :</p>
 </tr></thead>
 <tbody>
 <tr class="odd">
-<td align="left">min_velocity</td>
+<td align="left">type</td>
+<td align="left">Type de filtre (‘velocity’)</td>
+<td align="left">‘velocity’</td>
+</tr>
+<tr class="even">
+<td align="left">min_value</td>
 <td align="left">Vitesse minimale (m/s)</td>
 <td align="left">auto</td>
 </tr>
-<tr class="even">
-<td align="left">max_velocity</td>
+<tr class="odd">
+<td align="left">max_value</td>
 <td align="left">Vitesse maximale (m/s)</td>
 <td align="left">auto</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">vllim</td>
 <td align="left">Quantile bas pour calcul auto</td>
 <td align="left">0.02</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">vulim</td>
 <td align="left">Quantile haut pour calcul auto</td>
 <td align="left">0.98</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">vscale</td>
 <td align="left">Facteur d’échelle haut</td>
 <td align="left">1.5</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">minv_abs</td>
 <td align="left">Minimum absolu (m/s)</td>
 <td align="left">0.5</td>

@@ -307,7 +307,7 @@ est conservé si :</p>
 <span><span class="co">#&gt; === Application du filtre automatique ===</span></span>
 <span></span>
 <span><span class="co"># Appliquer le filtre</span></span>
-<span><span class="va">data_filtered</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/filter_moisture_range.html">filter_moisture_range</a></span><span class="op">(</span><span class="va">data</span>, n_std <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span>
+<span><span class="va">data_filtered</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/filter_data.html">filter_data</a></span><span class="op">(</span><span class="va">data</span>, type <span class="op">=</span> <span class="st">"moisture"</span>, n_std <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Points après filtrage:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">data_filtered</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Points après filtrage: 21602</span></span>
@@ -331,9 +331,10 @@ est conservé si :</p>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Seuils manuels (soja):"</span>, <span class="va">min_manual</span>, <span class="st">"-"</span>, <span class="va">max_manual</span>, <span class="st">"%\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Seuils manuels (soja): 8 - 20 %</span></span>
 <span></span>
-<span><span class="va">data_manual</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/filter_moisture_range.html">filter_moisture_range</a></span><span class="op">(</span><span class="va">data</span>, </span>
-<span>                                      min_moisture <span class="op">=</span> <span class="va">min_manual</span>,</span>
-<span>                                      max_moisture <span class="op">=</span> <span class="va">max_manual</span><span class="op">)</span></span>
+<span><span class="va">data_manual</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/filter_data.html">filter_data</a></span><span class="op">(</span><span class="va">data</span>, </span>
+<span>                           type <span class="op">=</span> <span class="st">"moisture"</span>,</span>
+<span>                           min_moisture <span class="op">=</span> <span class="va">min_manual</span>,</span>
+<span>                           max_moisture <span class="op">=</span> <span class="va">max_manual</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Points après filtrage manuel:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">data_manual</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Points après filtrage manuel: 21886</span></span>
@@ -376,15 +377,24 @@ est conservé si :</p>
 <h3 id="variation-au-cours-de-la-récolte">Variation au cours de la récolte<a class="anchor" aria-label="anchor" href="#variation-au-cours-de-la-r%C3%A9colte"></a>
 </h3>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Trier par temps</span></span>
+<code class="sourceCode R"><span><span class="co"># Trier par temps et échantillonner pour la ligne de tendance (LOESS est lent avec beaucoup de points)</span></span>
 <span><span class="va">data_time</span> <span class="op">&lt;-</span> <span class="va">data</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/arrange.html" class="external-link">arrange</a></span><span class="op">(</span><span class="va">GPS_Time</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html" class="external-link">mutate</a></span><span class="op">(</span>time_normalized <span class="op">=</span> <span class="op">(</span><span class="va">GPS_Time</span> <span class="op">-</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">min</a></span><span class="op">(</span><span class="va">GPS_Time</span><span class="op">)</span><span class="op">)</span> <span class="op">/</span> <span class="fl">3600</span><span class="op">)</span>  <span class="co"># En heures</span></span>
 <span></span>
+<span><span class="co"># Échantillon pour la ligne de tendance (max 5000 points)</span></span>
+<span><span class="va">n_points</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">data_time</span><span class="op">)</span></span>
+<span><span class="kw">if</span> <span class="op">(</span><span class="va">n_points</span> <span class="op">&gt;</span> <span class="fl">5000</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">42</span><span class="op">)</span></span>
+<span>  <span class="va">data_sample</span> <span class="op">&lt;-</span> <span class="va">data_time</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample</a></span><span class="op">(</span><span class="va">n_points</span>, <span class="fl">5000</span><span class="op">)</span>, <span class="op">]</span></span>
+<span><span class="op">}</span> <span class="kw">else</span> <span class="op">{</span></span>
+<span>  <span class="va">data_sample</span> <span class="op">&lt;-</span> <span class="va">data_time</span></span>
+<span><span class="op">}</span></span>
+<span></span>
 <span><span class="co"># Graphique temporel</span></span>
 <span><span class="va">p2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="va">data_time</span>, <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>x <span class="op">=</span> <span class="va">time_normalized</span>, y <span class="op">=</span> <span class="va">Moisture</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_point.html" class="external-link">geom_point</a></span><span class="op">(</span>alpha <span class="op">=</span> <span class="fl">0.3</span>, size <span class="op">=</span> <span class="fl">0.5</span>, color <span class="op">=</span> <span class="st">"#3498db"</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_smooth.html" class="external-link">geom_smooth</a></span><span class="op">(</span>method <span class="op">=</span> <span class="st">"loess"</span>, color <span class="op">=</span> <span class="st">"#e74c3c"</span>, se <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_smooth.html" class="external-link">geom_smooth</a></span><span class="op">(</span>data <span class="op">=</span> <span class="va">data_sample</span>, method <span class="op">=</span> <span class="st">"loess"</span>, color <span class="op">=</span> <span class="st">"#e74c3c"</span>, se <span class="op">=</span> <span class="cn">TRUE</span>, span <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_abline.html" class="external-link">geom_hline</a></span><span class="op">(</span>yintercept <span class="op">=</span> <span class="va">min_moisture_auto</span>, color <span class="op">=</span> <span class="st">"#27ae60"</span>, </span>
 <span>             linetype <span class="op">=</span> <span class="st">"dashed"</span>, alpha <span class="op">=</span> <span class="fl">0.7</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_abline.html" class="external-link">geom_hline</a></span><span class="op">(</span>yintercept <span class="op">=</span> <span class="va">max_moisture_auto</span>, color <span class="op">=</span> <span class="st">"#27ae60"</span>, </span>
@@ -500,21 +510,26 @@ est conservé si :</p>
 </tr></thead>
 <tbody>
 <tr class="odd">
-<td align="left">min_moisture</td>
+<td align="left">type</td>
+<td align="left">Type de filtre (‘moisture’)</td>
+<td align="left">‘moisture’</td>
+</tr>
+<tr class="even">
+<td align="left">min_value</td>
 <td align="left">Humidité minimum (%)</td>
 <td align="left">auto</td>
 </tr>
-<tr class="even">
-<td align="left">max_moisture</td>
+<tr class="odd">
+<td align="left">max_value</td>
 <td align="left">Humidité maximum (%)</td>
 <td align="left">auto</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">n_std</td>
 <td align="left">Nombre d’écarts-types pour calcul auto</td>
 <td align="left">3</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">moisture_column</td>
 <td align="left">Nom de la colonne d’humidité</td>
 <td align="left">‘Moisture’</td>

@@ -2,7 +2,8 @@
 
 Cette fonction permet de nettoyer les données en plusieurs phases :
 
-1.  Pré-traitement (polygones, overlap, PCDI) - calculé une fois
+1.  Pré-traitement (polygones, overlap, Delay Adjustment) - calculé une
+    fois
 
 2.  Filtres de rendement - peuvent être réappliqués sans recalculer le
     pré-traitement

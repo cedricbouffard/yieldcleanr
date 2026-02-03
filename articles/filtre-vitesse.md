@@ -84,7 +84,7 @@ Typiquement, $v_{min\_ abs} = 0.5$ m/s (environ 1.8 km/h).
 
 ``` r
 # Calculer les seuils automatiques
-thresholds <- calculate_auto_thresholds(data_utm)
+thresholds <- calculate_thresholds(data_utm)
 
 cat("=== Seuils de vitesse calculés ===\n")
 #> === Seuils de vitesse calculés ===
@@ -92,11 +92,11 @@ cat("Quantile 2%:", round(quantile(data_calc$velocity_manual, 0.02, na.rm = TRUE
 #> Quantile 2%: 0.95 m/s
 cat("Quantile 98%:", round(quantile(data_calc$velocity_manual, 0.98, na.rm = TRUE), 2), "m/s\n")
 #> Quantile 98%: 1.72 m/s
-cat("\nSeuil minimum:", round(thresholds$min_velocity, 2), "m/s\n")
+cat("\nSeuil minimum:", round(thresholds$velocity$min_velocity, 2), "m/s\n")
 #> 
 #> Seuil minimum: 0.5 m/s
-cat("Seuil maximum:", round(thresholds$max_velocity, 2), "m/s\n")
-#> Seuil maximum: 2.89 m/s
+cat("Seuil maximum:", round(thresholds$velocity$max_velocity, 2), "m/s\n")
+#> Seuil maximum: 2.52 m/s
 ```
 
 ## Distribution des vitesses
@@ -110,13 +110,13 @@ df_vel <- data.frame(velocity = velocities)
 
 p1 <- ggplot(df_vel, aes(x = velocity)) +
   geom_histogram(bins = 50, fill = "#3498db", alpha = 0.7, color = "white") +
-  geom_vline(xintercept = thresholds$min_velocity, color = "#e74c3c", 
+  geom_vline(xintercept = thresholds$velocity$min_velocity, color = "#e74c3c", 
              linetype = "dashed", size = 1) +
-  geom_vline(xintercept = thresholds$max_velocity, color = "#e74c3c", 
+  geom_vline(xintercept = thresholds$velocity$max_velocity, color = "#e74c3c", 
              linetype = "dashed", size = 1) +
-  annotate("text", x = thresholds$min_velocity, y = Inf, 
+  annotate("text", x = thresholds$velocity$min_velocity, y = Inf, 
            label = "Min", vjust = 2, color = "#e74c3c") +
-  annotate("text", x = thresholds$max_velocity, y = Inf, 
+  annotate("text", x = thresholds$velocity$max_velocity, y = Inf, 
            label = "Max", vjust = 2, color = "#e74c3c") +
   labs(title = "Distribution des vitesses",
        subtitle = "Seuils de filtrage indiqués en rouge",
@@ -157,17 +157,18 @@ cat("Vitesse min-max:", round(min(data_calc$velocity_manual, na.rm = TRUE), 2), 
 #> Vitesse min-max: 0 - 64.36 m/s
 
 # Appliquer le filtre
-data_filtered <- filter_velocity(data_utm, 
-                                  min_velocity = thresholds$min_velocity,
-                                  max_velocity = thresholds$max_velocity)
+data_filtered <- filter_data(data_utm, 
+                             type = "velocity",
+                             min_velocity = thresholds$velocity$min_velocity,
+                             max_velocity = thresholds$velocity$max_velocity)
 
 # Après filtrage
 n_after <- nrow(data_filtered)
 cat("Points après filtrage:", n_after, "\n")
-#> Points après filtrage: 21889
+#> Points après filtrage: 21884
 cat("Points retirés:", n_before - n_after, "(", 
     round((n_before - n_after)/n_before*100, 1), "%)\n")
-#> Points retirés: 28 ( 0.1 %)
+#> Points retirés: 33 ( 0.2 %)
 ```
 
 ## Visualisation avant/après
@@ -277,14 +278,15 @@ if (nrow(high_vel) > 0) {
 
 ### Paramètres de la fonction
 
-| Paramètre    | Description                    | Défaut |
-|:-------------|:-------------------------------|:-------|
-| min_velocity | Vitesse minimale (m/s)         | auto   |
-| max_velocity | Vitesse maximale (m/s)         | auto   |
-| vllim        | Quantile bas pour calcul auto  | 0.02   |
-| vulim        | Quantile haut pour calcul auto | 0.98   |
-| vscale       | Facteur d’échelle haut         | 1.5    |
-| minv_abs     | Minimum absolu (m/s)           | 0.5    |
+| Paramètre | Description                    | Défaut     |
+|:----------|:-------------------------------|:-----------|
+| type      | Type de filtre (‘velocity’)    | ‘velocity’ |
+| min_value | Vitesse minimale (m/s)         | auto       |
+| max_value | Vitesse maximale (m/s)         | auto       |
+| vllim     | Quantile bas pour calcul auto  | 0.02       |
+| vulim     | Quantile haut pour calcul auto | 0.98       |
+| vscale    | Facteur d’échelle haut         | 1.5        |
+| minv_abs  | Minimum absolu (m/s)           | 0.5        |
 
 Paramètres du filtre de vitesse
 

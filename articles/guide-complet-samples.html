@@ -191,27 +191,27 @@ pipeline AYCE (Auto Yield Cleaning Engine).</p>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"CV:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/sd.html" class="external-link">sd</a></span><span class="op">(</span><span class="va">data_s1</span><span class="op">$</span><span class="va">Yield_kg_ha</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span> <span class="op">/</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">data_s1</span><span class="op">$</span><span class="va">Yield_kg_ha</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span> <span class="op">*</span> <span class="fl">100</span>, <span class="fl">1</span><span class="op">)</span>, <span class="st">"%\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; CV: 24.8 %</span></span>
 <span></span>
-<span><span class="co"># Étape 2: PCDI</span></span>
-<span><span class="va">pcdi_s1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/apply_pcdi.html">apply_pcdi</a></span><span class="op">(</span><span class="va">data_s1</span>, delay_range <span class="op">=</span> <span class="op">-</span><span class="fl">25</span><span class="op">:</span><span class="fl">25</span>, n_iterations <span class="op">=</span> <span class="fl">10</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"\n🔧 PCDI - Délai optimal:"</span>, <span class="va">pcdi_s1</span><span class="op">$</span><span class="va">optimal_delay</span>, <span class="st">"secondes\n"</span><span class="op">)</span></span>
+<span><span class="co"># Étape 2: Delay Adjustment</span></span>
+<span><span class="va">delay_result_s1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/optimize_delays.html">optimize_delays</a></span><span class="op">(</span><span class="va">data_s1</span>, type <span class="op">=</span> <span class="st">"flow"</span>, delay_range <span class="op">=</span> <span class="op">-</span><span class="fl">25</span><span class="op">:</span><span class="fl">25</span>, n_iterations <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"\n🔧 Delay Adjustment - Délai optimal:"</span>, <span class="va">delay_result_s1</span><span class="op">$</span><span class="va">delays</span><span class="op">$</span><span class="va">flow</span>, <span class="st">"secondes\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; 🔧 PCDI - Délai optimal: 2 secondes</span></span>
+<span><span class="co">#&gt; 🔧 Delay Adjustment - Délai optimal: 3 secondes</span></span>
 <span></span>
-<span><span class="kw">if</span> <span class="op">(</span><span class="va">pcdi_s1</span><span class="op">$</span><span class="va">optimal_delay</span> <span class="op">!=</span> <span class="fl">0</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="va">data_s1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/apply_flow_delay.html">apply_flow_delay</a></span><span class="op">(</span><span class="va">data_s1</span>, delay <span class="op">=</span> <span class="va">pcdi_s1</span><span class="op">$</span><span class="va">optimal_delay</span><span class="op">)</span></span>
+<span><span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NULL.html" class="external-link">is.null</a></span><span class="op">(</span><span class="va">delay_result_s1</span><span class="op">$</span><span class="va">data</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">data_s1</span> <span class="op">&lt;-</span> <span class="va">delay_result_s1</span><span class="op">$</span><span class="va">data</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Points après correction délai:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">data_s1</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
 <span><span class="op">}</span></span>
 <span><span class="co">#&gt; Points après correction délai: 21905</span></span>
 <span></span>
 <span><span class="co"># Étape 3: Seuils automatiques</span></span>
-<span><span class="va">thresholds_s1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/calculate_auto_thresholds.html">calculate_auto_thresholds</a></span><span class="op">(</span><span class="va">data_s1</span><span class="op">)</span></span>
+<span><span class="va">thresholds_s1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/calculate_thresholds.html">calculate_thresholds</a></span><span class="op">(</span><span class="va">data_s1</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"\n📈 Seuils calculés:\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; 📈 Seuils calculés:</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"  Vitesse:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">thresholds_s1</span><span class="op">$</span><span class="va">min_velocity</span>, <span class="fl">2</span><span class="op">)</span>, <span class="st">"-"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">thresholds_s1</span><span class="op">$</span><span class="va">max_velocity</span>, <span class="fl">2</span><span class="op">)</span>, <span class="st">"m/s\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt;   Vitesse: 0.5 - 2.89 m/s</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"  Rendement:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">thresholds_s1</span><span class="op">$</span><span class="va">min_yield</span>, <span class="fl">1</span><span class="op">)</span>, <span class="st">"-"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">thresholds_s1</span><span class="op">$</span><span class="va">max_yield</span>, <span class="fl">1</span><span class="op">)</span>, <span class="st">"kg/ha\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt;   Rendement: 0 - 19.4 kg/ha</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"  Vitesse:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">thresholds_s1</span><span class="op">$</span><span class="va">velocity</span><span class="op">$</span><span class="va">min_velocity</span>, <span class="fl">2</span><span class="op">)</span>, <span class="st">"-"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">thresholds_s1</span><span class="op">$</span><span class="va">velocity</span><span class="op">$</span><span class="va">max_velocity</span>, <span class="fl">2</span><span class="op">)</span>, <span class="st">"m/s\n"</span><span class="op">)</span></span>
+<span><span class="co">#&gt;   Vitesse: 0.5 - 2.52 m/s</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"  Rendement:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">thresholds_s1</span><span class="op">$</span><span class="va">yield</span><span class="op">$</span><span class="va">min_yield</span>, <span class="fl">1</span><span class="op">)</span>, <span class="st">"-"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">thresholds_s1</span><span class="op">$</span><span class="va">yield</span><span class="op">$</span><span class="va">max_yield</span>, <span class="fl">1</span><span class="op">)</span>, <span class="st">"kg/ha\n"</span><span class="op">)</span></span>
+<span><span class="co">#&gt;   Rendement: 1071.8 - 5958.6 kg/ha</span></span>
 <span></span>
 <span><span class="co"># Étape 4-7: Filtres successifs</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"\n🔧 FILTRES APPLIQUÉS:\n"</span><span class="op">)</span></span>
@@ -220,44 +220,46 @@ pipeline AYCE (Auto Yield Cleaning Engine).</p>
 <span></span>
 <span><span class="co"># Filtre vitesse</span></span>
 <span><span class="va">n_before</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">data_s1</span><span class="op">)</span></span>
-<span><span class="va">data_s1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/filter_velocity.html">filter_velocity</a></span><span class="op">(</span><span class="va">data_s1</span>, <span class="va">thresholds_s1</span><span class="op">$</span><span class="va">min_velocity</span>, <span class="va">thresholds_s1</span><span class="op">$</span><span class="va">max_velocity</span><span class="op">)</span></span>
+<span><span class="va">data_s1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/filter_data.html">filter_data</a></span><span class="op">(</span><span class="va">data_s1</span>, type <span class="op">=</span> <span class="st">"velocity"</span>, </span>
+<span>                       min_velocity <span class="op">=</span> <span class="va">thresholds_s1</span><span class="op">$</span><span class="va">velocity</span><span class="op">$</span><span class="va">min_velocity</span>, </span>
+<span>                       max_velocity <span class="op">=</span> <span class="va">thresholds_s1</span><span class="op">$</span><span class="va">velocity</span><span class="op">$</span><span class="va">max_velocity</span><span class="op">)</span></span>
 <span><span class="va">removed_vel</span> <span class="op">&lt;-</span> <span class="va">n_before</span> <span class="op">-</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">data_s1</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"  Vitesse:"</span>, <span class="va">removed_vel</span>, <span class="st">"points retirés ("</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">removed_vel</span><span class="op">/</span><span class="va">n_before</span><span class="op">*</span><span class="fl">100</span>, <span class="fl">1</span><span class="op">)</span>, <span class="st">"%)\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt;   Vitesse: 29 points retirés ( 0.1 %)</span></span>
+<span><span class="co">#&gt;   Vitesse: 34 points retirés ( 0.2 %)</span></span>
 <span></span>
 <span><span class="co"># Filtre humidité</span></span>
 <span><span class="va">n_before</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">data_s1</span><span class="op">)</span></span>
-<span><span class="va">data_s1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/filter_moisture_range.html">filter_moisture_range</a></span><span class="op">(</span><span class="va">data_s1</span>, n_std <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span>
+<span><span class="va">data_s1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/filter_data.html">filter_data</a></span><span class="op">(</span><span class="va">data_s1</span>, type <span class="op">=</span> <span class="st">"moisture"</span>, n_std <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span>
 <span><span class="va">removed_moist</span> <span class="op">&lt;-</span> <span class="va">n_before</span> <span class="op">-</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">data_s1</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"  Humidité:"</span>, <span class="va">removed_moist</span>, <span class="st">"points retirés ("</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">removed_moist</span><span class="op">/</span><span class="va">n_before</span><span class="op">*</span><span class="fl">100</span>, <span class="fl">1</span><span class="op">)</span>, <span class="st">"%)\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt;   Humidité: 303 points retirés ( 1.4 %)</span></span>
 <span></span>
 <span><span class="co"># Filtre chevauchement</span></span>
 <span><span class="va">n_before</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">data_s1</span><span class="op">)</span></span>
-<span><span class="va">data_s1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/apply_overlap_filter.html">apply_overlap_filter</a></span><span class="op">(</span><span class="va">data_s1</span>, cellsize <span class="op">=</span> <span class="fl">0.3</span>, overlap_threshold <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span></span>
+<span><span class="va">data_s1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/detect_anomalies.html">detect_anomalies</a></span><span class="op">(</span><span class="va">data_s1</span>, type <span class="op">=</span> <span class="st">"overlap"</span>, cellsize <span class="op">=</span> <span class="fl">0.3</span>, overlap_threshold <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span></span>
 <span><span class="va">removed_overlap</span> <span class="op">&lt;-</span> <span class="va">n_before</span> <span class="op">-</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">data_s1</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"  Chevauchement:"</span>, <span class="va">removed_overlap</span>, <span class="st">"points retirés ("</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">removed_overlap</span><span class="op">/</span><span class="va">n_before</span><span class="op">*</span><span class="fl">100</span>, <span class="fl">1</span><span class="op">)</span>, <span class="st">"%)\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt;   Chevauchement: 1 points retirés ( 0 %)</span></span>
+<span><span class="co">#&gt;   Chevauchement: 0 points retirés ( 0 %)</span></span>
 <span></span>
 <span><span class="co"># Filtre écart-type local</span></span>
 <span><span class="va">n_before</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">data_s1</span><span class="op">)</span></span>
-<span><span class="va">data_s1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/apply_local_sd_filter.html">apply_local_sd_filter</a></span><span class="op">(</span><span class="va">data_s1</span>, n_swaths <span class="op">=</span> <span class="fl">5</span>, lsd_limit <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span>
+<span><span class="va">data_s1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/detect_anomalies.html">detect_anomalies</a></span><span class="op">(</span><span class="va">data_s1</span>, type <span class="op">=</span> <span class="st">"local_sd"</span>, n_swaths <span class="op">=</span> <span class="fl">5</span>, lsd_limit <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span>
 <span><span class="va">removed_lsd</span> <span class="op">&lt;-</span> <span class="va">n_before</span> <span class="op">-</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">data_s1</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"  Écart-type local:"</span>, <span class="va">removed_lsd</span>, <span class="st">"points retirés ("</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">removed_lsd</span><span class="op">/</span><span class="va">n_before</span><span class="op">*</span><span class="fl">100</span>, <span class="fl">1</span><span class="op">)</span>, <span class="st">"%)\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt;   Écart-type local: 561 points retirés ( 2.6 %)</span></span>
+<span><span class="co">#&gt;   Écart-type local: 144 points retirés ( 0.7 %)</span></span>
 <span></span>
 <span><span class="co"># Résultat final</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"\n📊 RÉSULTAT FINAL\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; 📊 RÉSULTAT FINAL</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Points nettoyés:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">data_s1</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Points nettoyés: 21011</span></span>
+<span><span class="co">#&gt; Points nettoyés: 21424</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Taux de rétention:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">data_s1</span><span class="op">)</span><span class="op">/</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">data_raw_s1</span><span class="op">)</span><span class="op">*</span><span class="fl">100</span>, <span class="fl">1</span><span class="op">)</span>, <span class="st">"%\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Taux de rétention: 95.9 %</span></span>
+<span><span class="co">#&gt; Taux de rétention: 97.8 %</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Rendement moyen:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">data_s1</span><span class="op">$</span><span class="va">Yield_kg_ha</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>, <span class="fl">1</span><span class="op">)</span>, <span class="st">"kg/ha\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Rendement moyen: 3595.9 kg/ha</span></span>
+<span><span class="co">#&gt; Rendement moyen: 3538.1 kg/ha</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"CV final:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/sd.html" class="external-link">sd</a></span><span class="op">(</span><span class="va">data_s1</span><span class="op">$</span><span class="va">Yield_kg_ha</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span> <span class="op">/</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">data_s1</span><span class="op">$</span><span class="va">Yield_kg_ha</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span> <span class="op">*</span> <span class="fl">100</span>, <span class="fl">1</span><span class="op">)</span>, <span class="st">"%\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; CV final: 18.3 %</span></span></code></pre></div>
+<span><span class="co">#&gt; CV final: 21.8 %</span></span></code></pre></div>
 </div>
 <div class="section level4">
 <h4 id="visualisation-avantaprès">Visualisation avant/après<a class="anchor" aria-label="anchor" href="#visualisation-avantapr%C3%A8s"></a>
@@ -308,20 +310,20 @@ pipeline AYCE (Auto Yield Cleaning Engine).</p>
 <code class="sourceCode R"><span><span class="va">data_s2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/latlon_to_utm.html">latlon_to_utm</a></span><span class="op">(</span><span class="va">data_raw_s2</span><span class="op">)</span></span>
 <span><span class="va">data_s2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/convert_flow_to_yield.html">convert_flow_to_yield</a></span><span class="op">(</span><span class="va">data_s2</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># PCDI avec délai important</span></span>
-<span><span class="va">pcdi_s2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/apply_pcdi.html">apply_pcdi</a></span><span class="op">(</span><span class="va">data_s2</span>, delay_range <span class="op">=</span> <span class="op">-</span><span class="fl">25</span><span class="op">:</span><span class="fl">25</span>, n_iterations <span class="op">=</span> <span class="fl">10</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"🔧 PCDI - Délai optimal:"</span>, <span class="va">pcdi_s2</span><span class="op">$</span><span class="va">optimal_delay</span>, <span class="st">"secondes\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; 🔧 PCDI - Délai optimal: 13 secondes</span></span>
+<span><span class="co"># Delay Adjustment avec délai important</span></span>
+<span><span class="va">delay_result_s2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/optimize_delays.html">optimize_delays</a></span><span class="op">(</span><span class="va">data_s2</span>, type <span class="op">=</span> <span class="st">"flow"</span>, delay_range <span class="op">=</span> <span class="op">-</span><span class="fl">25</span><span class="op">:</span><span class="fl">25</span>, n_iterations <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"🔧 Delay Adjustment - Délai optimal:"</span>, <span class="va">delay_result_s2</span><span class="op">$</span><span class="va">delays</span><span class="op">$</span><span class="va">flow</span>, <span class="st">"secondes\n"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; 🔧 Delay Adjustment - Délai optimal: 13 secondes</span></span>
 <span></span>
-<span><span class="kw">if</span> <span class="op">(</span><span class="va">pcdi_s2</span><span class="op">$</span><span class="va">optimal_delay</span> <span class="op">!=</span> <span class="fl">0</span><span class="op">)</span> <span class="op">{</span></span>
+<span><span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NULL.html" class="external-link">is.null</a></span><span class="op">(</span><span class="va">delay_result_s2</span><span class="op">$</span><span class="va">data</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="va">n_before</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">data_s2</span><span class="op">)</span></span>
-<span>  <span class="va">data_s2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/apply_flow_delay.html">apply_flow_delay</a></span><span class="op">(</span><span class="va">data_s2</span>, delay <span class="op">=</span> <span class="va">pcdi_s2</span><span class="op">$</span><span class="va">optimal_delay</span><span class="op">)</span></span>
-<span>  <span class="va">removed_pcdi</span> <span class="op">&lt;-</span> <span class="va">n_before</span> <span class="op">-</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">data_s2</span><span class="op">)</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Points retirés par PCDI:"</span>, <span class="va">removed_pcdi</span>, <span class="st">"\n"</span><span class="op">)</span></span>
+<span>  <span class="va">data_s2</span> <span class="op">&lt;-</span> <span class="va">delay_result_s2</span><span class="op">$</span><span class="va">data</span></span>
+<span>  <span class="va">removed_delay_adjustment</span> <span class="op">&lt;-</span> <span class="va">n_before</span> <span class="op">-</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">data_s2</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Points retirés par Delay Adjustment:"</span>, <span class="va">removed_delay_adjustment</span>, <span class="st">"\n"</span><span class="op">)</span></span>
 <span><span class="op">}</span></span>
-<span><span class="co">#&gt; Points retirés par PCDI: 0</span></span>
+<span><span class="co">#&gt; Points retirés par Delay Adjustment: 0</span></span>
 <span></span>
-<span><span class="va">thresholds_s2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/calculate_auto_thresholds.html">calculate_auto_thresholds</a></span><span class="op">(</span><span class="va">data_s2</span><span class="op">)</span></span>
+<span><span class="va">thresholds_s2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/calculate_thresholds.html">calculate_thresholds</a></span><span class="op">(</span><span class="va">data_s2</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Application des filtres</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"\n🔧 FILTRES APPLIQUÉS:\n"</span><span class="op">)</span></span>
@@ -329,38 +331,60 @@ pipeline AYCE (Auto Yield Cleaning Engine).</p>
 <span><span class="co">#&gt; 🔧 FILTRES APPLIQUÉS:</span></span>
 <span></span>
 <span><span class="va">n_before</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">data_s2</span><span class="op">)</span></span>
-<span><span class="va">data_s2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/filter_velocity.html">filter_velocity</a></span><span class="op">(</span><span class="va">data_s2</span>, <span class="va">thresholds_s2</span><span class="op">$</span><span class="va">min_velocity</span>, <span class="va">thresholds_s2</span><span class="op">$</span><span class="va">max_velocity</span><span class="op">)</span></span>
+<span><span class="va">data_s2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/filter_data.html">filter_data</a></span><span class="op">(</span><span class="va">data_s2</span>, type <span class="op">=</span> <span class="st">"velocity"</span>, </span>
+<span>                       min_velocity <span class="op">=</span> <span class="va">thresholds_s2</span><span class="op">$</span><span class="va">velocity</span><span class="op">$</span><span class="va">min_velocity</span>, </span>
+<span>                       max_velocity <span class="op">=</span> <span class="va">thresholds_s2</span><span class="op">$</span><span class="va">velocity</span><span class="op">$</span><span class="va">max_velocity</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"  Vitesse:"</span>, <span class="va">n_before</span> <span class="op">-</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">data_s2</span><span class="op">)</span>, <span class="st">"points\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt;   Vitesse: 366 points</span></span>
+<span><span class="co">#&gt;   Vitesse: 699 points</span></span>
 <span></span>
 <span><span class="va">n_before</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">data_s2</span><span class="op">)</span></span>
-<span><span class="va">data_s2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/filter_moisture_range.html">filter_moisture_range</a></span><span class="op">(</span><span class="va">data_s2</span>, n_std <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span>
+<span><span class="va">data_s2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/filter_data.html">filter_data</a></span><span class="op">(</span><span class="va">data_s2</span>, type <span class="op">=</span> <span class="st">"moisture"</span>, n_std <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"  Humidité:"</span>, <span class="va">n_before</span> <span class="op">-</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">data_s2</span><span class="op">)</span>, <span class="st">"points\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt;   Humidité: 153 points</span></span>
+<span><span class="co">#&gt;   Humidité: 147 points</span></span>
 <span></span>
 <span><span class="va">n_before</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">data_s2</span><span class="op">)</span></span>
-<span><span class="va">data_s2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/apply_overlap_filter.html">apply_overlap_filter</a></span><span class="op">(</span><span class="va">data_s2</span>, cellsize <span class="op">=</span> <span class="fl">0.3</span>, overlap_threshold <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span></span>
+<span><span class="va">data_s2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/detect_anomalies.html">detect_anomalies</a></span><span class="op">(</span><span class="va">data_s2</span>, type <span class="op">=</span> <span class="st">"overlap"</span>, cellsize <span class="op">=</span> <span class="fl">0.3</span>, overlap_threshold <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"  Chevauchement:"</span>, <span class="va">n_before</span> <span class="op">-</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">data_s2</span><span class="op">)</span>, <span class="st">"points\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt;   Chevauchement: 0 points</span></span>
 <span></span>
 <span><span class="va">n_before</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">data_s2</span><span class="op">)</span></span>
-<span><span class="va">data_s2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/apply_local_sd_filter.html">apply_local_sd_filter</a></span><span class="op">(</span><span class="va">data_s2</span>, n_swaths <span class="op">=</span> <span class="fl">5</span>, lsd_limit <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span>
+<span><span class="va">data_s2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/detect_anomalies.html">detect_anomalies</a></span><span class="op">(</span><span class="va">data_s2</span>, type <span class="op">=</span> <span class="st">"local_sd"</span>, n_swaths <span class="op">=</span> <span class="fl">5</span>, lsd_limit <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"  Écart-type local:"</span>, <span class="va">n_before</span> <span class="op">-</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">data_s2</span><span class="op">)</span>, <span class="st">"points\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt;   Écart-type local: 13 points</span></span>
+<span><span class="co">#&gt;   Écart-type local: 1 points</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"\n📊 RÉSULTAT FINAL\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; 📊 RÉSULTAT FINAL</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Points nettoyés:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">data_s2</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Points nettoyés: 33072</span></span>
+<span><span class="co">#&gt; Points nettoyés: 32757</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Taux de rétention:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">data_s2</span><span class="op">)</span><span class="op">/</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">data_raw_s2</span><span class="op">)</span><span class="op">*</span><span class="fl">100</span>, <span class="fl">1</span><span class="op">)</span>, <span class="st">"%\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Taux de rétention: 89.7 %</span></span></code></pre></div>
+<span><span class="co">#&gt; Taux de rétention: 88.8 %</span></span></code></pre></div>
+</div>
+<div class="section level4">
+<h4 id="visualisation-avantaprès-1">Visualisation avant/après<a class="anchor" aria-label="anchor" href="#visualisation-avantapr%C3%A8s-1"></a>
+</h4>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Créer les objets sf pour visualisation</span></span>
+<span><span class="va">sf_raw_s2</span> <span class="op">&lt;-</span> <span class="fu">sf</span><span class="fu">::</span><span class="fu"><a href="https://r-spatial.github.io/sf/reference/st_as_sf.html" class="external-link">st_as_sf</a></span><span class="op">(</span><span class="va">data_raw_s2</span>, coords <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Longitude"</span>, <span class="st">"Latitude"</span><span class="op">)</span>, crs <span class="op">=</span> <span class="fl">4326</span><span class="op">)</span></span>
+<span><span class="va">sf_clean_s2</span> <span class="op">&lt;-</span> <span class="fu">sf</span><span class="fu">::</span><span class="fu"><a href="https://r-spatial.github.io/sf/reference/st_as_sf.html" class="external-link">st_as_sf</a></span><span class="op">(</span><span class="va">data_s2</span>, coords <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Longitude"</span>, <span class="st">"Latitude"</span><span class="op">)</span>, crs <span class="op">=</span> <span class="fl">4326</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Convertir Flow brut en kg/ha pour comparaison</span></span>
+<span><span class="va">sf_raw_s2</span><span class="op">$</span><span class="va">Yield_kg_ha</span> <span class="op">&lt;-</span> <span class="va">sf_raw_s2</span><span class="op">$</span><span class="va">Flow</span> <span class="op">*</span> <span class="fl">0.453592</span> <span class="op">*</span> <span class="fl">3600</span> <span class="op">/</span> <span class="fl">4046</span> <span class="op">*</span> <span class="fl">1000</span></span>
+<span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/graphics/par.html" class="external-link">par</a></span><span class="op">(</span>mfrow <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">2</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">sf_raw_s2</span><span class="op">[</span><span class="st">"Yield_kg_ha"</span><span class="op">]</span>, main <span class="op">=</span> <span class="st">"AVANT - Sample 2 (Maïs)"</span>, </span>
+<span>     pch <span class="op">=</span> <span class="fl">19</span>, cex <span class="op">=</span> <span class="fl">0.3</span>, breaks <span class="op">=</span> <span class="st">"jenks"</span><span class="op">)</span></span></code></pre></div>
+<p><img src="guide-complet-samples_files/figure-html/sample2-viz-1.png" class="r-plt" alt="" width="1152"></p>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">sf_clean_s2</span><span class="op">[</span><span class="st">"Yield_kg_ha"</span><span class="op">]</span>, main <span class="op">=</span> <span class="st">"APRÈS - Sample 2 (Maïs)"</span>, </span>
+<span>     pch <span class="op">=</span> <span class="fl">19</span>, cex <span class="op">=</span> <span class="fl">0.3</span>, breaks <span class="op">=</span> <span class="st">"jenks"</span><span class="op">)</span></span></code></pre></div>
+<p><img src="guide-complet-samples_files/figure-html/sample2-viz-2.png" class="r-plt" alt="" width="1152"></p>
 </div>
 </div>
 <div class="section level3">
 <h3 id="sample-3---maïs">Sample 3 - Maïs<a class="anchor" aria-label="anchor" href="#sample-3---ma%C3%AFs"></a>
 </h3>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">file_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"sample3.txt"</span>, package <span class="op">=</span> <span class="st">"yieldcleanr"</span><span class="op">)</span></span>
 <span><span class="va">data_raw_s3</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/read_yield_data.html">read_yield_data</a></span><span class="op">(</span><span class="va">file_path</span><span class="op">)</span></span>
 <span></span>
@@ -372,27 +396,53 @@ pipeline AYCE (Auto Yield Cleaning Engine).</p>
 <span><span class="va">data_s3</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/latlon_to_utm.html">latlon_to_utm</a></span><span class="op">(</span><span class="va">data_raw_s3</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
 <span>  <span class="fu"><a href="../reference/convert_flow_to_yield.html">convert_flow_to_yield</a></span><span class="op">(</span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">pcdi_s3</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/apply_pcdi.html">apply_pcdi</a></span><span class="op">(</span><span class="va">data_s3</span>, delay_range <span class="op">=</span> <span class="op">-</span><span class="fl">25</span><span class="op">:</span><span class="fl">25</span>, n_iterations <span class="op">=</span> <span class="fl">10</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"PCDI - Délai optimal:"</span>, <span class="va">pcdi_s3</span><span class="op">$</span><span class="va">optimal_delay</span>, <span class="st">"secondes\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; PCDI - Délai optimal: 0 secondes</span></span>
+<span><span class="va">delay_result_s3</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/optimize_delays.html">optimize_delays</a></span><span class="op">(</span><span class="va">data_s3</span>, type <span class="op">=</span> <span class="st">"flow"</span>, delay_range <span class="op">=</span> <span class="op">-</span><span class="fl">25</span><span class="op">:</span><span class="fl">25</span>, n_iterations <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Delay Adjustment - Délai optimal:"</span>, <span class="va">delay_result_s3</span><span class="op">$</span><span class="va">delays</span><span class="op">$</span><span class="va">flow</span>, <span class="st">"secondes\n"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Delay Adjustment - Délai optimal: 0 secondes</span></span>
 <span></span>
-<span><span class="va">thresholds_s3</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/calculate_auto_thresholds.html">calculate_auto_thresholds</a></span><span class="op">(</span><span class="va">data_s3</span><span class="op">)</span></span>
+<span><span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NULL.html" class="external-link">is.null</a></span><span class="op">(</span><span class="va">delay_result_s3</span><span class="op">$</span><span class="va">data</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">data_s3</span> <span class="op">&lt;-</span> <span class="va">delay_result_s3</span><span class="op">$</span><span class="va">data</span></span>
+<span><span class="op">}</span></span>
+<span></span>
+<span><span class="va">thresholds_s3</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/calculate_thresholds.html">calculate_thresholds</a></span><span class="op">(</span><span class="va">data_s3</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">data_s3</span> <span class="op">&lt;-</span> <span class="va">data_s3</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
-<span>  <span class="fu"><a href="../reference/filter_velocity.html">filter_velocity</a></span><span class="op">(</span><span class="va">thresholds_s3</span><span class="op">$</span><span class="va">min_velocity</span>, <span class="va">thresholds_s3</span><span class="op">$</span><span class="va">max_velocity</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
-<span>  <span class="fu"><a href="../reference/filter_moisture_range.html">filter_moisture_range</a></span><span class="op">(</span>n_std <span class="op">=</span> <span class="fl">3</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
-<span>  <span class="fu"><a href="../reference/apply_overlap_filter.html">apply_overlap_filter</a></span><span class="op">(</span>cellsize <span class="op">=</span> <span class="fl">0.3</span>, overlap_threshold <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
-<span>  <span class="fu"><a href="../reference/apply_local_sd_filter.html">apply_local_sd_filter</a></span><span class="op">(</span>n_swaths <span class="op">=</span> <span class="fl">5</span>, lsd_limit <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="../reference/filter_data.html">filter_data</a></span><span class="op">(</span>type <span class="op">=</span> <span class="st">"velocity"</span>,</span>
+<span>              min_velocity <span class="op">=</span> <span class="va">thresholds_s3</span><span class="op">$</span><span class="va">velocity</span><span class="op">$</span><span class="va">min_velocity</span>,</span>
+<span>              max_velocity <span class="op">=</span> <span class="va">thresholds_s3</span><span class="op">$</span><span class="va">velocity</span><span class="op">$</span><span class="va">max_velocity</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
+<span>  <span class="fu"><a href="../reference/filter_data.html">filter_data</a></span><span class="op">(</span>type <span class="op">=</span> <span class="st">"moisture"</span>, n_std <span class="op">=</span> <span class="fl">3</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
+<span>  <span class="fu"><a href="../reference/detect_anomalies.html">detect_anomalies</a></span><span class="op">(</span>type <span class="op">=</span> <span class="st">"overlap"</span>, cellsize <span class="op">=</span> <span class="fl">0.3</span>, overlap_threshold <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
+<span>  <span class="fu"><a href="../reference/detect_anomalies.html">detect_anomalies</a></span><span class="op">(</span>type <span class="op">=</span> <span class="st">"local_sd"</span>, n_swaths <span class="op">=</span> <span class="fl">5</span>, lsd_limit <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Points nettoyés:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">data_s3</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Points nettoyés: 29939</span></span>
+<span><span class="co">#&gt; Points nettoyés: 29912</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Taux de rétention:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">data_s3</span><span class="op">)</span><span class="op">/</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">data_raw_s3</span><span class="op">)</span><span class="op">*</span><span class="fl">100</span>, <span class="fl">1</span><span class="op">)</span>, <span class="st">"%\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Taux de rétention: 94.1 %</span></span></code></pre></div>
+<span><span class="co">#&gt; Taux de rétention: 94 %</span></span></code></pre></div>
+<div class="section level4">
+<h4 id="visualisation-avantaprès-2">Visualisation avant/après<a class="anchor" aria-label="anchor" href="#visualisation-avantapr%C3%A8s-2"></a>
+</h4>
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Créer les objets sf pour visualisation</span></span>
+<span><span class="va">sf_raw_s3</span> <span class="op">&lt;-</span> <span class="fu">sf</span><span class="fu">::</span><span class="fu"><a href="https://r-spatial.github.io/sf/reference/st_as_sf.html" class="external-link">st_as_sf</a></span><span class="op">(</span><span class="va">data_raw_s3</span>, coords <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Longitude"</span>, <span class="st">"Latitude"</span><span class="op">)</span>, crs <span class="op">=</span> <span class="fl">4326</span><span class="op">)</span></span>
+<span><span class="va">sf_clean_s3</span> <span class="op">&lt;-</span> <span class="fu">sf</span><span class="fu">::</span><span class="fu"><a href="https://r-spatial.github.io/sf/reference/st_as_sf.html" class="external-link">st_as_sf</a></span><span class="op">(</span><span class="va">data_s3</span>, coords <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Longitude"</span>, <span class="st">"Latitude"</span><span class="op">)</span>, crs <span class="op">=</span> <span class="fl">4326</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Convertir Flow brut en kg/ha pour comparaison</span></span>
+<span><span class="va">sf_raw_s3</span><span class="op">$</span><span class="va">Yield_kg_ha</span> <span class="op">&lt;-</span> <span class="va">sf_raw_s3</span><span class="op">$</span><span class="va">Flow</span> <span class="op">*</span> <span class="fl">0.453592</span> <span class="op">*</span> <span class="fl">3600</span> <span class="op">/</span> <span class="fl">4046</span> <span class="op">*</span> <span class="fl">1000</span></span>
+<span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/graphics/par.html" class="external-link">par</a></span><span class="op">(</span>mfrow <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">2</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">sf_raw_s3</span><span class="op">[</span><span class="st">"Yield_kg_ha"</span><span class="op">]</span>, main <span class="op">=</span> <span class="st">"AVANT - Sample 3 (Maïs)"</span>, </span>
+<span>     pch <span class="op">=</span> <span class="fl">19</span>, cex <span class="op">=</span> <span class="fl">0.3</span>, breaks <span class="op">=</span> <span class="st">"jenks"</span><span class="op">)</span></span></code></pre></div>
+<p><img src="guide-complet-samples_files/figure-html/sample3-viz-1.png" class="r-plt" alt="" width="1152"></p>
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">sf_clean_s3</span><span class="op">[</span><span class="st">"Yield_kg_ha"</span><span class="op">]</span>, main <span class="op">=</span> <span class="st">"APRÈS - Sample 3 (Maïs)"</span>, </span>
+<span>     pch <span class="op">=</span> <span class="fl">19</span>, cex <span class="op">=</span> <span class="fl">0.3</span>, breaks <span class="op">=</span> <span class="st">"jenks"</span><span class="op">)</span></span></code></pre></div>
+<p><img src="guide-complet-samples_files/figure-html/sample3-viz-2.png" class="r-plt" alt="" width="1152"></p>
+</div>
 </div>
 <div class="section level3">
 <h3 id="sample-4---maïs-blanc">Sample 4 - Maïs blanc<a class="anchor" aria-label="anchor" href="#sample-4---ma%C3%AFs-blanc"></a>
 </h3>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">file_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"sample4.txt"</span>, package <span class="op">=</span> <span class="st">"yieldcleanr"</span><span class="op">)</span></span>
 <span><span class="va">data_raw_s4</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/read_yield_data.html">read_yield_data</a></span><span class="op">(</span><span class="va">file_path</span><span class="op">)</span></span>
 <span></span>
@@ -404,22 +454,48 @@ pipeline AYCE (Auto Yield Cleaning Engine).</p>
 <span><span class="va">data_s4</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/latlon_to_utm.html">latlon_to_utm</a></span><span class="op">(</span><span class="va">data_raw_s4</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
 <span>  <span class="fu"><a href="../reference/convert_flow_to_yield.html">convert_flow_to_yield</a></span><span class="op">(</span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">pcdi_s4</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/apply_pcdi.html">apply_pcdi</a></span><span class="op">(</span><span class="va">data_s4</span>, delay_range <span class="op">=</span> <span class="op">-</span><span class="fl">25</span><span class="op">:</span><span class="fl">25</span>, n_iterations <span class="op">=</span> <span class="fl">10</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"PCDI - Délai optimal:"</span>, <span class="va">pcdi_s4</span><span class="op">$</span><span class="va">optimal_delay</span>, <span class="st">"secondes\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; PCDI - Délai optimal: 0 secondes</span></span>
+<span><span class="va">delay_result_s4</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/optimize_delays.html">optimize_delays</a></span><span class="op">(</span><span class="va">data_s4</span>, type <span class="op">=</span> <span class="st">"flow"</span>, delay_range <span class="op">=</span> <span class="op">-</span><span class="fl">25</span><span class="op">:</span><span class="fl">25</span>, n_iterations <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Delay Adjustment - Délai optimal:"</span>, <span class="va">delay_result_s4</span><span class="op">$</span><span class="va">delays</span><span class="op">$</span><span class="va">flow</span>, <span class="st">"secondes\n"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Delay Adjustment - Délai optimal: 0 secondes</span></span>
 <span></span>
-<span><span class="va">thresholds_s4</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/calculate_auto_thresholds.html">calculate_auto_thresholds</a></span><span class="op">(</span><span class="va">data_s4</span><span class="op">)</span></span>
+<span><span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NULL.html" class="external-link">is.null</a></span><span class="op">(</span><span class="va">delay_result_s4</span><span class="op">$</span><span class="va">data</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">data_s4</span> <span class="op">&lt;-</span> <span class="va">delay_result_s4</span><span class="op">$</span><span class="va">data</span></span>
+<span><span class="op">}</span></span>
+<span></span>
+<span><span class="va">thresholds_s4</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/calculate_thresholds.html">calculate_thresholds</a></span><span class="op">(</span><span class="va">data_s4</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">data_s4</span> <span class="op">&lt;-</span> <span class="va">data_s4</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
-<span>  <span class="fu"><a href="../reference/filter_velocity.html">filter_velocity</a></span><span class="op">(</span><span class="va">thresholds_s4</span><span class="op">$</span><span class="va">min_velocity</span>, <span class="va">thresholds_s4</span><span class="op">$</span><span class="va">max_velocity</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
-<span>  <span class="fu"><a href="../reference/filter_moisture_range.html">filter_moisture_range</a></span><span class="op">(</span>n_std <span class="op">=</span> <span class="fl">3</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
-<span>  <span class="fu"><a href="../reference/apply_overlap_filter.html">apply_overlap_filter</a></span><span class="op">(</span>cellsize <span class="op">=</span> <span class="fl">0.3</span>, overlap_threshold <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
-<span>  <span class="fu"><a href="../reference/apply_local_sd_filter.html">apply_local_sd_filter</a></span><span class="op">(</span>n_swaths <span class="op">=</span> <span class="fl">5</span>, lsd_limit <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="../reference/filter_data.html">filter_data</a></span><span class="op">(</span>type <span class="op">=</span> <span class="st">"velocity"</span>,</span>
+<span>              min_velocity <span class="op">=</span> <span class="va">thresholds_s4</span><span class="op">$</span><span class="va">velocity</span><span class="op">$</span><span class="va">min_velocity</span>,</span>
+<span>              max_velocity <span class="op">=</span> <span class="va">thresholds_s4</span><span class="op">$</span><span class="va">velocity</span><span class="op">$</span><span class="va">max_velocity</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
+<span>  <span class="fu"><a href="../reference/filter_data.html">filter_data</a></span><span class="op">(</span>type <span class="op">=</span> <span class="st">"moisture"</span>, n_std <span class="op">=</span> <span class="fl">3</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
+<span>  <span class="fu"><a href="../reference/detect_anomalies.html">detect_anomalies</a></span><span class="op">(</span>type <span class="op">=</span> <span class="st">"overlap"</span>, cellsize <span class="op">=</span> <span class="fl">0.3</span>, overlap_threshold <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
+<span>  <span class="fu"><a href="../reference/detect_anomalies.html">detect_anomalies</a></span><span class="op">(</span>type <span class="op">=</span> <span class="st">"local_sd"</span>, n_swaths <span class="op">=</span> <span class="fl">5</span>, lsd_limit <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Points nettoyés:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">data_s4</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Points nettoyés: 18727</span></span>
+<span><span class="co">#&gt; Points nettoyés: 18539</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Taux de rétention:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">data_s4</span><span class="op">)</span><span class="op">/</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">data_raw_s4</span><span class="op">)</span><span class="op">*</span><span class="fl">100</span>, <span class="fl">1</span><span class="op">)</span>, <span class="st">"%\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Taux de rétention: 96.1 %</span></span></code></pre></div>
+<span><span class="co">#&gt; Taux de rétention: 95.1 %</span></span></code></pre></div>
+<div class="section level4">
+<h4 id="visualisation-avantaprès-3">Visualisation avant/après<a class="anchor" aria-label="anchor" href="#visualisation-avantapr%C3%A8s-3"></a>
+</h4>
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Créer les objets sf pour visualisation</span></span>
+<span><span class="va">sf_raw_s4</span> <span class="op">&lt;-</span> <span class="fu">sf</span><span class="fu">::</span><span class="fu"><a href="https://r-spatial.github.io/sf/reference/st_as_sf.html" class="external-link">st_as_sf</a></span><span class="op">(</span><span class="va">data_raw_s4</span>, coords <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Longitude"</span>, <span class="st">"Latitude"</span><span class="op">)</span>, crs <span class="op">=</span> <span class="fl">4326</span><span class="op">)</span></span>
+<span><span class="va">sf_clean_s4</span> <span class="op">&lt;-</span> <span class="fu">sf</span><span class="fu">::</span><span class="fu"><a href="https://r-spatial.github.io/sf/reference/st_as_sf.html" class="external-link">st_as_sf</a></span><span class="op">(</span><span class="va">data_s4</span>, coords <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Longitude"</span>, <span class="st">"Latitude"</span><span class="op">)</span>, crs <span class="op">=</span> <span class="fl">4326</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Convertir Flow brut en kg/ha pour comparaison</span></span>
+<span><span class="va">sf_raw_s4</span><span class="op">$</span><span class="va">Yield_kg_ha</span> <span class="op">&lt;-</span> <span class="va">sf_raw_s4</span><span class="op">$</span><span class="va">Flow</span> <span class="op">*</span> <span class="fl">0.453592</span> <span class="op">*</span> <span class="fl">3600</span> <span class="op">/</span> <span class="fl">4046</span> <span class="op">*</span> <span class="fl">1000</span></span>
+<span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/graphics/par.html" class="external-link">par</a></span><span class="op">(</span>mfrow <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">2</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">sf_raw_s4</span><span class="op">[</span><span class="st">"Yield_kg_ha"</span><span class="op">]</span>, main <span class="op">=</span> <span class="st">"AVANT - Sample 4 (Maïs blanc)"</span>, </span>
+<span>     pch <span class="op">=</span> <span class="fl">19</span>, cex <span class="op">=</span> <span class="fl">0.3</span>, breaks <span class="op">=</span> <span class="st">"jenks"</span><span class="op">)</span></span></code></pre></div>
+<p><img src="guide-complet-samples_files/figure-html/sample4-viz-1.png" class="r-plt" alt="" width="1152"></p>
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">sf_clean_s4</span><span class="op">[</span><span class="st">"Yield_kg_ha"</span><span class="op">]</span>, main <span class="op">=</span> <span class="st">"APRÈS - Sample 4 (Maïs blanc)"</span>, </span>
+<span>     pch <span class="op">=</span> <span class="fl">19</span>, cex <span class="op">=</span> <span class="fl">0.3</span>, breaks <span class="op">=</span> <span class="st">"jenks"</span><span class="op">)</span></span></code></pre></div>
+<p><img src="guide-complet-samples_files/figure-html/sample4-viz-2.png" class="r-plt" alt="" width="1152"></p>
+</div>
 </div>
 </div>
 <div class="section level2">
@@ -440,7 +516,7 @@ pipeline AYCE (Auto Yield Cleaning Engine).</p>
 </colgroup>
 <thead><tr class="header">
 <th>Sample</th>
-<th>PCDI</th>
+<th>Delay Adjustment</th>
 <th>Vitesse</th>
 <th>Humidité</th>
 <th>Chevauchement</th>
@@ -567,6 +643,102 @@ pipeline AYCE (Auto Yield Cleaning Engine).</p>
 </table>
 </div>
 </div>
+<div class="section level3">
+<h3 id="cartes-de-comparaison-complètes">Cartes de comparaison complètes<a class="anchor" aria-label="anchor" href="#cartes-de-comparaison-compl%C3%A8tes"></a>
+</h3>
+<div class="section level4">
+<h4 id="vue-densemble---tous-les-échantillons-avant-nettoyage">Vue d’ensemble - Tous les échantillons (AVANT nettoyage)<a class="anchor" aria-label="anchor" href="#vue-densemble---tous-les-%C3%A9chantillons-avant-nettoyage"></a>
+</h4>
+<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Créer une comparaison de tous les échantillons avant nettoyage</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/graphics/par.html" class="external-link">par</a></span><span class="op">(</span>mfrow <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2</span>, <span class="fl">2</span><span class="op">)</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">sf_raw</span><span class="op">[</span><span class="st">"Yield_kg_ha"</span><span class="op">]</span>, main <span class="op">=</span> <span class="st">"Sample 1 - Soja (AVANT)"</span>, </span>
+<span>     pch <span class="op">=</span> <span class="fl">19</span>, cex <span class="op">=</span> <span class="fl">0.3</span>, breaks <span class="op">=</span> <span class="st">"jenks"</span>, key.pos <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span></code></pre></div>
+<p><img src="guide-complet-samples_files/figure-html/all-samples-raw-map-1.png" class="r-plt" alt="" width="1344"></p>
+<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">sf_raw_s2</span><span class="op">[</span><span class="st">"Yield_kg_ha"</span><span class="op">]</span>, main <span class="op">=</span> <span class="st">"Sample 2 - Maïs (AVANT)"</span>, </span>
+<span>     pch <span class="op">=</span> <span class="fl">19</span>, cex <span class="op">=</span> <span class="fl">0.3</span>, breaks <span class="op">=</span> <span class="st">"jenks"</span>, key.pos <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span></code></pre></div>
+<p><img src="guide-complet-samples_files/figure-html/all-samples-raw-map-2.png" class="r-plt" alt="" width="1344"></p>
+<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">sf_raw_s3</span><span class="op">[</span><span class="st">"Yield_kg_ha"</span><span class="op">]</span>, main <span class="op">=</span> <span class="st">"Sample 3 - Maïs (AVANT)"</span>, </span>
+<span>     pch <span class="op">=</span> <span class="fl">19</span>, cex <span class="op">=</span> <span class="fl">0.3</span>, breaks <span class="op">=</span> <span class="st">"jenks"</span>, key.pos <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span></code></pre></div>
+<p><img src="guide-complet-samples_files/figure-html/all-samples-raw-map-3.png" class="r-plt" alt="" width="1344"></p>
+<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">sf_raw_s4</span><span class="op">[</span><span class="st">"Yield_kg_ha"</span><span class="op">]</span>, main <span class="op">=</span> <span class="st">"Sample 4 - Maïs blanc (AVANT)"</span>, </span>
+<span>     pch <span class="op">=</span> <span class="fl">19</span>, cex <span class="op">=</span> <span class="fl">0.3</span>, breaks <span class="op">=</span> <span class="st">"jenks"</span>, key.pos <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span></code></pre></div>
+<p><img src="guide-complet-samples_files/figure-html/all-samples-raw-map-4.png" class="r-plt" alt="" width="1344"></p>
+</div>
+<div class="section level4">
+<h4 id="vue-densemble---tous-les-échantillons-après-nettoyage">Vue d’ensemble - Tous les échantillons (APRÈS nettoyage)<a class="anchor" aria-label="anchor" href="#vue-densemble---tous-les-%C3%A9chantillons-apr%C3%A8s-nettoyage"></a>
+</h4>
+<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Créer une comparaison de tous les échantillons après nettoyage</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/graphics/par.html" class="external-link">par</a></span><span class="op">(</span>mfrow <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2</span>, <span class="fl">2</span><span class="op">)</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">sf_clean</span><span class="op">[</span><span class="st">"Yield_kg_ha"</span><span class="op">]</span>, main <span class="op">=</span> <span class="st">"Sample 1 - Soja (APRÈS)"</span>, </span>
+<span>     pch <span class="op">=</span> <span class="fl">19</span>, cex <span class="op">=</span> <span class="fl">0.3</span>, breaks <span class="op">=</span> <span class="st">"jenks"</span>, key.pos <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span></code></pre></div>
+<p><img src="guide-complet-samples_files/figure-html/all-samples-clean-map-1.png" class="r-plt" alt="" width="1344"></p>
+<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">sf_clean_s2</span><span class="op">[</span><span class="st">"Yield_kg_ha"</span><span class="op">]</span>, main <span class="op">=</span> <span class="st">"Sample 2 - Maïs (APRÈS)"</span>, </span>
+<span>     pch <span class="op">=</span> <span class="fl">19</span>, cex <span class="op">=</span> <span class="fl">0.3</span>, breaks <span class="op">=</span> <span class="st">"jenks"</span>, key.pos <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span></code></pre></div>
+<p><img src="guide-complet-samples_files/figure-html/all-samples-clean-map-2.png" class="r-plt" alt="" width="1344"></p>
+<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">sf_clean_s3</span><span class="op">[</span><span class="st">"Yield_kg_ha"</span><span class="op">]</span>, main <span class="op">=</span> <span class="st">"Sample 3 - Maïs (APRÈS)"</span>, </span>
+<span>     pch <span class="op">=</span> <span class="fl">19</span>, cex <span class="op">=</span> <span class="fl">0.3</span>, breaks <span class="op">=</span> <span class="st">"jenks"</span>, key.pos <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span></code></pre></div>
+<p><img src="guide-complet-samples_files/figure-html/all-samples-clean-map-3.png" class="r-plt" alt="" width="1344"></p>
+<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">sf_clean_s4</span><span class="op">[</span><span class="st">"Yield_kg_ha"</span><span class="op">]</span>, main <span class="op">=</span> <span class="st">"Sample 4 - Maïs blanc (APRÈS)"</span>, </span>
+<span>     pch <span class="op">=</span> <span class="fl">19</span>, cex <span class="op">=</span> <span class="fl">0.3</span>, breaks <span class="op">=</span> <span class="st">"jenks"</span>, key.pos <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span></code></pre></div>
+<p><img src="guide-complet-samples_files/figure-html/all-samples-clean-map-4.png" class="r-plt" alt="" width="1344"></p>
+</div>
+<div class="section level4">
+<h4 id="cartes-de-densité---comparaison-avantaprès">Cartes de densité - Comparaison AVANT/APRÈS<a class="anchor" aria-label="anchor" href="#cartes-de-densit%C3%A9---comparaison-avantapr%C3%A8s"></a>
+</h4>
+<div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Créer des cartes de densité pour visualiser la distribution spatiale</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/graphics/par.html" class="external-link">par</a></span><span class="op">(</span>mfrow <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">4</span>, <span class="fl">2</span><span class="op">)</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Sample 1</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">sf_raw</span><span class="op">[</span><span class="st">"Yield_kg_ha"</span><span class="op">]</span>, main <span class="op">=</span> <span class="st">"Sample 1 - Soja (AVANT)"</span>, </span>
+<span>     pch <span class="op">=</span> <span class="fl">19</span>, cex <span class="op">=</span> <span class="fl">0.3</span>, breaks <span class="op">=</span> <span class="st">"jenks"</span>, key.pos <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span></code></pre></div>
+<p><img src="guide-complet-samples_files/figure-html/density-maps-1.png" class="r-plt" alt="" width="1344"></p>
+<div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">sf_clean</span><span class="op">[</span><span class="st">"Yield_kg_ha"</span><span class="op">]</span>, main <span class="op">=</span> <span class="st">"Sample 1 - Soja (APRÈS)"</span>, </span>
+<span>     pch <span class="op">=</span> <span class="fl">19</span>, cex <span class="op">=</span> <span class="fl">0.3</span>, breaks <span class="op">=</span> <span class="st">"jenks"</span>, key.pos <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span></code></pre></div>
+<p><img src="guide-complet-samples_files/figure-html/density-maps-2.png" class="r-plt" alt="" width="1344"></p>
+<div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span></span>
+<span><span class="co"># Sample 2</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">sf_raw_s2</span><span class="op">[</span><span class="st">"Yield_kg_ha"</span><span class="op">]</span>, main <span class="op">=</span> <span class="st">"Sample 2 - Maïs (AVANT)"</span>, </span>
+<span>     pch <span class="op">=</span> <span class="fl">19</span>, cex <span class="op">=</span> <span class="fl">0.3</span>, breaks <span class="op">=</span> <span class="st">"jenks"</span>, key.pos <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span></code></pre></div>
+<p><img src="guide-complet-samples_files/figure-html/density-maps-3.png" class="r-plt" alt="" width="1344"></p>
+<div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">sf_clean_s2</span><span class="op">[</span><span class="st">"Yield_kg_ha"</span><span class="op">]</span>, main <span class="op">=</span> <span class="st">"Sample 2 - Maïs (APRÈS)"</span>, </span>
+<span>     pch <span class="op">=</span> <span class="fl">19</span>, cex <span class="op">=</span> <span class="fl">0.3</span>, breaks <span class="op">=</span> <span class="st">"jenks"</span>, key.pos <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span></code></pre></div>
+<p><img src="guide-complet-samples_files/figure-html/density-maps-4.png" class="r-plt" alt="" width="1344"></p>
+<div class="sourceCode" id="cb28"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span></span>
+<span><span class="co"># Sample 3</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">sf_raw_s3</span><span class="op">[</span><span class="st">"Yield_kg_ha"</span><span class="op">]</span>, main <span class="op">=</span> <span class="st">"Sample 3 - Maïs (AVANT)"</span>, </span>
+<span>     pch <span class="op">=</span> <span class="fl">19</span>, cex <span class="op">=</span> <span class="fl">0.3</span>, breaks <span class="op">=</span> <span class="st">"jenks"</span>, key.pos <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span></code></pre></div>
+<p><img src="guide-complet-samples_files/figure-html/density-maps-5.png" class="r-plt" alt="" width="1344"></p>
+<div class="sourceCode" id="cb29"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">sf_clean_s3</span><span class="op">[</span><span class="st">"Yield_kg_ha"</span><span class="op">]</span>, main <span class="op">=</span> <span class="st">"Sample 3 - Maïs (APRÈS)"</span>, </span>
+<span>     pch <span class="op">=</span> <span class="fl">19</span>, cex <span class="op">=</span> <span class="fl">0.3</span>, breaks <span class="op">=</span> <span class="st">"jenks"</span>, key.pos <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span></code></pre></div>
+<p><img src="guide-complet-samples_files/figure-html/density-maps-6.png" class="r-plt" alt="" width="1344"></p>
+<div class="sourceCode" id="cb30"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span></span>
+<span><span class="co"># Sample 4</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">sf_raw_s4</span><span class="op">[</span><span class="st">"Yield_kg_ha"</span><span class="op">]</span>, main <span class="op">=</span> <span class="st">"Sample 4 - Maïs blanc (AVANT)"</span>, </span>
+<span>     pch <span class="op">=</span> <span class="fl">19</span>, cex <span class="op">=</span> <span class="fl">0.3</span>, breaks <span class="op">=</span> <span class="st">"jenks"</span>, key.pos <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span></code></pre></div>
+<p><img src="guide-complet-samples_files/figure-html/density-maps-7.png" class="r-plt" alt="" width="1344"></p>
+<div class="sourceCode" id="cb31"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">sf_clean_s4</span><span class="op">[</span><span class="st">"Yield_kg_ha"</span><span class="op">]</span>, main <span class="op">=</span> <span class="st">"Sample 4 - Maïs blanc (APRÈS)"</span>, </span>
+<span>     pch <span class="op">=</span> <span class="fl">19</span>, cex <span class="op">=</span> <span class="fl">0.3</span>, breaks <span class="op">=</span> <span class="st">"jenks"</span>, key.pos <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span></code></pre></div>
+<p><img src="guide-complet-samples_files/figure-html/density-maps-8.png" class="r-plt" alt="" width="1344"></p>
+</div>
+</div>
 </div>
 <div class="section level2">
 <h2 id="visualisations-comparatives">Visualisations comparatives<a class="anchor" aria-label="anchor" href="#visualisations-comparatives"></a>
@@ -574,7 +746,7 @@ pipeline AYCE (Auto Yield Cleaning Engine).</p>
 <div class="section level3">
 <h3 id="distribution-des-rendements">Distribution des rendements<a class="anchor" aria-label="anchor" href="#distribution-des-rendements"></a>
 </h3>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb32"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Créer les données pour les histogrammes</span></span>
 <span><span class="va">samples_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
 <span>  Sample <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Sample 1 (Soja)"</span>, <span class="st">"Sample 2 (Maïs)"</span>, <span class="st">"Sample 3 (Maïs)"</span>, <span class="st">"Sample 4 (Maïs blanc)"</span><span class="op">)</span>, each <span class="op">=</span> <span class="fl">2</span><span class="op">)</span>,</span>
@@ -598,7 +770,7 @@ pipeline AYCE (Auto Yield Cleaning Engine).</p>
 <div class="section level3">
 <h3 id="coefficient-de-variation">Coefficient de variation<a class="anchor" aria-label="anchor" href="#coefficient-de-variation"></a>
 </h3>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb33"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="va">samples_data</span>, <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>x <span class="op">=</span> <span class="va">Sample</span>, y <span class="op">=</span> <span class="va">CV</span>, fill <span class="op">=</span> <span class="va">Type</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_bar.html" class="external-link">geom_bar</a></span><span class="op">(</span>stat <span class="op">=</span> <span class="st">"identity"</span>, position <span class="op">=</span> <span class="st">"dodge"</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/scale_manual.html" class="external-link">scale_fill_manual</a></span><span class="op">(</span>values <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Brut"</span> <span class="op">=</span> <span class="st">"#e74c3c"</span>, <span class="st">"Nettoyé"</span> <span class="op">=</span> <span class="st">"#27ae60"</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
@@ -613,7 +785,7 @@ pipeline AYCE (Auto Yield Cleaning Engine).</p>
 <div class="section level3">
 <h3 id="taux-de-rétention">Taux de rétention<a class="anchor" aria-label="anchor" href="#taux-de-r%C3%A9tention"></a>
 </h3>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb34"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">retention_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
 <span>  Sample <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Sample 1\n(Soja)"</span>, <span class="st">"Sample 2\n(Maïs)"</span>, <span class="st">"Sample 3\n(Maïs)"</span>, <span class="st">"Sample 4\n(Maïs blanc)"</span><span class="op">)</span>,</span>
 <span>  Retention <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">95.9</span>, <span class="fl">89.7</span>, <span class="fl">94.1</span>, <span class="fl">96.1</span><span class="op">)</span>,</span>
@@ -636,10 +808,10 @@ pipeline AYCE (Auto Yield Cleaning Engine).</p>
 <h2 id="analyse-des-filtres">Analyse des filtres<a class="anchor" aria-label="anchor" href="#analyse-des-filtres"></a>
 </h2>
 <div class="section level3">
-<h3 id="filtre-pcdi-position-coordinate-delay-identification">Filtre PCDI (Position-Coordinate Delay Identification)<a class="anchor" aria-label="anchor" href="#filtre-pcdi-position-coordinate-delay-identification"></a>
+<h3 id="filtre-delay-adjustment">Filtre Delay Adjustment<a class="anchor" aria-label="anchor" href="#filtre-delay-adjustment"></a>
 </h3>
-<p>Le filtre PCDI corrige le délai entre la mesure du flux et la
-position GPS. Voici les délais optimaux détectés :</p>
+<p>Le filtre Delay Adjustment corrige le délai entre la mesure du flux
+et la position GPS. Voici les délais optimaux détectés :</p>
 <ul>
 <li>
 <strong>Sample 1 (Soja)</strong> : 2 secondes</li>
@@ -747,23 +919,23 @@ conservés</li>
 <strong>Réduction significative du CV</strong> : Diminution de 24% à
 54% selon les échantillons</li>
 <li>
-<strong>Détection automatique des problèmes</strong> : PCDI
-identifie les délais de synchronisation</li>
+<strong>Détection automatique des problèmes</strong> : Delay
+Adjustment identifie les délais de synchronisation</li>
 <li>
 <strong>Filtrage ciblé</strong> : Chaque filtre cible un type
 spécifique d’anomalie</li>
 </ol>
 <p>Le Sample 2 (maïs) présente le taux de rejet le plus élevé (10.3%) en
-raison d’un délai PCDI important (13 secondes) et de nombreuses
-anomalies de vitesse. Les autres échantillons montrent une qualité de
-données initiale meilleure avec des taux de rétention supérieurs à
-94%.</p>
+raison d’un délai de delay adjustment important (13 secondes) et de
+nombreuses anomalies de vitesse. Les autres échantillons montrent une
+qualité de données initiale meilleure avec des taux de rétention
+supérieurs à 94%.</p>
 <p>Pour plus de détails sur les filtres individuels, consultez les
 articles mathématiques dédiés :</p>
 <ul>
 <li>
-<code>vignettes("filtre-pcdi")</code> - Théorie et mathématiques du
-PCDI</li>
+<code>vignettes("filtre-delai")</code> - Théorie et mathématiques du
+Delay Adjustment</li>
 <li>
 <code>vignettes("filtre-vitesse")</code> - Filtre de vitesse</li>
 <li>

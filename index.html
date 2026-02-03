@@ -92,7 +92,7 @@ document.addEventListener('DOMContentLoaded', function() {
 <li>
 <strong>Interactive Shiny Application</strong>: Visual interface for data cleaning with real-time preview</li>
 <li>
-<strong>PCDI (Pulse Count Delay Integration)</strong>: Automatic optimization of GPS-sensor delay compensation</li>
+<strong>Delay Adjustment</strong>: Automatic optimization of GPS-sensor delay compensation</li>
 <li>
 <strong>Multiple Filter Types</strong>:
 <ul>
@@ -173,12 +173,146 @@ document.addEventListener('DOMContentLoaded', function() {
 -73.5124,45.1235,8200.3,18.1,12.3,5.1</code></pre>
 </div>
 <div class="section level2">
+<h2 id="new-simplified-api">New Simplified API<a class="anchor" aria-label="anchor" href="#new-simplified-api"></a>
+</h2>
+<p>yieldcleanr now provides 8 meta-functions that replace the individual filter functions:</p>
+<div class="section level3">
+<h3 id="id_1-filter-data">1. Filter Data<a class="anchor" aria-label="anchor" href="#id_1-filter-data"></a>
+</h3>
+<p>Apply one or multiple filters to your data:</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Filter header status only</span></span>
+<span><span class="va">filtered</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/filter_data.html">filter_data</a></span><span class="op">(</span><span class="va">data</span>, type <span class="op">=</span> <span class="st">"header"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Apply multiple filters</span></span>
+<span><span class="va">filtered</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/filter_data.html">filter_data</a></span><span class="op">(</span><span class="va">data</span>, type <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"header"</span>, <span class="st">"gps"</span>, <span class="st">"velocity"</span><span class="op">)</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Apply all available filters</span></span>
+<span><span class="va">filtered</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/filter_data.html">filter_data</a></span><span class="op">(</span><span class="va">data</span>, type <span class="op">=</span> <span class="st">"all"</span><span class="op">)</span></span></code></pre></div>
+<p><strong>Filter types</strong>: <code>"header"</code>, <code>"gps"</code>, <code>"dop"</code>, <code>"velocity"</code>, <code>"yield"</code>, <code>"moisture"</code>, <code>"bounds"</code>, <code>"all"</code></p>
+</div>
+<div class="section level3">
+<h3 id="id_2-detect-anomalies">2. Detect Anomalies<a class="anchor" aria-label="anchor" href="#id_2-detect-anomalies"></a>
+</h3>
+<p>Detect and filter anomalies in your data:</p>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Detect and filter all anomalies</span></span>
+<span><span class="va">cleaned</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/detect_anomalies.html">detect_anomalies</a></span><span class="op">(</span><span class="va">data</span>, type <span class="op">=</span> <span class="st">"all"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Detect only overlaps with custom parameters</span></span>
+<span><span class="va">cleaned</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/detect_anomalies.html">detect_anomalies</a></span><span class="op">(</span><span class="va">data</span>, type <span class="op">=</span> <span class="st">"overlap"</span>, </span>
+<span>                            cellsize <span class="op">=</span> <span class="fl">0.5</span>, max_pass <span class="op">=</span> <span class="fl">30</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Mark anomalies without filtering (adds flag columns)</span></span>
+<span><span class="va">marked</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/detect_anomalies.html">detect_anomalies</a></span><span class="op">(</span><span class="va">data</span>, type <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"overlap"</span>, <span class="st">"local_sd"</span><span class="op">)</span>, </span>
+<span>                           action <span class="op">=</span> <span class="st">"detect"</span><span class="op">)</span></span></code></pre></div>
+<p><strong>Anomaly types</strong>: <code>"overlap"</code>, <code>"local_sd"</code>, <code>"velocity_jump"</code>, <code>"heading"</code>, <code>"position"</code>, <code>"all"</code></p>
+<p><strong>Actions</strong>: <code>"filter"</code> (remove points), <code>"detect"</code> (mark only), <code>"report"</code> (summary only)</p>
+</div>
+<div class="section level3">
+<h3 id="id_3-optimize-delays">3. Optimize Delays<a class="anchor" aria-label="anchor" href="#id_3-optimize-delays"></a>
+</h3>
+<p>Optimize GPS-sensor delays using delay adjustment method:</p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Optimize both flow and moisture delays</span></span>
+<span><span class="va">result</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/optimize_delays.html">optimize_delays</a></span><span class="op">(</span><span class="va">data</span>, type <span class="op">=</span> <span class="st">"both"</span><span class="op">)</span></span>
+<span><span class="va">data_corrected</span> <span class="op">&lt;-</span> <span class="va">result</span><span class="op">$</span><span class="va">data</span></span>
+<span></span>
+<span><span class="co"># Optimize flow delay only</span></span>
+<span><span class="va">result</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/optimize_delays.html">optimize_delays</a></span><span class="op">(</span><span class="va">data</span>, type <span class="op">=</span> <span class="st">"flow"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Get optimal delays without applying corrections</span></span>
+<span><span class="va">delays</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/optimize_delays.html">optimize_delays</a></span><span class="op">(</span><span class="va">data</span>, type <span class="op">=</span> <span class="st">"both"</span>, apply_correction <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">delays</span><span class="op">$</span><span class="va">delays</span><span class="op">$</span><span class="va">flow</span><span class="op">)</span>  <span class="co"># Optimal flow delay in seconds</span></span></code></pre></div>
+</div>
+<div class="section level3">
+<h3 id="id_4-calculate-thresholds">4. Calculate Thresholds<a class="anchor" aria-label="anchor" href="#id_4-calculate-thresholds"></a>
+</h3>
+<p>Automatically calculate thresholds for filtering:</p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Calculate all thresholds</span></span>
+<span><span class="va">thresholds</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/calculate_thresholds.html">calculate_thresholds</a></span><span class="op">(</span><span class="va">data</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Calculate only yield thresholds with custom quantiles</span></span>
+<span><span class="va">thresholds</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/calculate_thresholds.html">calculate_thresholds</a></span><span class="op">(</span><span class="va">data</span>, type <span class="op">=</span> <span class="st">"yield"</span>,</span>
+<span>                                   yllim <span class="op">=</span> <span class="fl">0.05</span>, yulim <span class="op">=</span> <span class="fl">0.95</span>, yscale <span class="op">=</span> <span class="fl">1.5</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Access calculated thresholds</span></span>
+<span><span class="va">thresholds</span><span class="op">$</span><span class="va">yield</span><span class="op">$</span><span class="va">min_yield</span>  <span class="co"># Minimum yield threshold</span></span>
+<span><span class="va">thresholds</span><span class="op">$</span><span class="va">velocity</span><span class="op">$</span><span class="va">max_velocity</span>  <span class="co"># Maximum velocity threshold</span></span></code></pre></div>
+<p><strong>Threshold types</strong>: <code>"yield"</code>, <code>"velocity"</code>, <code>"position"</code>, <code>"moisture"</code>, <code>"all"</code></p>
+</div>
+<div class="section level3">
+<h3 id="id_5-convert-coordinates">5. Convert Coordinates<a class="anchor" aria-label="anchor" href="#id_5-convert-coordinates"></a>
+</h3>
+<p>Convert between coordinate systems:</p>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Convert Lat/Lon to UTM</span></span>
+<span><span class="va">data_utm</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/convert_coordinates.html">convert_coordinates</a></span><span class="op">(</span><span class="va">data</span>, from <span class="op">=</span> <span class="st">"latlon"</span>, to <span class="op">=</span> <span class="st">"utm"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Convert UTM to Lat/Lon</span></span>
+<span><span class="va">data_latlon</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/convert_coordinates.html">convert_coordinates</a></span><span class="op">(</span><span class="va">data</span>, from <span class="op">=</span> <span class="st">"utm"</span>, to <span class="op">=</span> <span class="st">"latlon"</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level3">
+<h3 id="id_6-convert-yield-units">6. Convert Yield Units<a class="anchor" aria-label="anchor" href="#id_6-convert-yield-units"></a>
+</h3>
+<p>Convert yield between different units:</p>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Convert flow (lbs/s) to yield (kg/ha)</span></span>
+<span><span class="va">data_yield</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/convert_yield_units.html">convert_yield_units</a></span><span class="op">(</span><span class="va">data</span>, from <span class="op">=</span> <span class="st">"flow_lbs_s"</span>, to <span class="op">=</span> <span class="st">"kg_ha"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Convert kg/ha to bu/acre for corn</span></span>
+<span><span class="va">data_imperial</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/convert_yield_units.html">convert_yield_units</a></span><span class="op">(</span><span class="va">data</span>, from <span class="op">=</span> <span class="st">"kg_ha"</span>, to <span class="op">=</span> <span class="st">"bu_acre"</span>,</span>
+<span>                                     crop_type <span class="op">=</span> <span class="st">"maize"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Convert kg/ha to tonnes/ha</span></span>
+<span><span class="va">data_tonnes</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/convert_yield_units.html">convert_yield_units</a></span><span class="op">(</span><span class="va">data</span>, from <span class="op">=</span> <span class="st">"kg_ha"</span>, to <span class="op">=</span> <span class="st">"t_ha"</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level3">
+<h3 id="id_7-anonymize-data">7. Anonymize Data<a class="anchor" aria-label="anchor" href="#id_7-anonymize-data"></a>
+</h3>
+<p>Anonymize sensitive information:</p>
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Full anonymization (coordinates + attributes)</span></span>
+<span><span class="va">data_anon</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/anonymize_data.html">anonymize_data</a></span><span class="op">(</span><span class="va">data</span>, type <span class="op">=</span> <span class="st">"full"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Anonymize only coordinates with rotation method</span></span>
+<span><span class="va">data_anon</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/anonymize_data.html">anonymize_data</a></span><span class="op">(</span><span class="va">data</span>, type <span class="op">=</span> <span class="st">"coordinates"</span>, method <span class="op">=</span> <span class="st">"rotation"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Anonymize only sensitive attributes</span></span>
+<span><span class="va">data_anon</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/anonymize_data.html">anonymize_data</a></span><span class="op">(</span><span class="va">data</span>, type <span class="op">=</span> <span class="st">"attributes"</span><span class="op">)</span></span></code></pre></div>
+<p><strong>Types</strong>: <code>"coordinates"</code>, <code>"attributes"</code>, <code>"full"</code></p>
+<p><strong>Methods for coordinates</strong>: <code>"translation"</code>, <code>"rotation"</code>, <code>"noise"</code></p>
+</div>
+<div class="section level3">
+<h3 id="id_8-export-data">8. Export Data<a class="anchor" aria-label="anchor" href="#id_8-export-data"></a>
+</h3>
+<p>Export data to various formats:</p>
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Export to CSV</span></span>
+<span><span class="fu"><a href="reference/export_data.html">export_data</a></span><span class="op">(</span><span class="va">data</span>, <span class="st">"output.csv"</span>, format <span class="op">=</span> <span class="st">"csv"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Export to GeoJSON (format auto-detected from extension)</span></span>
+<span><span class="fu"><a href="reference/export_data.html">export_data</a></span><span class="op">(</span><span class="va">data</span>, <span class="st">"output.geojson"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Export to Shapefile</span></span>
+<span><span class="fu"><a href="reference/export_data.html">export_data</a></span><span class="op">(</span><span class="va">data</span>, <span class="st">"output.shp"</span>, format <span class="op">=</span> <span class="st">"shp"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Export to GeoPackage</span></span>
+<span><span class="fu"><a href="reference/export_data.html">export_data</a></span><span class="op">(</span><span class="va">data</span>, <span class="st">"output.gpkg"</span>, format <span class="op">=</span> <span class="st">"gpkg"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Export to raster (GeoTIFF)</span></span>
+<span><span class="fu"><a href="reference/export_data.html">export_data</a></span><span class="op">(</span><span class="va">data</span>, <span class="st">"yield_map.tif"</span>, format <span class="op">=</span> <span class="st">"raster"</span>, resolution <span class="op">=</span> <span class="fl">5</span><span class="op">)</span></span></code></pre></div>
+<p><strong>Formats</strong>: <code>"csv"</code>, <code>"geojson"</code>, <code>"shp"</code>, <code>"gpkg"</code>, <code>"raster"</code></p>
+</div>
+</div>
+<div class="section level2">
 <h2 id="filtering-pipeline">Filtering Pipeline<a class="anchor" aria-label="anchor" href="#filtering-pipeline"></a>
 </h2>
 <p>The cleaning process follows this order:</p>
 <ol style="list-style-type: decimal">
 <li>
-<strong>PCDI (Optional)</strong>: Optimize GPS-sensor delay for flow and moisture</li>
+<strong>Delay Adjustment (Optional)</strong>: Optimize GPS-sensor delay for flow and moisture</li>
 <li>
 <strong>Header Status</strong>: Remove points when header is raised</li>
 <li>
@@ -199,15 +333,23 @@ document.addEventListener('DOMContentLoaded', function() {
 <h2 id="raster-export">Raster Export<a class="anchor" aria-label="anchor" href="#raster-export"></a>
 </h2>
 <p>Generate interpolated raster maps:</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Export cleaned data to raster</span></span>
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Export cleaned data to raster using the new API</span></span>
+<span><span class="fu"><a href="reference/export_data.html">export_data</a></span><span class="op">(</span></span>
+<span>  data <span class="op">=</span> <span class="va">data_clean</span>,</span>
+<span>  file <span class="op">=</span> <span class="st">"output/yield_map.tif"</span>,</span>
+<span>  format <span class="op">=</span> <span class="st">"raster"</span>,</span>
+<span>  resolution <span class="op">=</span> <span class="fl">1</span>  <span class="co"># 1 meter resolution</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Or use the legacy functions (still available)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://r-spatial.github.io/sf/" class="external-link">sf</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Load cleaned data</span></span>
 <span><span class="va">data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://r-spatial.github.io/sf/reference/st_read.html" class="external-link">st_read</a></span><span class="op">(</span><span class="st">"data/cleaned.geojson"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Create raster with spline interpolation</span></span>
-<span><span class="va">raster</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/export_raster.html">export_raster</a></span><span class="op">(</span></span>
+<span><span class="va">raster</span> <span class="op">&lt;-</span> <span class="fu">export_raster</span><span class="op">(</span></span>
 <span>  data <span class="op">=</span> <span class="va">data</span>,</span>
 <span>  cell_size <span class="op">=</span> <span class="fl">1</span>,              <span class="co"># 1 meter resolution</span></span>
 <span>  column_colonne <span class="op">=</span> <span class="st">"Yield_kg_ha"</span>,</span>
@@ -215,7 +357,7 @@ document.addEventListener('DOMContentLoaded', function() {
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Save as GeoTIFF</span></span>
-<span><span class="fu"><a href="reference/save_raster.html">save_raster</a></span><span class="op">(</span><span class="va">raster</span>, <span class="st">"output/yield_map.tif"</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu">save_raster</span><span class="op">(</span><span class="va">raster</span>, <span class="st">"output/yield_map.tif"</span><span class="op">)</span></span></code></pre></div>
 <p>The raster export uses Thin Plate Spline (TPS) interpolation for smooth, continuous surfaces.</p>
 </div>
 <div class="section level2">

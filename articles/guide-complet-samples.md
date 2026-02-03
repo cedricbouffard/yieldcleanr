@@ -69,27 +69,27 @@ cat("Rendement moyen:", round(mean(data_s1$Yield_kg_ha, na.rm = TRUE), 1), "kg/h
 cat("CV:", round(sd(data_s1$Yield_kg_ha, na.rm = TRUE) / mean(data_s1$Yield_kg_ha, na.rm = TRUE) * 100, 1), "%\n")
 #> CV: 24.8 %
 
-# Étape 2: PCDI
-pcdi_s1 <- apply_pcdi(data_s1, delay_range = -25:25, n_iterations = 10)
-cat("\n🔧 PCDI - Délai optimal:", pcdi_s1$optimal_delay, "secondes\n")
+# Étape 2: Delay Adjustment
+delay_result_s1 <- optimize_delays(data_s1, type = "flow", delay_range = -25:25, n_iterations = 3)
+cat("\n🔧 Delay Adjustment - Délai optimal:", delay_result_s1$delays$flow, "secondes\n")
 #> 
-#> 🔧 PCDI - Délai optimal: 2 secondes
+#> 🔧 Delay Adjustment - Délai optimal: 3 secondes
 
-if (pcdi_s1$optimal_delay != 0) {
-  data_s1 <- apply_flow_delay(data_s1, delay = pcdi_s1$optimal_delay)
+if (!is.null(delay_result_s1$data)) {
+  data_s1 <- delay_result_s1$data
   cat("Points après correction délai:", nrow(data_s1), "\n")
 }
 #> Points après correction délai: 21905
 
 # Étape 3: Seuils automatiques
-thresholds_s1 <- calculate_auto_thresholds(data_s1)
+thresholds_s1 <- calculate_thresholds(data_s1)
 cat("\n📈 Seuils calculés:\n")
 #> 
 #> 📈 Seuils calculés:
-cat("  Vitesse:", round(thresholds_s1$min_velocity, 2), "-", round(thresholds_s1$max_velocity, 2), "m/s\n")
-#>   Vitesse: 0.5 - 2.89 m/s
-cat("  Rendement:", round(thresholds_s1$min_yield, 1), "-", round(thresholds_s1$max_yield, 1), "kg/ha\n")
-#>   Rendement: 0 - 19.4 kg/ha
+cat("  Vitesse:", round(thresholds_s1$velocity$min_velocity, 2), "-", round(thresholds_s1$velocity$max_velocity, 2), "m/s\n")
+#>   Vitesse: 0.5 - 2.52 m/s
+cat("  Rendement:", round(thresholds_s1$yield$min_yield, 1), "-", round(thresholds_s1$yield$max_yield, 1), "kg/ha\n")
+#>   Rendement: 1071.8 - 5958.6 kg/ha
 
 # Étape 4-7: Filtres successifs
 cat("\n🔧 FILTRES APPLIQUÉS:\n")
@@ -98,44 +98,46 @@ cat("\n🔧 FILTRES APPLIQUÉS:\n")
 
 # Filtre vitesse
 n_before <- nrow(data_s1)
-data_s1 <- filter_velocity(data_s1, thresholds_s1$min_velocity, thresholds_s1$max_velocity)
+data_s1 <- filter_data(data_s1, type = "velocity", 
+                       min_velocity = thresholds_s1$velocity$min_velocity, 
+                       max_velocity = thresholds_s1$velocity$max_velocity)
 removed_vel <- n_before - nrow(data_s1)
 cat("  Vitesse:", removed_vel, "points retirés (", round(removed_vel/n_before*100, 1), "%)\n")
-#>   Vitesse: 29 points retirés ( 0.1 %)
+#>   Vitesse: 34 points retirés ( 0.2 %)
 
 # Filtre humidité
 n_before <- nrow(data_s1)
-data_s1 <- filter_moisture_range(data_s1, n_std = 3)
+data_s1 <- filter_data(data_s1, type = "moisture", n_std = 3)
 removed_moist <- n_before - nrow(data_s1)
 cat("  Humidité:", removed_moist, "points retirés (", round(removed_moist/n_before*100, 1), "%)\n")
 #>   Humidité: 303 points retirés ( 1.4 %)
 
 # Filtre chevauchement
 n_before <- nrow(data_s1)
-data_s1 <- apply_overlap_filter(data_s1, cellsize = 0.3, overlap_threshold = 0.5)
+data_s1 <- detect_anomalies(data_s1, type = "overlap", cellsize = 0.3, overlap_threshold = 0.5)
 removed_overlap <- n_before - nrow(data_s1)
 cat("  Chevauchement:", removed_overlap, "points retirés (", round(removed_overlap/n_before*100, 1), "%)\n")
-#>   Chevauchement: 1 points retirés ( 0 %)
+#>   Chevauchement: 0 points retirés ( 0 %)
 
 # Filtre écart-type local
 n_before <- nrow(data_s1)
-data_s1 <- apply_local_sd_filter(data_s1, n_swaths = 5, lsd_limit = 3)
+data_s1 <- detect_anomalies(data_s1, type = "local_sd", n_swaths = 5, lsd_limit = 3)
 removed_lsd <- n_before - nrow(data_s1)
 cat("  Écart-type local:", removed_lsd, "points retirés (", round(removed_lsd/n_before*100, 1), "%)\n")
-#>   Écart-type local: 561 points retirés ( 2.6 %)
+#>   Écart-type local: 144 points retirés ( 0.7 %)
 
 # Résultat final
 cat("\n📊 RÉSULTAT FINAL\n")
 #> 
 #> 📊 RÉSULTAT FINAL
 cat("Points nettoyés:", nrow(data_s1), "\n")
-#> Points nettoyés: 21011
+#> Points nettoyés: 21424
 cat("Taux de rétention:", round(nrow(data_s1)/nrow(data_raw_s1)*100, 1), "%\n")
-#> Taux de rétention: 95.9 %
+#> Taux de rétention: 97.8 %
 cat("Rendement moyen:", round(mean(data_s1$Yield_kg_ha, na.rm = TRUE), 1), "kg/ha\n")
-#> Rendement moyen: 3595.9 kg/ha
+#> Rendement moyen: 3538.1 kg/ha
 cat("CV final:", round(sd(data_s1$Yield_kg_ha, na.rm = TRUE) / mean(data_s1$Yield_kg_ha, na.rm = TRUE) * 100, 1), "%\n")
-#> CV final: 18.3 %
+#> CV final: 21.8 %
 ```
 
 #### Visualisation avant/après
@@ -188,20 +190,20 @@ cat("  Écart-type:", round(sd(data_raw_s2$Flow, na.rm = TRUE), 2), "\n")
 data_s2 <- latlon_to_utm(data_raw_s2)
 data_s2 <- convert_flow_to_yield(data_s2)
 
-# PCDI avec délai important
-pcdi_s2 <- apply_pcdi(data_s2, delay_range = -25:25, n_iterations = 10)
-cat("🔧 PCDI - Délai optimal:", pcdi_s2$optimal_delay, "secondes\n")
-#> 🔧 PCDI - Délai optimal: 13 secondes
+# Delay Adjustment avec délai important
+delay_result_s2 <- optimize_delays(data_s2, type = "flow", delay_range = -25:25, n_iterations = 3)
+cat("🔧 Delay Adjustment - Délai optimal:", delay_result_s2$delays$flow, "secondes\n")
+#> 🔧 Delay Adjustment - Délai optimal: 13 secondes
 
-if (pcdi_s2$optimal_delay != 0) {
+if (!is.null(delay_result_s2$data)) {
   n_before <- nrow(data_s2)
-  data_s2 <- apply_flow_delay(data_s2, delay = pcdi_s2$optimal_delay)
-  removed_pcdi <- n_before - nrow(data_s2)
-  cat("Points retirés par PCDI:", removed_pcdi, "\n")
+  data_s2 <- delay_result_s2$data
+  removed_delay_adjustment <- n_before - nrow(data_s2)
+  cat("Points retirés par Delay Adjustment:", removed_delay_adjustment, "\n")
 }
-#> Points retirés par PCDI: 0
+#> Points retirés par Delay Adjustment: 0
 
-thresholds_s2 <- calculate_auto_thresholds(data_s2)
+thresholds_s2 <- calculate_thresholds(data_s2)
 
 # Application des filtres
 cat("\n🔧 FILTRES APPLIQUÉS:\n")
@@ -209,33 +211,59 @@ cat("\n🔧 FILTRES APPLIQUÉS:\n")
 #> 🔧 FILTRES APPLIQUÉS:
 
 n_before <- nrow(data_s2)
-data_s2 <- filter_velocity(data_s2, thresholds_s2$min_velocity, thresholds_s2$max_velocity)
+data_s2 <- filter_data(data_s2, type = "velocity", 
+                       min_velocity = thresholds_s2$velocity$min_velocity, 
+                       max_velocity = thresholds_s2$velocity$max_velocity)
 cat("  Vitesse:", n_before - nrow(data_s2), "points\n")
-#>   Vitesse: 366 points
+#>   Vitesse: 699 points
 
 n_before <- nrow(data_s2)
-data_s2 <- filter_moisture_range(data_s2, n_std = 3)
+data_s2 <- filter_data(data_s2, type = "moisture", n_std = 3)
 cat("  Humidité:", n_before - nrow(data_s2), "points\n")
-#>   Humidité: 153 points
+#>   Humidité: 147 points
 
 n_before <- nrow(data_s2)
-data_s2 <- apply_overlap_filter(data_s2, cellsize = 0.3, overlap_threshold = 0.5)
+data_s2 <- detect_anomalies(data_s2, type = "overlap", cellsize = 0.3, overlap_threshold = 0.5)
 cat("  Chevauchement:", n_before - nrow(data_s2), "points\n")
 #>   Chevauchement: 0 points
 
 n_before <- nrow(data_s2)
-data_s2 <- apply_local_sd_filter(data_s2, n_swaths = 5, lsd_limit = 3)
+data_s2 <- detect_anomalies(data_s2, type = "local_sd", n_swaths = 5, lsd_limit = 3)
 cat("  Écart-type local:", n_before - nrow(data_s2), "points\n")
-#>   Écart-type local: 13 points
+#>   Écart-type local: 1 points
 
 cat("\n📊 RÉSULTAT FINAL\n")
 #> 
 #> 📊 RÉSULTAT FINAL
 cat("Points nettoyés:", nrow(data_s2), "\n")
-#> Points nettoyés: 33072
+#> Points nettoyés: 32757
 cat("Taux de rétention:", round(nrow(data_s2)/nrow(data_raw_s2)*100, 1), "%\n")
-#> Taux de rétention: 89.7 %
+#> Taux de rétention: 88.8 %
 ```
+
+#### Visualisation avant/après
+
+``` r
+# Créer les objets sf pour visualisation
+sf_raw_s2 <- sf::st_as_sf(data_raw_s2, coords = c("Longitude", "Latitude"), crs = 4326)
+sf_clean_s2 <- sf::st_as_sf(data_s2, coords = c("Longitude", "Latitude"), crs = 4326)
+
+# Convertir Flow brut en kg/ha pour comparaison
+sf_raw_s2$Yield_kg_ha <- sf_raw_s2$Flow * 0.453592 * 3600 / 4046 * 1000
+
+par(mfrow = c(1, 2))
+plot(sf_raw_s2["Yield_kg_ha"], main = "AVANT - Sample 2 (Maïs)", 
+     pch = 19, cex = 0.3, breaks = "jenks")
+```
+
+![](guide-complet-samples_files/figure-html/sample2-viz-1.png)
+
+``` r
+plot(sf_clean_s2["Yield_kg_ha"], main = "APRÈS - Sample 2 (Maïs)", 
+     pch = 19, cex = 0.3, breaks = "jenks")
+```
+
+![](guide-complet-samples_files/figure-html/sample2-viz-2.png)
 
 ### Sample 3 - Maïs
 
@@ -251,23 +279,53 @@ cat("Points bruts:", nrow(data_raw_s3), "\n")
 data_s3 <- latlon_to_utm(data_raw_s3) %>%
   convert_flow_to_yield()
 
-pcdi_s3 <- apply_pcdi(data_s3, delay_range = -25:25, n_iterations = 10)
-cat("PCDI - Délai optimal:", pcdi_s3$optimal_delay, "secondes\n")
-#> PCDI - Délai optimal: 0 secondes
+delay_result_s3 <- optimize_delays(data_s3, type = "flow", delay_range = -25:25, n_iterations = 3)
+cat("Delay Adjustment - Délai optimal:", delay_result_s3$delays$flow, "secondes\n")
+#> Delay Adjustment - Délai optimal: 0 secondes
 
-thresholds_s3 <- calculate_auto_thresholds(data_s3)
+if (!is.null(delay_result_s3$data)) {
+  data_s3 <- delay_result_s3$data
+}
+
+thresholds_s3 <- calculate_thresholds(data_s3)
 
 data_s3 <- data_s3 %>%
-  filter_velocity(thresholds_s3$min_velocity, thresholds_s3$max_velocity) %>%
-  filter_moisture_range(n_std = 3) %>%
-  apply_overlap_filter(cellsize = 0.3, overlap_threshold = 0.5) %>%
-  apply_local_sd_filter(n_swaths = 5, lsd_limit = 3)
+  filter_data(type = "velocity",
+              min_velocity = thresholds_s3$velocity$min_velocity,
+              max_velocity = thresholds_s3$velocity$max_velocity) %>%
+  filter_data(type = "moisture", n_std = 3) %>%
+  detect_anomalies(type = "overlap", cellsize = 0.3, overlap_threshold = 0.5) %>%
+  detect_anomalies(type = "local_sd", n_swaths = 5, lsd_limit = 3)
 
 cat("Points nettoyés:", nrow(data_s3), "\n")
-#> Points nettoyés: 29939
+#> Points nettoyés: 29912
 cat("Taux de rétention:", round(nrow(data_s3)/nrow(data_raw_s3)*100, 1), "%\n")
-#> Taux de rétention: 94.1 %
+#> Taux de rétention: 94 %
 ```
+
+#### Visualisation avant/après
+
+``` r
+# Créer les objets sf pour visualisation
+sf_raw_s3 <- sf::st_as_sf(data_raw_s3, coords = c("Longitude", "Latitude"), crs = 4326)
+sf_clean_s3 <- sf::st_as_sf(data_s3, coords = c("Longitude", "Latitude"), crs = 4326)
+
+# Convertir Flow brut en kg/ha pour comparaison
+sf_raw_s3$Yield_kg_ha <- sf_raw_s3$Flow * 0.453592 * 3600 / 4046 * 1000
+
+par(mfrow = c(1, 2))
+plot(sf_raw_s3["Yield_kg_ha"], main = "AVANT - Sample 3 (Maïs)", 
+     pch = 19, cex = 0.3, breaks = "jenks")
+```
+
+![](guide-complet-samples_files/figure-html/sample3-viz-1.png)
+
+``` r
+plot(sf_clean_s3["Yield_kg_ha"], main = "APRÈS - Sample 3 (Maïs)", 
+     pch = 19, cex = 0.3, breaks = "jenks")
+```
+
+![](guide-complet-samples_files/figure-html/sample3-viz-2.png)
 
 ### Sample 4 - Maïs blanc
 
@@ -283,34 +341,64 @@ cat("Points bruts:", nrow(data_raw_s4), "\n")
 data_s4 <- latlon_to_utm(data_raw_s4) %>%
   convert_flow_to_yield()
 
-pcdi_s4 <- apply_pcdi(data_s4, delay_range = -25:25, n_iterations = 10)
-cat("PCDI - Délai optimal:", pcdi_s4$optimal_delay, "secondes\n")
-#> PCDI - Délai optimal: 0 secondes
+delay_result_s4 <- optimize_delays(data_s4, type = "flow", delay_range = -25:25, n_iterations = 3)
+cat("Delay Adjustment - Délai optimal:", delay_result_s4$delays$flow, "secondes\n")
+#> Delay Adjustment - Délai optimal: 0 secondes
 
-thresholds_s4 <- calculate_auto_thresholds(data_s4)
+if (!is.null(delay_result_s4$data)) {
+  data_s4 <- delay_result_s4$data
+}
+
+thresholds_s4 <- calculate_thresholds(data_s4)
 
 data_s4 <- data_s4 %>%
-  filter_velocity(thresholds_s4$min_velocity, thresholds_s4$max_velocity) %>%
-  filter_moisture_range(n_std = 3) %>%
-  apply_overlap_filter(cellsize = 0.3, overlap_threshold = 0.5) %>%
-  apply_local_sd_filter(n_swaths = 5, lsd_limit = 3)
+  filter_data(type = "velocity",
+              min_velocity = thresholds_s4$velocity$min_velocity,
+              max_velocity = thresholds_s4$velocity$max_velocity) %>%
+  filter_data(type = "moisture", n_std = 3) %>%
+  detect_anomalies(type = "overlap", cellsize = 0.3, overlap_threshold = 0.5) %>%
+  detect_anomalies(type = "local_sd", n_swaths = 5, lsd_limit = 3)
 
 cat("Points nettoyés:", nrow(data_s4), "\n")
-#> Points nettoyés: 18727
+#> Points nettoyés: 18539
 cat("Taux de rétention:", round(nrow(data_s4)/nrow(data_raw_s4)*100, 1), "%\n")
-#> Taux de rétention: 96.1 %
+#> Taux de rétention: 95.1 %
 ```
+
+#### Visualisation avant/après
+
+``` r
+# Créer les objets sf pour visualisation
+sf_raw_s4 <- sf::st_as_sf(data_raw_s4, coords = c("Longitude", "Latitude"), crs = 4326)
+sf_clean_s4 <- sf::st_as_sf(data_s4, coords = c("Longitude", "Latitude"), crs = 4326)
+
+# Convertir Flow brut en kg/ha pour comparaison
+sf_raw_s4$Yield_kg_ha <- sf_raw_s4$Flow * 0.453592 * 3600 / 4046 * 1000
+
+par(mfrow = c(1, 2))
+plot(sf_raw_s4["Yield_kg_ha"], main = "AVANT - Sample 4 (Maïs blanc)", 
+     pch = 19, cex = 0.3, breaks = "jenks")
+```
+
+![](guide-complet-samples_files/figure-html/sample4-viz-1.png)
+
+``` r
+plot(sf_clean_s4["Yield_kg_ha"], main = "APRÈS - Sample 4 (Maïs blanc)", 
+     pch = 19, cex = 0.3, breaks = "jenks")
+```
+
+![](guide-complet-samples_files/figure-html/sample4-viz-2.png)
 
 ## Tableau récapitulatif complet
 
 ### Points retirés par filtre
 
-| Sample                    | PCDI  | Vitesse | Humidité | Chevauchement | Écart-type local | **Total** |
-|---------------------------|-------|---------|----------|---------------|------------------|-----------|
-| **Sample 1 (Soja)**       | 12    | 29      | 303      | 1             | 561              | **906**   |
-| **Sample 2 (Maïs)**       | 3,265 | 366     | 153      | 0             | 13               | **3,797** |
-| **Sample 3 (Maïs)**       | 0     | 490     | 425      | 4             | 0                | **1,876** |
-| **Sample 4 (Maïs blanc)** | 0     | 539     | 210      | 8             | 0                | **768**   |
+| Sample                    | Delay Adjustment | Vitesse | Humidité | Chevauchement | Écart-type local | **Total** |
+|---------------------------|------------------|---------|----------|---------------|------------------|-----------|
+| **Sample 1 (Soja)**       | 12               | 29      | 303      | 1             | 561              | **906**   |
+| **Sample 2 (Maïs)**       | 3,265            | 366     | 153      | 0             | 13               | **3,797** |
+| **Sample 3 (Maïs)**       | 0                | 490     | 425      | 4             | 0                | **1,876** |
+| **Sample 4 (Maïs blanc)** | 0                | 539     | 210      | 8             | 0                | **768**   |
 
 ### Comparaison des rendements
 
@@ -331,6 +419,142 @@ cat("Taux de rétention:", round(nrow(data_s4)/nrow(data_raw_s4)*100, 1), "%\n")
 | Sample 2 (Maïs)       | 5,224 kg/ha     | 2,315 kg/ha | **44.3%** |
 | Sample 3 (Maïs)       | 7,854 kg/ha     | 4,719 kg/ha | **60.1%** |
 | Sample 4 (Maïs blanc) | 8,202 kg/ha     | 2,482 kg/ha | **30.3%** |
+
+### Cartes de comparaison complètes
+
+#### Vue d’ensemble - Tous les échantillons (AVANT nettoyage)
+
+``` r
+# Créer une comparaison de tous les échantillons avant nettoyage
+par(mfrow = c(2, 2))
+
+plot(sf_raw["Yield_kg_ha"], main = "Sample 1 - Soja (AVANT)", 
+     pch = 19, cex = 0.3, breaks = "jenks", key.pos = NULL)
+```
+
+![](guide-complet-samples_files/figure-html/all-samples-raw-map-1.png)
+
+``` r
+plot(sf_raw_s2["Yield_kg_ha"], main = "Sample 2 - Maïs (AVANT)", 
+     pch = 19, cex = 0.3, breaks = "jenks", key.pos = NULL)
+```
+
+![](guide-complet-samples_files/figure-html/all-samples-raw-map-2.png)
+
+``` r
+plot(sf_raw_s3["Yield_kg_ha"], main = "Sample 3 - Maïs (AVANT)", 
+     pch = 19, cex = 0.3, breaks = "jenks", key.pos = NULL)
+```
+
+![](guide-complet-samples_files/figure-html/all-samples-raw-map-3.png)
+
+``` r
+plot(sf_raw_s4["Yield_kg_ha"], main = "Sample 4 - Maïs blanc (AVANT)", 
+     pch = 19, cex = 0.3, breaks = "jenks", key.pos = NULL)
+```
+
+![](guide-complet-samples_files/figure-html/all-samples-raw-map-4.png)
+
+#### Vue d’ensemble - Tous les échantillons (APRÈS nettoyage)
+
+``` r
+# Créer une comparaison de tous les échantillons après nettoyage
+par(mfrow = c(2, 2))
+
+plot(sf_clean["Yield_kg_ha"], main = "Sample 1 - Soja (APRÈS)", 
+     pch = 19, cex = 0.3, breaks = "jenks", key.pos = NULL)
+```
+
+![](guide-complet-samples_files/figure-html/all-samples-clean-map-1.png)
+
+``` r
+plot(sf_clean_s2["Yield_kg_ha"], main = "Sample 2 - Maïs (APRÈS)", 
+     pch = 19, cex = 0.3, breaks = "jenks", key.pos = NULL)
+```
+
+![](guide-complet-samples_files/figure-html/all-samples-clean-map-2.png)
+
+``` r
+plot(sf_clean_s3["Yield_kg_ha"], main = "Sample 3 - Maïs (APRÈS)", 
+     pch = 19, cex = 0.3, breaks = "jenks", key.pos = NULL)
+```
+
+![](guide-complet-samples_files/figure-html/all-samples-clean-map-3.png)
+
+``` r
+plot(sf_clean_s4["Yield_kg_ha"], main = "Sample 4 - Maïs blanc (APRÈS)", 
+     pch = 19, cex = 0.3, breaks = "jenks", key.pos = NULL)
+```
+
+![](guide-complet-samples_files/figure-html/all-samples-clean-map-4.png)
+
+#### Cartes de densité - Comparaison AVANT/APRÈS
+
+``` r
+# Créer des cartes de densité pour visualiser la distribution spatiale
+par(mfrow = c(4, 2))
+
+# Sample 1
+plot(sf_raw["Yield_kg_ha"], main = "Sample 1 - Soja (AVANT)", 
+     pch = 19, cex = 0.3, breaks = "jenks", key.pos = NULL)
+```
+
+![](guide-complet-samples_files/figure-html/density-maps-1.png)
+
+``` r
+plot(sf_clean["Yield_kg_ha"], main = "Sample 1 - Soja (APRÈS)", 
+     pch = 19, cex = 0.3, breaks = "jenks", key.pos = NULL)
+```
+
+![](guide-complet-samples_files/figure-html/density-maps-2.png)
+
+``` r
+
+# Sample 2
+plot(sf_raw_s2["Yield_kg_ha"], main = "Sample 2 - Maïs (AVANT)", 
+     pch = 19, cex = 0.3, breaks = "jenks", key.pos = NULL)
+```
+
+![](guide-complet-samples_files/figure-html/density-maps-3.png)
+
+``` r
+plot(sf_clean_s2["Yield_kg_ha"], main = "Sample 2 - Maïs (APRÈS)", 
+     pch = 19, cex = 0.3, breaks = "jenks", key.pos = NULL)
+```
+
+![](guide-complet-samples_files/figure-html/density-maps-4.png)
+
+``` r
+
+# Sample 3
+plot(sf_raw_s3["Yield_kg_ha"], main = "Sample 3 - Maïs (AVANT)", 
+     pch = 19, cex = 0.3, breaks = "jenks", key.pos = NULL)
+```
+
+![](guide-complet-samples_files/figure-html/density-maps-5.png)
+
+``` r
+plot(sf_clean_s3["Yield_kg_ha"], main = "Sample 3 - Maïs (APRÈS)", 
+     pch = 19, cex = 0.3, breaks = "jenks", key.pos = NULL)
+```
+
+![](guide-complet-samples_files/figure-html/density-maps-6.png)
+
+``` r
+
+# Sample 4
+plot(sf_raw_s4["Yield_kg_ha"], main = "Sample 4 - Maïs blanc (AVANT)", 
+     pch = 19, cex = 0.3, breaks = "jenks", key.pos = NULL)
+```
+
+![](guide-complet-samples_files/figure-html/density-maps-7.png)
+
+``` r
+plot(sf_clean_s4["Yield_kg_ha"], main = "Sample 4 - Maïs blanc (APRÈS)", 
+     pch = 19, cex = 0.3, breaks = "jenks", key.pos = NULL)
+```
+
+![](guide-complet-samples_files/figure-html/density-maps-8.png)
 
 ## Visualisations comparatives
 
@@ -399,10 +623,10 @@ ggplot(retention_data, aes(x = Sample, y = Retention)) +
 
 ## Analyse des filtres
 
-### Filtre PCDI (Position-Coordinate Delay Identification)
+### Filtre Delay Adjustment
 
-Le filtre PCDI corrige le délai entre la mesure du flux et la position
-GPS. Voici les délais optimaux détectés :
+Le filtre Delay Adjustment corrige le délai entre la mesure du flux et
+la position GPS. Voici les délais optimaux détectés :
 
 - **Sample 1 (Soja)** : 2 secondes
 - **Sample 2 (Maïs)** : 13 secondes
@@ -441,20 +665,22 @@ L’analyse des 4 échantillons montre l’efficacité du pipeline AYCE :
 1.  **Taux de rétention élevé** : 89.7% à 96.1% des points conservés
 2.  **Réduction significative du CV** : Diminution de 24% à 54% selon
     les échantillons
-3.  **Détection automatique des problèmes** : PCDI identifie les délais
-    de synchronisation
+3.  **Détection automatique des problèmes** : Delay Adjustment identifie
+    les délais de synchronisation
 4.  **Filtrage ciblé** : Chaque filtre cible un type spécifique
     d’anomalie
 
 Le Sample 2 (maïs) présente le taux de rejet le plus élevé (10.3%) en
-raison d’un délai PCDI important (13 secondes) et de nombreuses
-anomalies de vitesse. Les autres échantillons montrent une qualité de
-données initiale meilleure avec des taux de rétention supérieurs à 94%.
+raison d’un délai de delay adjustment important (13 secondes) et de
+nombreuses anomalies de vitesse. Les autres échantillons montrent une
+qualité de données initiale meilleure avec des taux de rétention
+supérieurs à 94%.
 
 Pour plus de détails sur les filtres individuels, consultez les articles
 mathématiques dédiés :
 
-- `vignettes("filtre-pcdi")` - Théorie et mathématiques du PCDI
+- `vignettes("filtre-delai")` - Théorie et mathématiques du Delay
+  Adjustment
 - `vignettes("filtre-vitesse")` - Filtre de vitesse
 - `vignettes("filtre-rendement")` - Filtre de plage de rendement
 - `vignettes("filtre-humidite")` - Filtre d’humidité

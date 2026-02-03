@@ -120,17 +120,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
         </dt>
         <dd>Pipeline AYCE complet avec sortie SF</dd>
-
-        <dt>
-
-          <code><a href="preprocess_yield_data.html">preprocess_yield_data()</a></code>
-
-        </dt>
-        <dd>Pré-traitement des données de rendement</dd>
       </dl></div><div class="section level2">
-      <h2 id="application-des-filtres">Application des Filtres<a class="anchor" aria-label="anchor" href="#application-des-filtres"></a></h2>
+      <h2 id="filtres-et-anomalies">Filtres et Anomalies<a class="anchor" aria-label="anchor" href="#filtres-et-anomalies"></a></h2>
 
-      <div class="section-desc"><p>Fonctions pour appliquer les filtres de nettoyage</p></div>
+      <div class="section-desc"><p>Fonctions pour appliquer les filtres et détecter les anomalies</p></div>
 
       <dl></dl></div><div class="section level2">
 
@@ -139,17 +132,45 @@ document.addEventListener('DOMContentLoaded', function() {
 
       <dl><dt>
 
-          <code><a href="apply_flow_delay.html">apply_flow_delay()</a></code>
+          <code><a href="filter_data.html">filter_data()</a></code>
 
         </dt>
-        <dd>Appliquer la correction de delai de flux</dd>
+        <dd>Méta-fonction de filtrage unifiée</dd>
 
         <dt>
 
-          <code><a href="apply_local_sd_filter.html">apply_local_sd_filter()</a></code>
+          <code><a href="detect_anomalies.html">detect_anomalies()</a></code>
 
         </dt>
-        <dd>Filtre d'ecart-type localise</dd>
+        <dd>Méta-fonction de détection d'anomalies</dd>
+
+        <dt>
+
+          <code><a href="apply_delay_adjustment.html">apply_delay_adjustment()</a></code>
+
+        </dt>
+        <dd>Delay Adjustment : Delay Adjustment (Version Rapide)</dd>
+
+        <dt>
+
+          <code><a href="optimize_delays.html">optimize_delays()</a></code>
+
+        </dt>
+        <dd>Méta-fonction d'optimisation des délais</dd>
+
+        <dt>
+
+          <code><a href="calculate_thresholds.html">calculate_thresholds()</a></code>
+
+        </dt>
+        <dd>Méta-fonction de calcul des seuils</dd>
+
+        <dt>
+
+          <code><a href="calculate_auto_thresholds.html">calculate_auto_thresholds()</a></code>
+
+        </dt>
+        <dd>Calculer les seuils automatiques (methode quantiles-IQR)</dd>
 
         <dt>
 
@@ -160,151 +181,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
         <dt>
 
-          <code><a href="apply_overlap_filter.html">apply_overlap_filter()</a></code>
-
-        </dt>
-        <dd>Filtre de chevauchement base sur un bitmap</dd>
-
-        <dt>
-
-          <code><a href="apply_pcdi.html">apply_pcdi()</a></code>
-
-        </dt>
-        <dd>PCDI : Phase Correlation Delay Identification (Version Rapide)</dd>
-
-        <dt>
-
-          <code><a href="apply_position_filter.html">apply_position_filter()</a></code>
-
-        </dt>
-        <dd>Appliquer le filtre de position (POS)</dd>
-
-        <dt>
-
-          <code><a href="apply_yield_filters.html">apply_yield_filters()</a></code>
-
-        </dt>
-        <dd>Application des filtres de rendement</dd>
-      </dl></div><div class="section level2">
-      <h2 id="filtres-de-donn-es">Filtres de Données<a class="anchor" aria-label="anchor" href="#filtres-de-donn-es"></a></h2>
-
-      <div class="section-desc"><p>Fonctions de filtrage des données de rendement</p></div>
-
-      <dl></dl></div><div class="section level2">
-
-
-
-
-      <dl><dt>
-
-          <code><a href="filter_bounds.html">filter_bounds()</a></code>
-
-        </dt>
-        <dd>Filtrer selon les limites geographiques</dd>
-
-        <dt>
-
-          <code><a href="filter_dop.html">filter_dop()</a></code>
-
-        </dt>
-        <dd>Filtrer selon le DOP (Dilution of Precision)</dd>
-
-        <dt>
-
-          <code><a href="filter_gps_status.html">filter_gps_status()</a></code>
-
-        </dt>
-        <dd>Filtrer selon le statut GPS</dd>
-
-        <dt>
-
-          <code><a href="filter_header_status.html">filter_header_status()</a></code>
-
-        </dt>
-        <dd>Filtrer selon le statut du header</dd>
-
-        <dt>
-
-          <code><a href="filter_heading_anomalies.html">filter_heading_anomalies()</a></code>
-
-        </dt>
-        <dd>Filtre pour variations brusques de direction du header</dd>
-
-        <dt>
-
-          <code><a href="filter_local_std.html">filter_local_std()</a></code>
-
-        </dt>
-        <dd>Appliquer le filtre ET local</dd>
-
-        <dt>
-
-          <code><a href="filter_moisture_range.html">filter_moisture_range()</a></code>
-
-        </dt>
-        <dd>Filtrer selon la plage d'humidite</dd>
-
-        <dt>
-
-          <code><a href="filter_position_outliers.html">filter_position_outliers()</a></code>
-
-        </dt>
-        <dd>Filtre de position pour eliminer les points hors champ</dd>
-
-        <dt>
-
-          <code><a href="filter_sliding_window.html">filter_sliding_window()</a></code>
-
-        </dt>
-        <dd>Appliquer le filtre a fenetre glissante</dd>
-
-        <dt>
-
-          <code><a href="filter_velocity.html">filter_velocity()</a></code>
-
-        </dt>
-        <dd>Filtrer selon la plage de vitesse</dd>
-
-        <dt>
-
-          <code><a href="filter_velocity_jumps.html">filter_velocity_jumps()</a></code>
-
-        </dt>
-        <dd>Filtre pour changements brusques de vitesse</dd>
-
-        <dt>
-
-          <code><a href="filter_yield_range.html">filter_yield_range()</a></code>
-
-        </dt>
-        <dd>Filtrer selon la plage de rendement</dd>
-      </dl></div><div class="section level2">
-      <h2 id="calculs-et-statistiques">Calculs et Statistiques<a class="anchor" aria-label="anchor" href="#calculs-et-statistiques"></a></h2>
-
-      <div class="section-desc"><p>Fonctions de calcul et analyse des données</p></div>
-
-      <dl></dl></div><div class="section level2">
-
-
-
-
-      <dl><dt>
-
-          <code><a href="calculate_auto_thresholds.html">calculate_auto_thresholds()</a></code>
-
-        </dt>
-        <dd>Calculer les seuils automatiques (methode quantiles-IQR)</dd>
-
-        <dt>
-
           <code><a href="calculate_filter_counts.html">calculate_filter_counts()</a></code>
 
         </dt>
         <dd>Calculer le nombre de points retires par chaque filtre</dd>
       </dl></div><div class="section level2">
-      <h2 id="utilitaires">Utilitaires<a class="anchor" aria-label="anchor" href="#utilitaires"></a></h2>
+      <h2 id="conversion-et-import-export">Conversion et Import/Export<a class="anchor" aria-label="anchor" href="#conversion-et-import-export"></a></h2>
 
-      <div class="section-desc"><p>Fonctions utilitaires pour la manipulation des données</p></div>
+      <div class="section-desc"><p>Fonctions de conversion et manipulation des données</p></div>
 
       <dl></dl></div><div class="section level2">
 
@@ -320,10 +204,17 @@ document.addEventListener('DOMContentLoaded', function() {
 
         <dt>
 
-          <code><a href="export_raster.html">export_raster()</a></code>
+          <code><a href="convert_coordinates.html">convert_coordinates()</a></code>
 
         </dt>
-        <dd>Exporter les donnees nettoyees en raster</dd>
+        <dd>Méta-fonction de conversion des coordonnées</dd>
+
+        <dt>
+
+          <code><a href="convert_yield_units.html">convert_yield_units()</a></code>
+
+        </dt>
+        <dd>Méta-fonction de conversion des unités de rendement</dd>
 
         <dt>
 
@@ -334,12 +225,21 @@ document.addEventListener('DOMContentLoaded', function() {
 
         <dt>
 
-          <code><a href="list_fields_from_zip.html">list_fields_from_zip()</a></code>
+          <code><a href="export_data.html">export_data()</a></code>
 
         </dt>
-        <dd>Lister les champs disponibles dans un fichier ZIP</dd>
+        <dd>Méta-fonction d'export des données</dd>
+      </dl></div><div class="section level2">
+      <h2 id="lecture-de-fichiers">Lecture de Fichiers<a class="anchor" aria-label="anchor" href="#lecture-de-fichiers"></a></h2>
 
-        <dt>
+      <div class="section-desc"><p>Fonctions pour lire les données depuis différentes sources</p></div>
+
+      <dl></dl></div><div class="section level2">
+
+
+
+
+      <dl><dt>
 
           <code><a href="read_yield_from_zip.html">read_yield_from_zip()</a></code>
 
@@ -348,17 +248,54 @@ document.addEventListener('DOMContentLoaded', function() {
 
         <dt>
 
-          <code><a href="remove_overlap.html">remove_overlap()</a></code>
+          <code><a href="list_fields_from_zip.html">list_fields_from_zip()</a></code>
 
         </dt>
-        <dd>Supprimer les points en chevauchement</dd>
+        <dd>Lister les champs disponibles dans un fichier ZIP</dd>
+      </dl></div><div class="section level2">
+      <h2 id="anonymisation">Anonymisation<a class="anchor" aria-label="anchor" href="#anonymisation"></a></h2>
+
+      <div class="section-desc"><p>Fonctions pour anonymiser les données sensibles</p></div>
+
+      <dl></dl></div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
+          <code><a href="anonymize_coordinates.html">anonymize_coordinates()</a></code>
+
+        </dt>
+        <dd>Anonymiser les coordonnées GPS des données de rendement</dd>
 
         <dt>
 
-          <code><a href="save_raster.html">save_raster()</a></code>
+          <code><a href="anonymize_data.html">anonymize_data()</a></code>
 
         </dt>
-        <dd>Sauvegarder un raster en fichier</dd>
+        <dd>Méta-fonction d'anonymisation des données</dd>
+
+        <dt>
+
+          <code><a href="anonymize_yield_data.html">anonymize_yield_data()</a></code>
+
+        </dt>
+        <dd>Pipeline complet d'anonymisation des donnees de rendement</dd>
+
+        <dt>
+
+          <code><a href="remove_sensitive_attributes.html">remove_sensitive_attributes()</a></code>
+
+        </dt>
+        <dd>Supprimer les attributs sensibles des donnees de rendement</dd>
+
+        <dt>
+
+          <code><a href="restore_coordinates.html">restore_coordinates()</a></code>
+
+        </dt>
+        <dd>Restaurer les coordonnées originales à partir de données anonymisées</dd>
       </dl></div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>

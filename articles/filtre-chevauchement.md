@@ -84,8 +84,8 @@ data_raw <- read_yield_data(file_path)
 # Préparation
 data <- latlon_to_utm(data_raw) %>%
   convert_flow_to_yield() %>%
-  filter_velocity(min_velocity = 0.5, max_velocity = 10) %>%
-  filter_moisture_range(n_std = 3)
+  filter_data(type = "velocity", min_velocity = 0.5, max_velocity = 10) %>%
+  filter_data(type = "moisture", n_std = 3)
 
 cat("=== Filtre de chevauchement ===\n")
 #> === Filtre de chevauchement ===
@@ -166,14 +166,15 @@ cat("\n=== Application du filtre de chevauchement ===\n")
 #> === Application du filtre de chevauchement ===
 
 # Appliquer le filtre
-data_filtered <- apply_overlap_filter(data, 
-                                       cellsize = cell_size,
-                                       overlap_threshold = overlap_threshold)
+data_filtered <- detect_anomalies(data, 
+                                  type = "overlap",
+                                  cellsize = cell_size,
+                                  overlap_threshold = overlap_threshold)
 
 cat("Points après filtrage:", nrow(data_filtered), "\n")
-#> Points après filtrage: 21577
+#> Points après filtrage: 21578
 cat("Points retirés:", nrow(data) - nrow(data_filtered), "\n")
-#> Points retirés: 1
+#> Points retirés: 0
 cat("Taux de rétention:", round(nrow(data_filtered)/nrow(data)*100, 1), "%\n")
 #> Taux de rétention: 100 %
 ```
@@ -190,7 +191,7 @@ cat("\n=== Analyse des zones de chevauchement ===\n")
 #> 
 #> === Analyse des zones de chevauchement ===
 cat("Points en zone de chevauchement:", nrow(removed), "\n")
-#> Points en zone de chevauchement: 1
+#> Points en zone de chevauchement: 0
 
 if (nrow(removed) > 0) {
   # Distribution par passage
@@ -214,15 +215,7 @@ if (nrow(removed) > 0) {
   plot(sf_removed["Yield_kg_ha"], main = "Points en chevauchement", 
        pch = 19, cex = 0.5, breaks = "jenks", key.pos = NULL)
 }
-#> 
-#> Distribution par passage (top 5):
-#> # A tibble: 1 × 2
-#>    Pass     n
-#>   <int> <int>
-#> 1    11     1
 ```
-
-![](filtre-chevauchement_files/figure-html/overlap-zones-1.png)![](filtre-chevauchement_files/figure-html/overlap-zones-2.png)
 
 ## Exemple illustratif
 
@@ -348,11 +341,12 @@ print(cell_counts %>% filter(is_overlap))
 
 ### Paramètres de la fonction
 
-| Paramètre         | Description                              | Défaut |
-|:------------------|:-----------------------------------------|:-------|
-| cellsize          | Taille des cellules (m)                  | 0.3    |
-| overlap_threshold | Seuil de ratio pour élimination          | 0.5    |
-| max_pass          | Nombre max de passages avant élimination | 50     |
+| Paramètre         | Description                              | Défaut    |
+|:------------------|:-----------------------------------------|:----------|
+| type              | Type de détection (‘overlap’)            | ‘overlap’ |
+| cellsize          | Taille des cellules (m)                  | 0.3       |
+| overlap_threshold | Seuil de ratio pour élimination          | 0.5       |
+| max_pass          | Nombre max de passages avant élimination | 50        |
 
 Paramètres du filtre de chevauchement
 
@@ -394,10 +388,10 @@ comparison <- data.frame(
 
 print(comparison, row.names = FALSE)
 #>          Métrique   Avant   Après Variation
-#>  Nombre de points 21578.0 21577.0      0.00
-#>   Rendement moyen  3516.2  3516.4      0.00
-#>        Écart-type   811.4   811.2     -0.02
-#>            CV (%)    23.1    23.1     -0.03
+#>  Nombre de points 21578.0 21578.0         0
+#>   Rendement moyen  3516.2  3516.2         0
+#>        Écart-type   811.4   811.4         0
+#>            CV (%)    23.1    23.1         0
 ```
 
 ## Conclusion

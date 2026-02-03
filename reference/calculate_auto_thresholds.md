@@ -65,11 +65,3 @@ calculate_auto_thresholds(
 ## Value
 
 Liste avec tous les seuils calcules
-
-## Examples
-
-``` r
-if (FALSE) { # \dontrun{
-thresholds <- calculate_auto_thresholds(data)
-} # }
-```

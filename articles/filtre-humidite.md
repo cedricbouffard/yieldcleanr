@@ -158,7 +158,7 @@ cat("\n=== Application du filtre automatique ===\n")
 #> === Application du filtre automatique ===
 
 # Appliquer le filtre
-data_filtered <- filter_moisture_range(data, n_std = 3)
+data_filtered <- filter_data(data, type = "moisture", n_std = 3)
 
 cat("Points après filtrage:", nrow(data_filtered), "\n")
 #> Points après filtrage: 21602
@@ -182,9 +182,10 @@ max_manual <- 20
 cat("Seuils manuels (soja):", min_manual, "-", max_manual, "%\n")
 #> Seuils manuels (soja): 8 - 20 %
 
-data_manual <- filter_moisture_range(data, 
-                                      min_moisture = min_manual,
-                                      max_moisture = max_manual)
+data_manual <- filter_data(data, 
+                           type = "moisture",
+                           min_moisture = min_manual,
+                           max_moisture = max_manual)
 
 cat("Points après filtrage manuel:", nrow(data_manual), "\n")
 #> Points après filtrage manuel: 21886
@@ -226,15 +227,24 @@ if (nrow(removed) > 0) {
 ### Variation au cours de la récolte
 
 ``` r
-# Trier par temps
+# Trier par temps et échantillonner pour la ligne de tendance (LOESS est lent avec beaucoup de points)
 data_time <- data %>%
   arrange(GPS_Time) %>%
   mutate(time_normalized = (GPS_Time - min(GPS_Time)) / 3600)  # En heures
 
+# Échantillon pour la ligne de tendance (max 5000 points)
+n_points <- nrow(data_time)
+if (n_points > 5000) {
+  set.seed(42)
+  data_sample <- data_time[sample(n_points, 5000), ]
+} else {
+  data_sample <- data_time
+}
+
 # Graphique temporel
 p2 <- ggplot(data_time, aes(x = time_normalized, y = Moisture)) +
   geom_point(alpha = 0.3, size = 0.5, color = "#3498db") +
-  geom_smooth(method = "loess", color = "#e74c3c", se = TRUE) +
+  geom_smooth(data = data_sample, method = "loess", color = "#e74c3c", se = TRUE, span = 0.5) +
   geom_hline(yintercept = min_moisture_auto, color = "#27ae60", 
              linetype = "dashed", alpha = 0.7) +
   geom_hline(yintercept = max_moisture_auto, color = "#27ae60", 
@@ -311,8 +321,9 @@ cat("\nDifférence:", round(rendement_sec_filt - rendement_sec_brut, 1), "kg/ha\
 
 | Paramètre       | Description                            | Défaut     |
 |:----------------|:---------------------------------------|:-----------|
-| min_moisture    | Humidité minimum (%)                   | auto       |
-| max_moisture    | Humidité maximum (%)                   | auto       |
+| type            | Type de filtre (‘moisture’)            | ‘moisture’ |
+| min_value       | Humidité minimum (%)                   | auto       |
+| max_value       | Humidité maximum (%)                   | auto       |
 | n_std           | Nombre d’écarts-types pour calcul auto | 3          |
 | moisture_column | Nom de la colonne d’humidité           | ‘Moisture’ |
 

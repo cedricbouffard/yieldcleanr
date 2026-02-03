@@ -12,8 +12,8 @@ interactive Shiny application for visual data cleaning.
 
 - **Interactive Shiny Application**: Visual interface for data cleaning
   with real-time preview
-- **PCDI (Pulse Count Delay Integration)**: Automatic optimization of
-  GPS-sensor delay compensation
+- **Delay Adjustment**: Automatic optimization of GPS-sensor delay
+  compensation
 - **Multiple Filter Types**:
   - Header status filtering (eliminates points when header is raised)
   - GPS quality filtering (GPS status, DOP values)
@@ -94,11 +94,165 @@ Example data format:
     -73.5123,45.1234,8500.5,18.2,12.5,5.2
     -73.5124,45.1235,8200.3,18.1,12.3,5.1
 
+## New Simplified API
+
+yieldcleanr now provides 8 meta-functions that replace the individual
+filter functions:
+
+### 1. Filter Data
+
+Apply one or multiple filters to your data:
+
+``` r
+# Filter header status only
+filtered <- filter_data(data, type = "header")
+
+# Apply multiple filters
+filtered <- filter_data(data, type = c("header", "gps", "velocity"))
+
+# Apply all available filters
+filtered <- filter_data(data, type = "all")
+```
+
+**Filter types**: `"header"`, `"gps"`, `"dop"`, `"velocity"`, `"yield"`,
+`"moisture"`, `"bounds"`, `"all"`
+
+### 2. Detect Anomalies
+
+Detect and filter anomalies in your data:
+
+``` r
+# Detect and filter all anomalies
+cleaned <- detect_anomalies(data, type = "all")
+
+# Detect only overlaps with custom parameters
+cleaned <- detect_anomalies(data, type = "overlap", 
+                            cellsize = 0.5, max_pass = 30)
+
+# Mark anomalies without filtering (adds flag columns)
+marked <- detect_anomalies(data, type = c("overlap", "local_sd"), 
+                           action = "detect")
+```
+
+**Anomaly types**: `"overlap"`, `"local_sd"`, `"velocity_jump"`,
+`"heading"`, `"position"`, `"all"`
+
+**Actions**: `"filter"` (remove points), `"detect"` (mark only),
+`"report"` (summary only)
+
+### 3. Optimize Delays
+
+Optimize GPS-sensor delays using delay adjustment method:
+
+``` r
+# Optimize both flow and moisture delays
+result <- optimize_delays(data, type = "both")
+data_corrected <- result$data
+
+# Optimize flow delay only
+result <- optimize_delays(data, type = "flow")
+
+# Get optimal delays without applying corrections
+delays <- optimize_delays(data, type = "both", apply_correction = FALSE)
+print(delays$delays$flow)  # Optimal flow delay in seconds
+```
+
+### 4. Calculate Thresholds
+
+Automatically calculate thresholds for filtering:
+
+``` r
+# Calculate all thresholds
+thresholds <- calculate_thresholds(data)
+
+# Calculate only yield thresholds with custom quantiles
+thresholds <- calculate_thresholds(data, type = "yield",
+                                   yllim = 0.05, yulim = 0.95, yscale = 1.5)
+
+# Access calculated thresholds
+thresholds$yield$min_yield  # Minimum yield threshold
+thresholds$velocity$max_velocity  # Maximum velocity threshold
+```
+
+**Threshold types**: `"yield"`, `"velocity"`, `"position"`,
+`"moisture"`, `"all"`
+
+### 5. Convert Coordinates
+
+Convert between coordinate systems:
+
+``` r
+# Convert Lat/Lon to UTM
+data_utm <- convert_coordinates(data, from = "latlon", to = "utm")
+
+# Convert UTM to Lat/Lon
+data_latlon <- convert_coordinates(data, from = "utm", to = "latlon")
+```
+
+### 6. Convert Yield Units
+
+Convert yield between different units:
+
+``` r
+# Convert flow (lbs/s) to yield (kg/ha)
+data_yield <- convert_yield_units(data, from = "flow_lbs_s", to = "kg_ha")
+
+# Convert kg/ha to bu/acre for corn
+data_imperial <- convert_yield_units(data, from = "kg_ha", to = "bu_acre",
+                                     crop_type = "maize")
+
+# Convert kg/ha to tonnes/ha
+data_tonnes <- convert_yield_units(data, from = "kg_ha", to = "t_ha")
+```
+
+### 7. Anonymize Data
+
+Anonymize sensitive information:
+
+``` r
+# Full anonymization (coordinates + attributes)
+data_anon <- anonymize_data(data, type = "full")
+
+# Anonymize only coordinates with rotation method
+data_anon <- anonymize_data(data, type = "coordinates", method = "rotation")
+
+# Anonymize only sensitive attributes
+data_anon <- anonymize_data(data, type = "attributes")
+```
+
+**Types**: `"coordinates"`, `"attributes"`, `"full"`
+
+**Methods for coordinates**: `"translation"`, `"rotation"`, `"noise"`
+
+### 8. Export Data
+
+Export data to various formats:
+
+``` r
+# Export to CSV
+export_data(data, "output.csv", format = "csv")
+
+# Export to GeoJSON (format auto-detected from extension)
+export_data(data, "output.geojson")
+
+# Export to Shapefile
+export_data(data, "output.shp", format = "shp", overwrite = TRUE)
+
+# Export to GeoPackage
+export_data(data, "output.gpkg", format = "gpkg")
+
+# Export to raster (GeoTIFF)
+export_data(data, "yield_map.tif", format = "raster", resolution = 5)
+```
+
+**Formats**: `"csv"`, `"geojson"`, `"shp"`, `"gpkg"`, `"raster"`
+
 ## Filtering Pipeline
 
 The cleaning process follows this order:
 
-1.  **PCDI (Optional)**: Optimize GPS-sensor delay for flow and moisture
+1.  **Delay Adjustment (Optional)**: Optimize GPS-sensor delay for flow
+    and moisture
 2.  **Header Status**: Remove points when header is raised
 3.  **GPS Quality**: Filter by GPS status and DOP values
 4.  **Velocity**: Remove stationary and high-speed points
@@ -112,7 +266,15 @@ The cleaning process follows this order:
 Generate interpolated raster maps:
 
 ``` r
-# Export cleaned data to raster
+# Export cleaned data to raster using the new API
+export_data(
+  data = data_clean,
+  file = "output/yield_map.tif",
+  format = "raster",
+  resolution = 1  # 1 meter resolution
+)
+
+# Or use the legacy functions (still available)
 library(sf)
 
 # Load cleaned data
@@ -215,84 +377,66 @@ Fonctions du moteur de nettoyage automatique AYCE
   : AYCE : Auto Yield Cleaning Engine (sortie imperiale)
 - [`ayce_sf()`](https://cedricbouffard.github.io/yieldcleanr/reference/ayce_sf.md)
   : Pipeline AYCE complet avec sortie SF
-- [`preprocess_yield_data()`](https://cedricbouffard.github.io/yieldcleanr/reference/preprocess_yield_data.md)
-  : Pré-traitement des données de rendement
 
-## Application des Filtres
+## Filtres et Anomalies
 
-Fonctions pour appliquer les filtres de nettoyage
+Fonctions pour appliquer les filtres et détecter les anomalies
 
-- [`apply_flow_delay()`](https://cedricbouffard.github.io/yieldcleanr/reference/apply_flow_delay.md)
-  : Appliquer la correction de delai de flux
-- [`apply_local_sd_filter()`](https://cedricbouffard.github.io/yieldcleanr/reference/apply_local_sd_filter.md)
-  : Filtre d'ecart-type localise
-- [`apply_moisture_delay()`](https://cedricbouffard.github.io/yieldcleanr/reference/apply_moisture_delay.md)
-  : Appliquer la correction de delai d'humidite
-- [`apply_overlap_filter()`](https://cedricbouffard.github.io/yieldcleanr/reference/apply_overlap_filter.md)
-  : Filtre de chevauchement base sur un bitmap
-- [`apply_pcdi()`](https://cedricbouffard.github.io/yieldcleanr/reference/apply_pcdi.md)
-  : PCDI : Phase Correlation Delay Identification (Version Rapide)
-- [`apply_position_filter()`](https://cedricbouffard.github.io/yieldcleanr/reference/apply_position_filter.md)
-  : Appliquer le filtre de position (POS)
-- [`apply_yield_filters()`](https://cedricbouffard.github.io/yieldcleanr/reference/apply_yield_filters.md)
-  : Application des filtres de rendement
-
-## Filtres de Données
-
-Fonctions de filtrage des données de rendement
-
-- [`filter_bounds()`](https://cedricbouffard.github.io/yieldcleanr/reference/filter_bounds.md)
-  : Filtrer selon les limites geographiques
-- [`filter_dop()`](https://cedricbouffard.github.io/yieldcleanr/reference/filter_dop.md)
-  : Filtrer selon le DOP (Dilution of Precision)
-- [`filter_gps_status()`](https://cedricbouffard.github.io/yieldcleanr/reference/filter_gps_status.md)
-  : Filtrer selon le statut GPS
-- [`filter_header_status()`](https://cedricbouffard.github.io/yieldcleanr/reference/filter_header_status.md)
-  : Filtrer selon le statut du header
-- [`filter_heading_anomalies()`](https://cedricbouffard.github.io/yieldcleanr/reference/filter_heading_anomalies.md)
-  : Filtre pour variations brusques de direction du header
-- [`filter_local_std()`](https://cedricbouffard.github.io/yieldcleanr/reference/filter_local_std.md)
-  : Appliquer le filtre ET local
-- [`filter_moisture_range()`](https://cedricbouffard.github.io/yieldcleanr/reference/filter_moisture_range.md)
-  : Filtrer selon la plage d'humidite
-- [`filter_position_outliers()`](https://cedricbouffard.github.io/yieldcleanr/reference/filter_position_outliers.md)
-  : Filtre de position pour eliminer les points hors champ
-- [`filter_sliding_window()`](https://cedricbouffard.github.io/yieldcleanr/reference/filter_sliding_window.md)
-  : Appliquer le filtre a fenetre glissante
-- [`filter_velocity()`](https://cedricbouffard.github.io/yieldcleanr/reference/filter_velocity.md)
-  : Filtrer selon la plage de vitesse
-- [`filter_velocity_jumps()`](https://cedricbouffard.github.io/yieldcleanr/reference/filter_velocity_jumps.md)
-  : Filtre pour changements brusques de vitesse
-- [`filter_yield_range()`](https://cedricbouffard.github.io/yieldcleanr/reference/filter_yield_range.md)
-  : Filtrer selon la plage de rendement
-
-## Calculs et Statistiques
-
-Fonctions de calcul et analyse des données
-
+- [`filter_data()`](https://cedricbouffard.github.io/yieldcleanr/reference/filter_data.md)
+  : Méta-fonction de filtrage unifiée
+- [`detect_anomalies()`](https://cedricbouffard.github.io/yieldcleanr/reference/detect_anomalies.md)
+  : Méta-fonction de détection d'anomalies
+- [`apply_delay_adjustment()`](https://cedricbouffard.github.io/yieldcleanr/reference/apply_delay_adjustment.md)
+  : Delay Adjustment : Delay Adjustment (Version Rapide)
+- [`optimize_delays()`](https://cedricbouffard.github.io/yieldcleanr/reference/optimize_delays.md)
+  : Méta-fonction d'optimisation des délais
+- [`calculate_thresholds()`](https://cedricbouffard.github.io/yieldcleanr/reference/calculate_thresholds.md)
+  : Méta-fonction de calcul des seuils
 - [`calculate_auto_thresholds()`](https://cedricbouffard.github.io/yieldcleanr/reference/calculate_auto_thresholds.md)
   : Calculer les seuils automatiques (methode quantiles-IQR)
+- [`apply_moisture_delay()`](https://cedricbouffard.github.io/yieldcleanr/reference/apply_moisture_delay.md)
+  : Appliquer la correction de delai d'humidite
 - [`calculate_filter_counts()`](https://cedricbouffard.github.io/yieldcleanr/reference/calculate_filter_counts.md)
   : Calculer le nombre de points retires par chaque filtre
 
-## Utilitaires
+## Conversion et Import/Export
 
-Fonctions utilitaires pour la manipulation des données
+Fonctions de conversion et manipulation des données
 
 - [`convert_flow_to_yield()`](https://cedricbouffard.github.io/yieldcleanr/reference/convert_flow_to_yield.md)
   : Convertir le flux de grain en rendement (boisseaux/acre)
-- [`export_raster()`](https://cedricbouffard.github.io/yieldcleanr/reference/export_raster.md)
-  : Exporter les donnees nettoyees en raster
+- [`convert_coordinates()`](https://cedricbouffard.github.io/yieldcleanr/reference/convert_coordinates.md)
+  : Méta-fonction de conversion des coordonnées
+- [`convert_yield_units()`](https://cedricbouffard.github.io/yieldcleanr/reference/convert_yield_units.md)
+  : Méta-fonction de conversion des unités de rendement
 - [`latlon_to_utm()`](https://cedricbouffard.github.io/yieldcleanr/reference/latlon_to_utm.md)
   : Convertir Latitude/Longitude en coordonnees UTM
-- [`list_fields_from_zip()`](https://cedricbouffard.github.io/yieldcleanr/reference/list_fields_from_zip.md)
-  : Lister les champs disponibles dans un fichier ZIP
+- [`export_data()`](https://cedricbouffard.github.io/yieldcleanr/reference/export_data.md)
+  : Méta-fonction d'export des données
+
+## Lecture de Fichiers
+
+Fonctions pour lire les données depuis différentes sources
+
 - [`read_yield_from_zip()`](https://cedricbouffard.github.io/yieldcleanr/reference/read_yield_from_zip.md)
   : Lire les donnees de rendement depuis un fichier ZIP
-- [`remove_overlap()`](https://cedricbouffard.github.io/yieldcleanr/reference/remove_overlap.md)
-  : Supprimer les points en chevauchement
-- [`save_raster()`](https://cedricbouffard.github.io/yieldcleanr/reference/save_raster.md)
-  : Sauvegarder un raster en fichier
+- [`list_fields_from_zip()`](https://cedricbouffard.github.io/yieldcleanr/reference/list_fields_from_zip.md)
+  : Lister les champs disponibles dans un fichier ZIP
+
+## Anonymisation
+
+Fonctions pour anonymiser les données sensibles
+
+- [`anonymize_coordinates()`](https://cedricbouffard.github.io/yieldcleanr/reference/anonymize_coordinates.md)
+  : Anonymiser les coordonnées GPS des données de rendement
+- [`anonymize_data()`](https://cedricbouffard.github.io/yieldcleanr/reference/anonymize_data.md)
+  : Méta-fonction d'anonymisation des données
+- [`anonymize_yield_data()`](https://cedricbouffard.github.io/yieldcleanr/reference/anonymize_yield_data.md)
+  : Pipeline complet d'anonymisation des donnees de rendement
+- [`remove_sensitive_attributes()`](https://cedricbouffard.github.io/yieldcleanr/reference/remove_sensitive_attributes.md)
+  : Supprimer les attributs sensibles des donnees de rendement
+- [`restore_coordinates()`](https://cedricbouffard.github.io/yieldcleanr/reference/restore_coordinates.md)
+  : Restaurer les coordonnées originales à partir de données anonymisées
 
 # Articles
 
@@ -310,8 +454,8 @@ Documentation détaillée des filtres de nettoyage
   SD)](https://cedricbouffard.github.io/yieldcleanr/articles/filtre-ecart-type-local.md):
 - [Filtre de Chevauchement
   (Overlap)](https://cedricbouffard.github.io/yieldcleanr/articles/filtre-chevauchement.md):
-- [Filtre PCDI - Position-Coordinate Delay
-  Identification](https://cedricbouffard.github.io/yieldcleanr/articles/filtre-pcdi.md):
+- [Filtre Delay Adjustment - Position-Coordinate Delay
+  Identification](https://cedricbouffard.github.io/yieldcleanr/articles/filtre-delai.md):
 
 ### Guides et Exemples
 
@@ -319,3 +463,12 @@ Guides d’utilisation et exemples
 
 - [Guide Complet du Nettoyage de Données de
   Rendement](https://cedricbouffard.github.io/yieldcleanr/articles/guide-complet-samples.md):
+- [Guide des
+  Méta-fonctions](https://cedricbouffard.github.io/yieldcleanr/articles/guide-meta-fonctions.md):
+
+### Sécurité et Confidentialité
+
+Protection des données sensibles
+
+- [Sécurité et Anonymisation des Données de
+  Rendement](https://cedricbouffard.github.io/yieldcleanr/articles/securite-donnees.md):

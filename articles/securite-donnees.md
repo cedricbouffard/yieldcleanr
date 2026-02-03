@@ -1,0 +1,245 @@
+# Sécurité et Anonymisation des Données de Rendement
+
+## Introduction
+
+La protection des données de rendement agricole est essentielle pour
+préserver la confidentialité des exploitations. Ces données contiennent
+des informations précises sur la localisation géographique des champs,
+ce qui peut révéler des secrets commerciaux sensibles (zones les plus
+productives, pratiques culturales, etc.).
+
+Ce document présente les méthodes d’anonymisation et les bonnes
+pratiques de sécurité implémentées dans `yieldcleanr`.
+
+## Méthodes d’Anonymisation
+
+### 1. Décalage par Point de Référence Aléatoire
+
+La méthode principale consiste à: 1. **Sélectionner un point aléatoire**
+dans les données comme origine 2. **Calculer un décalage** pour que ce
+point devienne la nouvelle origine 3. **Appliquer ce décalage** à toutes
+les coordonnées 4. **Sauvegarder la clé** de manière sécurisée
+
+Cette approche offre plusieurs avantages: - **Confidentialité**: Les
+coordonnées absolues sont perdues - **Préservation des patterns**: Les
+relations spatiales entre points sont conservées - **Réversibilité**:
+Avec la clé, on peut retrouver les coordonnées originales -
+**Cohérence**: Toutes les données d’un même champ partagent le même
+décalage
+
+### 2. Systèmes de Coordonnées Supportés
+
+- **Latitude/Longitude (WGS84)**: Système géographique standard
+- **UTM (Universal Transverse Mercator)**: Système projeté en mètres
+
+### 3. Chiffrement des Clés
+
+Les clés de décalage sont chiffrées avec **AES-256-GCM**: -
+**Confidentialité**: Données illisibles sans le mot de passe -
+**Authenticité**: Détection de toute modification - **Intégrité**:
+Vérification que les données n’ont pas été altérées
+
+## Bonnes Pratiques de Sécurité
+
+### Niveau 1: Basique (Développement/Tests)
+
+``` r
+# Anonymisation sans chiffrement (rapide mais peu sécurisé)
+result <- anonymize_data(data, type = "coordinates")
+```
+
+**Risques**: La clé n’est pas sauvegardée, perte irréversible des
+coordonnées.
+
+### Niveau 2: Standard (Recherche)
+
+``` r
+# Anonymisation avec chiffrement
+result <- anonymize_data(
+  data,
+  type = "coordinates",
+  output_key_file = "cle_chiffree.enc",
+  password = "MotDePasseFort123!"
+)
+```
+
+**Recommandations**: - Mot de passe de 12+ caractères - Mélange de
+majuscules, minuscules, chiffres et symboles - Stocker le fichier de clé
+séparément des données
+
+### Niveau 3: Élevé (Production/Données Sensibles)
+
+``` r
+# Anonymisation avec UTM et sécurité renforcée
+result <- anonymize_data(
+  data,
+  type = "coordinates",
+  output_key_file = "/chemin/securise/cle.enc",
+  password = Sys.getenv("ANONYMIZATION_KEY"),  # Depuis variable d'environnement
+  coordinate_system = "utm",
+  algorithm = "aes-256-gcm"
+)
+
+# Vérification de l'intégrité
+if (verify_key_file("/chemin/securise/cle.enc", Sys.getenv("ANONYMIZATION_KEY"))) {
+  message("Clé valide")
+}
+```
+
+**Recommandations**: - Utiliser des variables d’environnement pour les
+mots de passe - Stocker les clés sur un système de fichiers chiffré -
+Faire des sauvegardes dans un coffre-fort numérique - Utiliser un
+gestionnaire de mots de passe d’entreprise
+
+## Méthodes Complémentaires de Sécurité
+
+### 1. Agrégation Spatiale
+
+Au lieu de conserver les points individuels, agréger en mailles:
+
+``` r
+# Créer une grille et agréger
+library(sf)
+grid <- st_make_grid(data_sf, cellsize = 50)  # Mailles de 50m
+aggregated <- aggregate(data_sf, grid, mean)
+```
+
+**Avantage**: Perte d’information de localisation précise.
+**Inconvénient**: Perte de résolution spatiale.
+
+### 2. Bruit Aléatoire
+
+Ajouter un bruit aléatoire aux coordonnées:
+
+``` r
+# Ajouter du bruit (±10 mètres)
+noise_lat <- runif(nrow(data), -0.00009, 0.00009)  # ~±10m
+noise_lon <- runif(nrow(data), -0.00009, 0.00009)
+data$Latitude <- data$Latitude + noise_lat
+data$Longitude <- data$Longitude + noise_lon
+```
+
+**Avantage**: Simple à implémenter. **Inconvénient**: Déformation des
+patterns spatiaux.
+
+### 3. Suppression d’Attributs Sensibles
+
+Retirer les colonnes identifiantes:
+
+``` r
+# Supprimer les identifiants
+anonymized <- anonymize_data(data, type = "attributes")
+```
+
+### 4. K-Anonymat
+
+S’assurer que chaque point est indiscernable d’au moins k-1 autres
+points:
+
+``` r
+# Généraliser les coordonnées (arrondir à 3 décimales ~ 100m)
+data$Lat_rounded <- round(data$Latitude, 3)
+data$Lon_rounded <- round(data$Longitude, 3)
+```
+
+### 5. Cryptage Homomorphe (Avancé)
+
+Pour des cas très sensibles, utiliser un cryptage permettant les calculs
+sur données chiffrées. Cette méthode est complexe et nécessite des
+bibliothèques spécialisées.
+
+## Workflow Recommandé
+
+### Pour la Recherche
+
+1.  **Anonymiser** les données avec chiffrement
+2.  **Stocker** la clé dans un endroit sécurisé
+3.  **Partager** uniquement les données anonymisées
+4.  **Documenter** la méthode d’anonymisation
+
+### Pour la Production
+
+1.  **Créer** une politique de sécurité des données
+2.  **Classer** les données par niveau de sensibilité
+3.  **Anonymiser** selon le niveau requis
+4.  **Auditer** régulièrement l’accès aux clés
+5.  **Former** le personnel aux bonnes pratiques
+
+## Vérification et Tests
+
+### Vérifier l’Intégrité d’une Clé
+
+``` r
+# Vérifier avant de restaurer
+if (verify_key_file("cle.enc", "mot_de_passe")) {
+  restored <- restore_coordinates(data_anon, "cle.enc", "mot_de_passe")
+} else {
+  stop("Clé invalide ou mot de passe incorrect")
+}
+```
+
+### Générer un Rapport de Sécurité
+
+``` r
+result <- anonymize_data(data, type = "coordinates", output_key_file = "cle.enc", password = "pass")
+report <- security_report(result)
+print(report$summary)
+#> $encryption
+#> [1] "AES-256 - Niveau militaire"
+#> 
+#> $approximate_shift_km
+#> [1] 156.3  # Décalage d'environ 156 km
+```
+
+## Exemple Complet
+
+``` r
+library(yieldcleanr)
+
+# 1. Charger les données
+data <- read_yield_data("rendement.txt")
+
+# 2. Anonymiser avec sécurité maximale
+result <- anonymize_data(
+  data,
+  type = "coordinates",
+  output_key_file = "donnees/cles/champ_2024.enc",
+  password = Sys.getenv("YIELD_KEY_PASSWORD"),
+  coordinate_system = "utm",
+  random_seed = 42  # Pour reproductibilité
+)
+
+# 3. Sauvegarder les données anonymisées
+write.csv(result$data, "donnees/anonymisees/rendement_2024.csv")
+
+# 4. Vérifier la sécurité
+report <- security_report(result)
+cat("Niveau de sécurité:", report$security_level, "\n")
+cat("Décalage approximatif:", round(report$summary$approximate_shift_km), "km\n")
+
+# 5. Plus tard, restaurer si nécessaire
+if (file.exists("donnees/cles/champ_2024.enc")) {
+  original <- restore_coordinates(
+    result$data,
+    key_file = "donnees/cles/champ_2024.enc",
+    password = Sys.getenv("YIELD_KEY_PASSWORD")
+  )
+}
+```
+
+## Références et Ressources
+
+- [NIST Guidelines on Data Anonymization](https://www.nist.gov/)
+- [GDPR et données agricoles](https://gdpr.eu/)
+- [OpenSSL Documentation](https://www.openssl.org/docs/)
+
+## Conclusion
+
+L’anonymisation des données de rendement est un équilibre entre: -
+**Utilité**: Préserver la valeur analytique des données -
+**Confidentialité**: Protéger la localisation précise -
+**Réversibilité**: Pouvoir retrouver les coordonnées si nécessaire
+
+La méthode de décalage par point de référence aléatoire offre un
+excellent compromis, surtout combinée avec un chiffrement robuste des
+clés.

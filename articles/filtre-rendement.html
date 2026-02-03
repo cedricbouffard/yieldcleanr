@@ -202,7 +202,7 @@ est conservé si et seulement si :</p>
 </h3>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Calculer les seuils automatiques</span></span>
-<span><span class="va">thresholds</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/calculate_auto_thresholds.html">calculate_auto_thresholds</a></span><span class="op">(</span><span class="va">data</span><span class="op">)</span></span>
+<span><span class="va">thresholds</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/calculate_thresholds.html">calculate_thresholds</a></span><span class="op">(</span><span class="va">data</span>, type <span class="op">=</span> <span class="st">"yield"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"\n=== Seuils calculés automatiquement ===\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
@@ -211,11 +211,11 @@ est conservé si et seulement si :</p>
 <span><span class="co">#&gt; Quantile 5%: 457.6 kg/ha</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Quantile 95%:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/quantile.html" class="external-link">quantile</a></span><span class="op">(</span><span class="va">data</span><span class="op">$</span><span class="va">Yield_kg_ha</span>, <span class="fl">0.95</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>, <span class="fl">1</span><span class="op">)</span>, <span class="st">"kg/ha\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Quantile 95%: 8710.9 kg/ha</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"\nSeuil minimum:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">thresholds</span><span class="op">$</span><span class="va">min_yield</span>, <span class="fl">1</span><span class="op">)</span>, <span class="st">"kg/ha\n"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"\nSeuil minimum:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">thresholds</span><span class="op">$</span><span class="va">yield</span><span class="op">$</span><span class="va">min_yield</span>, <span class="fl">1</span><span class="op">)</span>, <span class="st">"kg/ha\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Seuil minimum: 0 kg/ha</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Seuil maximum:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">thresholds</span><span class="op">$</span><span class="va">max_yield</span>, <span class="fl">1</span><span class="op">)</span>, <span class="st">"kg/ha\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Seuil maximum: 28.8 kg/ha</span></span></code></pre></div>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Seuil maximum:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">thresholds</span><span class="op">$</span><span class="va">yield</span><span class="op">$</span><span class="va">max_yield</span>, <span class="fl">1</span><span class="op">)</span>, <span class="st">"kg/ha\n"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Seuil maximum: 14759 kg/ha</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="distribution-du-rendement">Distribution du rendement<a class="anchor" aria-label="anchor" href="#distribution-du-rendement"></a>
@@ -229,13 +229,13 @@ est conservé si et seulement si :</p>
 <span></span>
 <span><span class="va">p1</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>yield <span class="op">=</span> <span class="va">yields</span><span class="op">)</span>, <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>x <span class="op">=</span> <span class="va">yield</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_histogram.html" class="external-link">geom_histogram</a></span><span class="op">(</span>bins <span class="op">=</span> <span class="fl">50</span>, fill <span class="op">=</span> <span class="st">"#3498db"</span>, alpha <span class="op">=</span> <span class="fl">0.7</span>, color <span class="op">=</span> <span class="st">"white"</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_abline.html" class="external-link">geom_vline</a></span><span class="op">(</span>xintercept <span class="op">=</span> <span class="va">thresholds</span><span class="op">$</span><span class="va">min_yield</span>, color <span class="op">=</span> <span class="st">"#27ae60"</span>, </span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_abline.html" class="external-link">geom_vline</a></span><span class="op">(</span>xintercept <span class="op">=</span> <span class="va">thresholds</span><span class="op">$</span><span class="va">yield</span><span class="op">$</span><span class="va">min_yield</span>, color <span class="op">=</span> <span class="st">"#27ae60"</span>,</span>
 <span>             linetype <span class="op">=</span> <span class="st">"dashed"</span>, size <span class="op">=</span> <span class="fl">1</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_abline.html" class="external-link">geom_vline</a></span><span class="op">(</span>xintercept <span class="op">=</span> <span class="va">thresholds</span><span class="op">$</span><span class="va">max_yield</span>, color <span class="op">=</span> <span class="st">"#27ae60"</span>, </span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_abline.html" class="external-link">geom_vline</a></span><span class="op">(</span>xintercept <span class="op">=</span> <span class="va">thresholds</span><span class="op">$</span><span class="va">yield</span><span class="op">$</span><span class="va">max_yield</span>, color <span class="op">=</span> <span class="st">"#27ae60"</span>,</span>
 <span>             linetype <span class="op">=</span> <span class="st">"dashed"</span>, size <span class="op">=</span> <span class="fl">1</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/annotate.html" class="external-link">annotate</a></span><span class="op">(</span><span class="st">"text"</span>, x <span class="op">=</span> <span class="va">thresholds</span><span class="op">$</span><span class="va">min_yield</span>, y <span class="op">=</span> <span class="cn">Inf</span>, </span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/annotate.html" class="external-link">annotate</a></span><span class="op">(</span><span class="st">"text"</span>, x <span class="op">=</span> <span class="va">thresholds</span><span class="op">$</span><span class="va">yield</span><span class="op">$</span><span class="va">min_yield</span>, y <span class="op">=</span> <span class="cn">Inf</span>,</span>
 <span>           label <span class="op">=</span> <span class="st">"Min"</span>, vjust <span class="op">=</span> <span class="fl">2</span>, color <span class="op">=</span> <span class="st">"#27ae60"</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/annotate.html" class="external-link">annotate</a></span><span class="op">(</span><span class="st">"text"</span>, x <span class="op">=</span> <span class="va">thresholds</span><span class="op">$</span><span class="va">max_yield</span>, y <span class="op">=</span> <span class="cn">Inf</span>, </span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/annotate.html" class="external-link">annotate</a></span><span class="op">(</span><span class="st">"text"</span>, x <span class="op">=</span> <span class="va">thresholds</span><span class="op">$</span><span class="va">yield</span><span class="op">$</span><span class="va">max_yield</span>, y <span class="op">=</span> <span class="cn">Inf</span>,</span>
 <span>           label <span class="op">=</span> <span class="st">"Max"</span>, vjust <span class="op">=</span> <span class="fl">2</span>, color <span class="op">=</span> <span class="st">"#27ae60"</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">labs</a></span><span class="op">(</span>title <span class="op">=</span> <span class="st">"Distribution du rendement"</span>,</span>
 <span>       subtitle <span class="op">=</span> <span class="st">"Seuils de filtrage indiqués en vert"</span>,</span>
@@ -267,10 +267,10 @@ est conservé si et seulement si :</p>
 <span><span class="co">#&gt; Seuils manuels: 2000 - 15000 kg/ha</span></span>
 <span></span>
 <span><span class="co"># Appliquer le filtre</span></span>
-<span><span class="va">data_manual</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/filter_yield_range.html">filter_yield_range</a></span><span class="op">(</span><span class="va">data</span>, </span>
-<span>                                   min_yield <span class="op">=</span> <span class="va">min_yield_manual</span>,</span>
-<span>                                   max_yield <span class="op">=</span> <span class="va">max_yield_manual</span>,</span>
-<span>                                   yield_column <span class="op">=</span> <span class="st">"Yield_kg_ha"</span><span class="op">)</span></span>
+<span><span class="va">data_manual</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/filter_data.html">filter_data</a></span><span class="op">(</span><span class="va">data</span>, </span>
+<span>                           type <span class="op">=</span> <span class="st">"yield"</span>,</span>
+<span>                           min_yield <span class="op">=</span> <span class="va">min_yield_manual</span>,</span>
+<span>                           max_yield <span class="op">=</span> <span class="va">max_yield_manual</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Points après filtrage manuel:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">data_manual</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Points après filtrage manuel: 29572</span></span>
@@ -286,15 +286,15 @@ est conservé si et seulement si :</p>
 <span><span class="co">#&gt; === Filtrage avec seuils automatiques ===</span></span>
 <span></span>
 <span><span class="co"># Appliquer avec les seuils calculés</span></span>
-<span><span class="va">data_auto</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/filter_yield_range.html">filter_yield_range</a></span><span class="op">(</span><span class="va">data</span>,</span>
-<span>                                 min_yield <span class="op">=</span> <span class="va">thresholds</span><span class="op">$</span><span class="va">min_yield</span>,</span>
-<span>                                 max_yield <span class="op">=</span> <span class="va">thresholds</span><span class="op">$</span><span class="va">max_yield</span>,</span>
-<span>                                 yield_column <span class="op">=</span> <span class="st">"Yield_kg_ha"</span><span class="op">)</span></span>
+<span><span class="va">data_auto</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/filter_data.html">filter_data</a></span><span class="op">(</span><span class="va">data</span>,</span>
+<span>                         type <span class="op">=</span> <span class="st">"yield"</span>,</span>
+<span>                         min_yield <span class="op">=</span> <span class="va">thresholds</span><span class="op">$</span><span class="va">yield</span><span class="op">$</span><span class="va">min_yield</span>,</span>
+<span>                         max_yield <span class="op">=</span> <span class="va">thresholds</span><span class="op">$</span><span class="va">yield</span><span class="op">$</span><span class="va">max_yield</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Points après filtrage auto:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">data_auto</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Points après filtrage auto: 0</span></span>
+<span><span class="co">#&gt; Points après filtrage auto: 33488</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Points retirés:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">data</span><span class="op">)</span> <span class="op">-</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">data_auto</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Points retirés: 33604</span></span></code></pre></div>
+<span><span class="co">#&gt; Points retirés: 116</span></span></code></pre></div>
 </div>
 </div>
 <div class="section level2">
@@ -303,19 +303,19 @@ est conservé si et seulement si :</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Identifier les points éliminés</span></span>
 <span><span class="va">removed</span> <span class="op">&lt;-</span> <span class="va">data</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
-<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">Yield_kg_ha</span> <span class="op">&lt;</span> <span class="va">thresholds</span><span class="op">$</span><span class="va">min_yield</span> <span class="op">|</span> </span>
-<span>         <span class="va">Yield_kg_ha</span> <span class="op">&gt;</span> <span class="va">thresholds</span><span class="op">$</span><span class="va">max_yield</span> <span class="op">|</span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">Yield_kg_ha</span> <span class="op">&lt;</span> <span class="va">thresholds</span><span class="op">$</span><span class="va">yield</span><span class="op">$</span><span class="va">min_yield</span> <span class="op">|</span> </span>
+<span>         <span class="va">Yield_kg_ha</span> <span class="op">&gt;</span> <span class="va">thresholds</span><span class="op">$</span><span class="va">yield</span><span class="op">$</span><span class="va">max_yield</span> <span class="op">|</span></span>
 <span>         <span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/is.finite.html" class="external-link">is.finite</a></span><span class="op">(</span><span class="va">Yield_kg_ha</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"\nPoints éliminés:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">removed</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Points éliminés: 33604</span></span>
+<span><span class="co">#&gt; Points éliminés: 116</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Détails:\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Détails:</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"  Sous le minimum:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="va">removed</span><span class="op">$</span><span class="va">Yield_kg_ha</span> <span class="op">&lt;</span> <span class="va">thresholds</span><span class="op">$</span><span class="va">min_yield</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"  Sous le minimum:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="va">removed</span><span class="op">$</span><span class="va">Yield_kg_ha</span> <span class="op">&lt;</span> <span class="va">thresholds</span><span class="op">$</span><span class="va">yield</span><span class="op">$</span><span class="va">min_yield</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt;   Sous le minimum: 0</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"  Au-dessus du maximum:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="va">removed</span><span class="op">$</span><span class="va">Yield_kg_ha</span> <span class="op">&gt;</span> <span class="va">thresholds</span><span class="op">$</span><span class="va">max_yield</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt;   Au-dessus du maximum: 33604</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"  Au-dessus du maximum:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="va">removed</span><span class="op">$</span><span class="va">Yield_kg_ha</span> <span class="op">&gt;</span> <span class="va">thresholds</span><span class="op">$</span><span class="va">yield</span><span class="op">$</span><span class="va">max_yield</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
+<span><span class="co">#&gt;   Au-dessus du maximum: 116</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"  Valeurs infinies/NaN:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/is.finite.html" class="external-link">is.finite</a></span><span class="op">(</span><span class="va">removed</span><span class="op">$</span><span class="va">Yield_kg_ha</span><span class="op">)</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt;   Valeurs infinies/NaN: 0</span></span>
 <span></span>
@@ -472,31 +472,36 @@ est conservé si et seulement si :</p>
 </tr></thead>
 <tbody>
 <tr class="odd">
-<td align="left">min_yield</td>
+<td align="left">type</td>
+<td align="left">Type de filtre (‘yield’)</td>
+<td align="left">‘yield’</td>
+</tr>
+<tr class="even">
+<td align="left">min_value</td>
 <td align="left">Rendement minimum</td>
 <td align="left">0</td>
 </tr>
-<tr class="even">
-<td align="left">max_yield</td>
+<tr class="odd">
+<td align="left">max_value</td>
 <td align="left">Rendement maximum</td>
 <td align="left">Inf</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">yield_column</td>
 <td align="left">Nom de la colonne de rendement</td>
 <td align="left">‘Yield_buacre’</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">yllim</td>
 <td align="left">Quantile bas pour calcul auto</td>
 <td align="left">0.05</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">yulim</td>
 <td align="left">Quantile haut pour calcul auto</td>
 <td align="left">0.95</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">yscale</td>
 <td align="left">Facteur d’échelle</td>
 <td align="left">1.5</td>
@@ -550,13 +555,13 @@ est conservé si et seulement si :</p>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">comparison</span>, row.names <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
-<span><span class="co">#&gt;    Métrique    Avant Après Variation</span></span>
-<span><span class="co">#&gt;     Moyenne   5293.6   NaN       NaN</span></span>
-<span><span class="co">#&gt;     Médiane   5457.2    NA        NA</span></span>
-<span><span class="co">#&gt;  Écart-type   5087.8    NA        NA</span></span>
-<span><span class="co">#&gt;      CV (%)     96.1    NA        NA</span></span>
-<span><span class="co">#&gt;         Min     58.0   Inf       Inf</span></span>
-<span><span class="co">#&gt;         Max 527653.3  -Inf      -Inf</span></span></code></pre></div>
+<span><span class="co">#&gt;    Métrique    Avant   Après Variation</span></span>
+<span><span class="co">#&gt;     Moyenne   5293.6  5168.9      -2.4</span></span>
+<span><span class="co">#&gt;     Médiane   5457.2  5450.9      -0.1</span></span>
+<span><span class="co">#&gt;  Écart-type   5087.8  2273.9     -55.3</span></span>
+<span><span class="co">#&gt;      CV (%)     96.1    44.0     -54.2</span></span>
+<span><span class="co">#&gt;         Min     58.0    58.0       0.0</span></span>
+<span><span class="co">#&gt;         Max 527653.3 14686.3     -97.2</span></span></code></pre></div>
 </div>
 </div>
 <div class="section level2">

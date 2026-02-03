@@ -86,7 +86,7 @@ cat("  Écart-type:", round(sd(data$Yield_kg_ha, na.rm = TRUE), 1), "\n")
 
 ``` r
 # Calculer les seuils automatiques
-thresholds <- calculate_auto_thresholds(data)
+thresholds <- calculate_thresholds(data, type = "yield")
 
 cat("\n=== Seuils calculés automatiquement ===\n")
 #> 
@@ -95,11 +95,11 @@ cat("Quantile 5%:", round(quantile(data$Yield_kg_ha, 0.05, na.rm = TRUE), 1), "k
 #> Quantile 5%: 457.6 kg/ha
 cat("Quantile 95%:", round(quantile(data$Yield_kg_ha, 0.95, na.rm = TRUE), 1), "kg/ha\n")
 #> Quantile 95%: 8710.9 kg/ha
-cat("\nSeuil minimum:", round(thresholds$min_yield, 1), "kg/ha\n")
+cat("\nSeuil minimum:", round(thresholds$yield$min_yield, 1), "kg/ha\n")
 #> 
 #> Seuil minimum: 0 kg/ha
-cat("Seuil maximum:", round(thresholds$max_yield, 1), "kg/ha\n")
-#> Seuil maximum: 28.8 kg/ha
+cat("Seuil maximum:", round(thresholds$yield$max_yield, 1), "kg/ha\n")
+#> Seuil maximum: 14759 kg/ha
 ```
 
 ### Distribution du rendement
@@ -113,13 +113,13 @@ ylim_max <- quantile(yields, 0.995)
 
 p1 <- ggplot(data.frame(yield = yields), aes(x = yield)) +
   geom_histogram(bins = 50, fill = "#3498db", alpha = 0.7, color = "white") +
-  geom_vline(xintercept = thresholds$min_yield, color = "#27ae60", 
+  geom_vline(xintercept = thresholds$yield$min_yield, color = "#27ae60",
              linetype = "dashed", size = 1) +
-  geom_vline(xintercept = thresholds$max_yield, color = "#27ae60", 
+  geom_vline(xintercept = thresholds$yield$max_yield, color = "#27ae60",
              linetype = "dashed", size = 1) +
-  annotate("text", x = thresholds$min_yield, y = Inf, 
+  annotate("text", x = thresholds$yield$min_yield, y = Inf,
            label = "Min", vjust = 2, color = "#27ae60") +
-  annotate("text", x = thresholds$max_yield, y = Inf, 
+  annotate("text", x = thresholds$yield$max_yield, y = Inf,
            label = "Max", vjust = 2, color = "#27ae60") +
   labs(title = "Distribution du rendement",
        subtitle = "Seuils de filtrage indiqués en vert",
@@ -150,10 +150,10 @@ cat("Seuils manuels:", min_yield_manual, "-", max_yield_manual, "kg/ha\n")
 #> Seuils manuels: 2000 - 15000 kg/ha
 
 # Appliquer le filtre
-data_manual <- filter_yield_range(data, 
-                                   min_yield = min_yield_manual,
-                                   max_yield = max_yield_manual,
-                                   yield_column = "Yield_kg_ha")
+data_manual <- filter_data(data, 
+                           type = "yield",
+                           min_yield = min_yield_manual,
+                           max_yield = max_yield_manual)
 
 cat("Points après filtrage manuel:", nrow(data_manual), "\n")
 #> Points après filtrage manuel: 29572
@@ -169,15 +169,15 @@ cat("\n=== Filtrage avec seuils automatiques ===\n")
 #> === Filtrage avec seuils automatiques ===
 
 # Appliquer avec les seuils calculés
-data_auto <- filter_yield_range(data,
-                                 min_yield = thresholds$min_yield,
-                                 max_yield = thresholds$max_yield,
-                                 yield_column = "Yield_kg_ha")
+data_auto <- filter_data(data,
+                         type = "yield",
+                         min_yield = thresholds$yield$min_yield,
+                         max_yield = thresholds$yield$max_yield)
 
 cat("Points après filtrage auto:", nrow(data_auto), "\n")
-#> Points après filtrage auto: 0
+#> Points après filtrage auto: 33488
 cat("Points retirés:", nrow(data) - nrow(data_auto), "\n")
-#> Points retirés: 33604
+#> Points retirés: 116
 ```
 
 ## Visualisation des points éliminés
@@ -185,19 +185,19 @@ cat("Points retirés:", nrow(data) - nrow(data_auto), "\n")
 ``` r
 # Identifier les points éliminés
 removed <- data %>%
-  filter(Yield_kg_ha < thresholds$min_yield | 
-         Yield_kg_ha > thresholds$max_yield |
+  filter(Yield_kg_ha < thresholds$yield$min_yield | 
+         Yield_kg_ha > thresholds$yield$max_yield |
          !is.finite(Yield_kg_ha))
 
 cat("\nPoints éliminés:", nrow(removed), "\n")
 #> 
-#> Points éliminés: 33604
+#> Points éliminés: 116
 cat("Détails:\n")
 #> Détails:
-cat("  Sous le minimum:", sum(removed$Yield_kg_ha < thresholds$min_yield, na.rm = TRUE), "\n")
+cat("  Sous le minimum:", sum(removed$Yield_kg_ha < thresholds$yield$min_yield, na.rm = TRUE), "\n")
 #>   Sous le minimum: 0
-cat("  Au-dessus du maximum:", sum(removed$Yield_kg_ha > thresholds$max_yield, na.rm = TRUE), "\n")
-#>   Au-dessus du maximum: 33604
+cat("  Au-dessus du maximum:", sum(removed$Yield_kg_ha > thresholds$yield$max_yield, na.rm = TRUE), "\n")
+#>   Au-dessus du maximum: 116
 cat("  Valeurs infinies/NaN:", sum(!is.finite(removed$Yield_kg_ha)), "\n")
 #>   Valeurs infinies/NaN: 0
 
@@ -305,8 +305,9 @@ if (nrow(high_yield) > 0) {
 
 | Paramètre    | Description                    | Défaut         |
 |:-------------|:-------------------------------|:---------------|
-| min_yield    | Rendement minimum              | 0              |
-| max_yield    | Rendement maximum              | Inf            |
+| type         | Type de filtre (‘yield’)       | ‘yield’        |
+| min_value    | Rendement minimum              | 0              |
+| max_value    | Rendement maximum              | Inf            |
 | yield_column | Nom de la colonne de rendement | ‘Yield_buacre’ |
 | yllim        | Quantile bas pour calcul auto  | 0.05           |
 | yulim        | Quantile haut pour calcul auto | 0.95           |
@@ -357,13 +358,13 @@ comparison <- data.frame(
 )
 
 print(comparison, row.names = FALSE)
-#>    Métrique    Avant Après Variation
-#>     Moyenne   5293.6   NaN       NaN
-#>     Médiane   5457.2    NA        NA
-#>  Écart-type   5087.8    NA        NA
-#>      CV (%)     96.1    NA        NA
-#>         Min     58.0   Inf       Inf
-#>         Max 527653.3  -Inf      -Inf
+#>    Métrique    Avant   Après Variation
+#>     Moyenne   5293.6  5168.9      -2.4
+#>     Médiane   5457.2  5450.9      -0.1
+#>  Écart-type   5087.8  2273.9     -55.3
+#>      CV (%)     96.1    44.0     -54.2
+#>         Min     58.0    58.0       0.0
+#>         Max 527653.3 14686.3     -97.2
 ```
 
 ## Conclusion

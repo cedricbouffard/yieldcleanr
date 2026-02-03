@@ -202,8 +202,8 @@ point</p>
 <span><span class="co"># Préparation</span></span>
 <span><span class="va">data</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/latlon_to_utm.html">latlon_to_utm</a></span><span class="op">(</span><span class="va">data_raw</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
 <span>  <span class="fu"><a href="../reference/convert_flow_to_yield.html">convert_flow_to_yield</a></span><span class="op">(</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
-<span>  <span class="fu"><a href="../reference/filter_velocity.html">filter_velocity</a></span><span class="op">(</span>min_velocity <span class="op">=</span> <span class="fl">0.5</span>, max_velocity <span class="op">=</span> <span class="fl">10</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
-<span>  <span class="fu"><a href="../reference/filter_moisture_range.html">filter_moisture_range</a></span><span class="op">(</span>n_std <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="../reference/filter_data.html">filter_data</a></span><span class="op">(</span>type <span class="op">=</span> <span class="st">"velocity"</span>, min_velocity <span class="op">=</span> <span class="fl">0.5</span>, max_velocity <span class="op">=</span> <span class="fl">10</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
+<span>  <span class="fu"><a href="../reference/filter_data.html">filter_data</a></span><span class="op">(</span>type <span class="op">=</span> <span class="st">"moisture"</span>, n_std <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"=== Filtre de chevauchement ===\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; === Filtre de chevauchement ===</span></span>
@@ -285,14 +285,15 @@ point</p>
 <span><span class="co">#&gt; === Application du filtre de chevauchement ===</span></span>
 <span></span>
 <span><span class="co"># Appliquer le filtre</span></span>
-<span><span class="va">data_filtered</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/apply_overlap_filter.html">apply_overlap_filter</a></span><span class="op">(</span><span class="va">data</span>, </span>
-<span>                                       cellsize <span class="op">=</span> <span class="va">cell_size</span>,</span>
-<span>                                       overlap_threshold <span class="op">=</span> <span class="va">overlap_threshold</span><span class="op">)</span></span>
+<span><span class="va">data_filtered</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/detect_anomalies.html">detect_anomalies</a></span><span class="op">(</span><span class="va">data</span>, </span>
+<span>                                  type <span class="op">=</span> <span class="st">"overlap"</span>,</span>
+<span>                                  cellsize <span class="op">=</span> <span class="va">cell_size</span>,</span>
+<span>                                  overlap_threshold <span class="op">=</span> <span class="va">overlap_threshold</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Points après filtrage:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">data_filtered</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Points après filtrage: 21577</span></span>
+<span><span class="co">#&gt; Points après filtrage: 21578</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Points retirés:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">data</span><span class="op">)</span> <span class="op">-</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">data_filtered</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Points retirés: 1</span></span>
+<span><span class="co">#&gt; Points retirés: 0</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Taux de rétention:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">data_filtered</span><span class="op">)</span><span class="op">/</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">data</span><span class="op">)</span><span class="op">*</span><span class="fl">100</span>, <span class="fl">1</span><span class="op">)</span>, <span class="st">"%\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Taux de rétention: 100 %</span></span></code></pre></div>
 </div>
@@ -310,7 +311,7 @@ point</p>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; === Analyse des zones de chevauchement ===</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Points en zone de chevauchement:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">removed</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Points en zone de chevauchement: 1</span></span>
+<span><span class="co">#&gt; Points en zone de chevauchement: 0</span></span>
 <span></span>
 <span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">removed</span><span class="op">)</span> <span class="op">&gt;</span> <span class="fl">0</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="co"># Distribution par passage</span></span>
@@ -333,14 +334,7 @@ point</p>
 <span>  </span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">sf_removed</span><span class="op">[</span><span class="st">"Yield_kg_ha"</span><span class="op">]</span>, main <span class="op">=</span> <span class="st">"Points en chevauchement"</span>, </span>
 <span>       pch <span class="op">=</span> <span class="fl">19</span>, cex <span class="op">=</span> <span class="fl">0.5</span>, breaks <span class="op">=</span> <span class="st">"jenks"</span>, key.pos <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span>
-<span><span class="op">}</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Distribution par passage (top 5):</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 2</span></span></span>
-<span><span class="co">#&gt;    Pass     n</span></span>
-<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    11     1</span></span></code></pre></div>
-<p><img src="filtre-chevauchement_files/figure-html/overlap-zones-1.png" class="r-plt" alt="" width="1344"><img src="filtre-chevauchement_files/figure-html/overlap-zones-2.png" class="r-plt" alt="" width="1344"></p>
+<span><span class="op">}</span></span></code></pre></div>
 </div>
 </div>
 <div class="section level2">
@@ -531,6 +525,11 @@ point</p>
 </h3>
 <table class="table">
 <caption>Paramètres du filtre de chevauchement</caption>
+<colgroup>
+<col width="26%">
+<col width="59%">
+<col width="14%">
+</colgroup>
 <thead><tr class="header">
 <th align="left">Paramètre</th>
 <th align="left">Description</th>
@@ -538,16 +537,21 @@ point</p>
 </tr></thead>
 <tbody>
 <tr class="odd">
+<td align="left">type</td>
+<td align="left">Type de détection (‘overlap’)</td>
+<td align="left">‘overlap’</td>
+</tr>
+<tr class="even">
 <td align="left">cellsize</td>
 <td align="left">Taille des cellules (m)</td>
 <td align="left">0.3</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">overlap_threshold</td>
 <td align="left">Seuil de ratio pour élimination</td>
 <td align="left">0.5</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">max_pass</td>
 <td align="left">Nombre max de passages avant élimination</td>
 <td align="left">50</td>
@@ -595,10 +599,10 @@ point</p>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">comparison</span>, row.names <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="co">#&gt;          Métrique   Avant   Après Variation</span></span>
-<span><span class="co">#&gt;  Nombre de points 21578.0 21577.0      0.00</span></span>
-<span><span class="co">#&gt;   Rendement moyen  3516.2  3516.4      0.00</span></span>
-<span><span class="co">#&gt;        Écart-type   811.4   811.2     -0.02</span></span>
-<span><span class="co">#&gt;            CV (%)    23.1    23.1     -0.03</span></span></code></pre></div>
+<span><span class="co">#&gt;  Nombre de points 21578.0 21578.0         0</span></span>
+<span><span class="co">#&gt;   Rendement moyen  3516.2  3516.2         0</span></span>
+<span><span class="co">#&gt;        Écart-type   811.4   811.4         0</span></span>
+<span><span class="co">#&gt;            CV (%)    23.1    23.1         0</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="conclusion">Conclusion<a class="anchor" aria-label="anchor" href="#conclusion"></a>

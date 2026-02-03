@@ -3,13 +3,15 @@ pkgdown: 2.2.0
 pkgdown_sha: ~
 articles:
   filtre-chevauchement: filtre-chevauchement.html
+  filtre-delai: filtre-delai.html
   filtre-ecart-type-local: filtre-ecart-type-local.html
   filtre-humidite: filtre-humidite.html
-  filtre-pcdi: filtre-pcdi.html
   filtre-rendement: filtre-rendement.html
   filtre-vitesse: filtre-vitesse.html
   guide-complet-samples: guide-complet-samples.html
-last_built: 2026-02-01T18:44Z
+  guide-meta-fonctions: guide-meta-fonctions.html
+  securite-donnees: securite-donnees.html
+last_built: 2026-02-03T21:19Z
 urls:
   reference: https://cedricbouffard.github.io/yieldcleanr/reference
   article: https://cedricbouffard.github.io/yieldcleanr/articles

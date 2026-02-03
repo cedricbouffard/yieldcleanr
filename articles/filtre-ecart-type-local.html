@@ -162,20 +162,20 @@ est le seuil d’écart-type (défaut: 3).</p>
 <span><span class="co"># Préparation complète jusqu'au filtre LSD</span></span>
 <span><span class="va">data</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/latlon_to_utm.html">latlon_to_utm</a></span><span class="op">(</span><span class="va">data_raw</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
 <span>  <span class="fu"><a href="../reference/convert_flow_to_yield.html">convert_flow_to_yield</a></span><span class="op">(</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
-<span>  <span class="fu"><a href="../reference/filter_velocity.html">filter_velocity</a></span><span class="op">(</span>min_velocity <span class="op">=</span> <span class="fl">0.5</span>, max_velocity <span class="op">=</span> <span class="fl">10</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
-<span>  <span class="fu"><a href="../reference/filter_moisture_range.html">filter_moisture_range</a></span><span class="op">(</span>n_std <span class="op">=</span> <span class="fl">3</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
-<span>  <span class="fu"><a href="../reference/apply_overlap_filter.html">apply_overlap_filter</a></span><span class="op">(</span>cellsize <span class="op">=</span> <span class="fl">0.3</span>, overlap_threshold <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="../reference/filter_data.html">filter_data</a></span><span class="op">(</span>type <span class="op">=</span> <span class="st">"velocity"</span>, min_velocity <span class="op">=</span> <span class="fl">0.5</span>, max_velocity <span class="op">=</span> <span class="fl">10</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
+<span>  <span class="fu"><a href="../reference/filter_data.html">filter_data</a></span><span class="op">(</span>type <span class="op">=</span> <span class="st">"moisture"</span>, n_std <span class="op">=</span> <span class="fl">3</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
+<span>  <span class="fu"><a href="../reference/detect_anomalies.html">detect_anomalies</a></span><span class="op">(</span>type <span class="op">=</span> <span class="st">"overlap"</span>, cellsize <span class="op">=</span> <span class="fl">0.3</span>, overlap_threshold <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"=== Filtre d'écart-type local ===\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; === Filtre d'écart-type local ===</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Points avant filtrage:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">data</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Points avant filtrage: 21577</span></span>
+<span><span class="co">#&gt; Points avant filtrage: 21578</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Nombre de passages:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">data</span><span class="op">$</span><span class="va">Pass</span><span class="op">)</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Nombre de passages: 65</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Rendement moyen:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">data</span><span class="op">$</span><span class="va">Yield_kg_ha</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>, <span class="fl">1</span><span class="op">)</span>, <span class="st">"kg/ha\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Rendement moyen: 3516.4 kg/ha</span></span>
+<span><span class="co">#&gt; Rendement moyen: 3516.2 kg/ha</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Écart-type global:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/sd.html" class="external-link">sd</a></span><span class="op">(</span><span class="va">data</span><span class="op">$</span><span class="va">Yield_kg_ha</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>, <span class="fl">1</span><span class="op">)</span>, <span class="st">"kg/ha\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Écart-type global: 811.2 kg/ha</span></span></code></pre></div>
+<span><span class="co">#&gt; Écart-type global: 811.4 kg/ha</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="analyse-locale">Analyse locale<a class="anchor" aria-label="anchor" href="#analyse-locale"></a>
@@ -289,21 +289,22 @@ est le seuil d’écart-type (défaut: 3).</p>
 <span><span class="co"># Avant filtrage</span></span>
 <span><span class="va">n_before</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">data</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Points avant filtrage:"</span>, <span class="va">n_before</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Points avant filtrage: 21577</span></span>
+<span><span class="co">#&gt; Points avant filtrage: 21578</span></span>
 <span></span>
 <span><span class="co"># Appliquer le filtre</span></span>
-<span><span class="va">data_filtered</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/apply_local_sd_filter.html">apply_local_sd_filter</a></span><span class="op">(</span><span class="va">data</span>, </span>
-<span>                                        n_swaths <span class="op">=</span> <span class="va">n_swaths</span>,</span>
-<span>                                        lsd_limit <span class="op">=</span> <span class="va">lsd_limit</span><span class="op">)</span></span>
+<span><span class="va">data_filtered</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/detect_anomalies.html">detect_anomalies</a></span><span class="op">(</span><span class="va">data</span>, </span>
+<span>                                  type <span class="op">=</span> <span class="st">"local_sd"</span>,</span>
+<span>                                  n_swaths <span class="op">=</span> <span class="va">n_swaths</span>,</span>
+<span>                                  lsd_limit <span class="op">=</span> <span class="va">lsd_limit</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Après filtrage</span></span>
 <span><span class="va">n_after</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">data_filtered</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Points après filtrage:"</span>, <span class="va">n_after</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Points après filtrage: 21013</span></span>
+<span><span class="co">#&gt; Points après filtrage: 21432</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Points retirés:"</span>, <span class="va">n_before</span> <span class="op">-</span> <span class="va">n_after</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Points retirés: 564</span></span>
+<span><span class="co">#&gt; Points retirés: 146</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Taux de rétention:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">n_after</span><span class="op">/</span><span class="va">n_before</span><span class="op">*</span><span class="fl">100</span>, <span class="fl">1</span><span class="op">)</span>, <span class="st">"%\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Taux de rétention: 97.4 %</span></span></code></pre></div>
+<span><span class="co">#&gt; Taux de rétention: 99.3 %</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="visualisation-des-outliers-détectés">Visualisation des outliers détectés<a class="anchor" aria-label="anchor" href="#visualisation-des-outliers-d%C3%A9tect%C3%A9s"></a>
@@ -316,7 +317,7 @@ est le seuil d’écart-type (défaut: 3).</p>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; === Points éliminés comme outliers ===</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Nombre d'outliers:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">removed</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Nombre d'outliers: 564</span></span>
+<span><span class="co">#&gt; Nombre d'outliers: 146</span></span>
 <span></span>
 <span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">removed</span><span class="op">)</span> <span class="op">&gt;</span> <span class="fl">0</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"\nStatistiques des outliers:\n"</span><span class="op">)</span></span>
@@ -346,18 +347,18 @@ est le seuil d’écart-type (défaut: 3).</p>
 <span><span class="op">}</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Statistiques des outliers:</span></span>
-<span><span class="co">#&gt;   Rendement moyen: 440.9 kg/ha</span></span>
-<span><span class="co">#&gt;   vs données conservées: 3598.9 kg/ha</span></span>
+<span><span class="co">#&gt;   Rendement moyen: 143.2 kg/ha</span></span>
+<span><span class="co">#&gt;   vs données conservées: 3539.2 kg/ha</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Top 5 passages avec le plus d'outliers:</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 5 × 3</span></span></span>
 <span><span class="co">#&gt;    Pass     n mean_yield</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    48    18       367.</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span>    60    18       315.</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span>    64    18       348.</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span>    39    16       227.</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span>    56    16       399.</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    64    10       88.6</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span>    62     8       68.6</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span>     8     7       48.6</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span>    39     7       64.6</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span>    50     7      159.</span></span></code></pre></div>
 <p><img src="filtre-ecart-type-local_files/figure-html/outliers-viz-1.png" class="r-plt" alt="" width="1344"><img src="filtre-ecart-type-local_files/figure-html/outliers-viz-2.png" class="r-plt" alt="" width="1344"></p>
 </div>
 <div class="section level2">
@@ -561,16 +562,21 @@ est le seuil d’écart-type (défaut: 3).</p>
 </tr></thead>
 <tbody>
 <tr class="odd">
+<td align="left">type</td>
+<td align="left">Type de détection (‘local_sd’)</td>
+<td align="left">‘local_sd’</td>
+</tr>
+<tr class="even">
 <td align="left">n_swaths</td>
 <td align="left">Nombre de passages dans le voisinage</td>
 <td align="left">5</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">lsd_limit</td>
 <td align="left">Seuil d’écart-type pour élimination</td>
 <td align="left">3</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">yield_column</td>
 <td align="left">Nom de la colonne de rendement</td>
 <td align="left">‘Yield_kg_ha’</td>
@@ -618,15 +624,15 @@ est le seuil d’écart-type (défaut: 3).</p>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">comparison</span>, row.names <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="co">#&gt;          Métrique   Avant   Après Variation</span></span>
-<span><span class="co">#&gt;  Nombre de points 21577.0 21013.0     -2.61</span></span>
-<span><span class="co">#&gt;   Rendement moyen  3516.4  3598.9      2.35</span></span>
-<span><span class="co">#&gt;        Écart-type   811.2   642.9    -20.75</span></span>
-<span><span class="co">#&gt;            CV (%)    23.1    17.9    -22.57</span></span>
+<span><span class="co">#&gt;  Nombre de points 21578.0 21432.0     -0.68</span></span>
+<span><span class="co">#&gt;   Rendement moyen  3516.2  3539.2      0.65</span></span>
+<span><span class="co">#&gt;        Écart-type   811.4   764.3     -5.81</span></span>
+<span><span class="co">#&gt;            CV (%)    23.1    21.6     -6.42</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"\n✓ Réduction du CV:"</span>, </span>
 <span>    <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">stats_before</span><span class="op">$</span><span class="va">value</span><span class="op">[</span><span class="fl">4</span><span class="op">]</span> <span class="op">-</span> <span class="va">stats_after</span><span class="op">$</span><span class="va">value</span><span class="op">[</span><span class="fl">4</span><span class="op">]</span>, <span class="fl">1</span><span class="op">)</span>, <span class="st">"points\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; ✓ Réduction du CV: 5.2 points</span></span></code></pre></div>
+<span><span class="co">#&gt; ✓ Réduction du CV: 1.5 points</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="comparaison-avec-dautres-méthodes">Comparaison avec d’autres méthodes<a class="anchor" aria-label="anchor" href="#comparaison-avec-dautres-m%C3%A9thodes"></a>
@@ -649,13 +655,13 @@ est le seuil d’écart-type (défaut: 3).</p>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Filtre global (±3σ global):\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Filtre global (±3σ global):</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"  Points retirés:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">removed_global</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt;   Points retirés: 735</span></span>
+<span><span class="co">#&gt;   Points retirés: 736</span></span>
 <span></span>
 <span><span class="co"># Filtre local</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Filtre local (±3σ local par voisinage):\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Filtre local (±3σ local par voisinage):</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"  Points retirés:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">removed</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt;   Points retirés: 564</span></span>
+<span><span class="co">#&gt;   Points retirés: 146</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"\nAvantage du filtre local:\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>

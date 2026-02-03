@@ -64,20 +64,20 @@ data_raw <- read_yield_data(file_path)
 # Préparation complète jusqu'au filtre LSD
 data <- latlon_to_utm(data_raw) %>%
   convert_flow_to_yield() %>%
-  filter_velocity(min_velocity = 0.5, max_velocity = 10) %>%
-  filter_moisture_range(n_std = 3) %>%
-  apply_overlap_filter(cellsize = 0.3, overlap_threshold = 0.5)
+  filter_data(type = "velocity", min_velocity = 0.5, max_velocity = 10) %>%
+  filter_data(type = "moisture", n_std = 3) %>%
+  detect_anomalies(type = "overlap", cellsize = 0.3, overlap_threshold = 0.5)
 
 cat("=== Filtre d'écart-type local ===\n")
 #> === Filtre d'écart-type local ===
 cat("Points avant filtrage:", nrow(data), "\n")
-#> Points avant filtrage: 21577
+#> Points avant filtrage: 21578
 cat("Nombre de passages:", length(unique(data$Pass)), "\n")
 #> Nombre de passages: 65
 cat("Rendement moyen:", round(mean(data$Yield_kg_ha, na.rm = TRUE), 1), "kg/ha\n")
-#> Rendement moyen: 3516.4 kg/ha
+#> Rendement moyen: 3516.2 kg/ha
 cat("Écart-type global:", round(sd(data$Yield_kg_ha, na.rm = TRUE), 1), "kg/ha\n")
-#> Écart-type global: 811.2 kg/ha
+#> Écart-type global: 811.4 kg/ha
 ```
 
 ## Analyse locale
@@ -190,21 +190,22 @@ cat("\n=== Application du filtre LSD ===\n")
 # Avant filtrage
 n_before <- nrow(data)
 cat("Points avant filtrage:", n_before, "\n")
-#> Points avant filtrage: 21577
+#> Points avant filtrage: 21578
 
 # Appliquer le filtre
-data_filtered <- apply_local_sd_filter(data, 
-                                        n_swaths = n_swaths,
-                                        lsd_limit = lsd_limit)
+data_filtered <- detect_anomalies(data, 
+                                  type = "local_sd",
+                                  n_swaths = n_swaths,
+                                  lsd_limit = lsd_limit)
 
 # Après filtrage
 n_after <- nrow(data_filtered)
 cat("Points après filtrage:", n_after, "\n")
-#> Points après filtrage: 21013
+#> Points après filtrage: 21432
 cat("Points retirés:", n_before - n_after, "\n")
-#> Points retirés: 564
+#> Points retirés: 146
 cat("Taux de rétention:", round(n_after/n_before*100, 1), "%\n")
-#> Taux de rétention: 97.4 %
+#> Taux de rétention: 99.3 %
 ```
 
 ## Visualisation des outliers détectés
@@ -217,7 +218,7 @@ cat("\n=== Points éliminés comme outliers ===\n")
 #> 
 #> === Points éliminés comme outliers ===
 cat("Nombre d'outliers:", nrow(removed), "\n")
-#> Nombre d'outliers: 564
+#> Nombre d'outliers: 146
 
 if (nrow(removed) > 0) {
   cat("\nStatistiques des outliers:\n")
@@ -247,18 +248,18 @@ if (nrow(removed) > 0) {
 }
 #> 
 #> Statistiques des outliers:
-#>   Rendement moyen: 440.9 kg/ha
-#>   vs données conservées: 3598.9 kg/ha
+#>   Rendement moyen: 143.2 kg/ha
+#>   vs données conservées: 3539.2 kg/ha
 #> 
 #> Top 5 passages avec le plus d'outliers:
 #> # A tibble: 5 × 3
 #>    Pass     n mean_yield
 #>   <int> <int>      <dbl>
-#> 1    48    18       367.
-#> 2    60    18       315.
-#> 3    64    18       348.
-#> 4    39    16       227.
-#> 5    56    16       399.
+#> 1    64    10       88.6
+#> 2    62     8       68.6
+#> 3     8     7       48.6
+#> 4    39     7       64.6
+#> 5    50     7      159.
 ```
 
 ![](filtre-ecart-type-local_files/figure-html/outliers-viz-1.png)![](filtre-ecart-type-local_files/figure-html/outliers-viz-2.png)
@@ -384,6 +385,7 @@ if (nrow(detected_outliers) > 0) {
 
 | Paramètre    | Description                          | Défaut        |
 |:-------------|:-------------------------------------|:--------------|
+| type         | Type de détection (‘local_sd’)       | ‘local_sd’    |
 | n_swaths     | Nombre de passages dans le voisinage | 5             |
 | lsd_limit    | Seuil d’écart-type pour élimination  | 3             |
 | yield_column | Nom de la colonne de rendement       | ‘Yield_kg_ha’ |
@@ -428,15 +430,15 @@ comparison <- data.frame(
 
 print(comparison, row.names = FALSE)
 #>          Métrique   Avant   Après Variation
-#>  Nombre de points 21577.0 21013.0     -2.61
-#>   Rendement moyen  3516.4  3598.9      2.35
-#>        Écart-type   811.2   642.9    -20.75
-#>            CV (%)    23.1    17.9    -22.57
+#>  Nombre de points 21578.0 21432.0     -0.68
+#>   Rendement moyen  3516.2  3539.2      0.65
+#>        Écart-type   811.4   764.3     -5.81
+#>            CV (%)    23.1    21.6     -6.42
 
 cat("\n✓ Réduction du CV:", 
     round(stats_before$value[4] - stats_after$value[4], 1), "points\n")
 #> 
-#> ✓ Réduction du CV: 5.2 points
+#> ✓ Réduction du CV: 1.5 points
 ```
 
 ## Comparaison avec d’autres méthodes
@@ -458,13 +460,13 @@ removed_global <- data %>%
 cat("Filtre global (±3σ global):\n")
 #> Filtre global (±3σ global):
 cat("  Points retirés:", nrow(removed_global), "\n")
-#>   Points retirés: 735
+#>   Points retirés: 736
 
 # Filtre local
 cat("Filtre local (±3σ local par voisinage):\n")
 #> Filtre local (±3σ local par voisinage):
 cat("  Points retirés:", nrow(removed), "\n")
-#>   Points retirés: 564
+#>   Points retirés: 146
 
 cat("\nAvantage du filtre local:\n")
 #> 
