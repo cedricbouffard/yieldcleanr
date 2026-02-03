@@ -216,6 +216,12 @@ est conservé si :</p>
 <span><span class="va">file_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"sample1.txt"</span>, package <span class="op">=</span> <span class="st">"yieldcleanr"</span><span class="op">)</span></span>
 <span><span class="va">data_raw</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/read_yield_data.html">read_yield_data</a></span><span class="op">(</span><span class="va">file_path</span><span class="op">)</span></span>
 <span></span>
+<span><span class="co"># Réduire la taille pour accélérer le build (échantillon représentatif)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">42</span><span class="op">)</span></span>
+<span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">data_raw</span><span class="op">)</span> <span class="op">&gt;</span> <span class="fl">3000</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">data_raw</span> <span class="op">&lt;-</span> <span class="va">data_raw</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">data_raw</span><span class="op">)</span>, <span class="fl">3000</span><span class="op">)</span>, <span class="op">]</span></span>
+<span><span class="op">}</span></span>
+<span></span>
 <span><span class="co"># Préparation</span></span>
 <span><span class="va">data</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/latlon_to_utm.html">latlon_to_utm</a></span><span class="op">(</span><span class="va">data_raw</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
 <span>  <span class="fu"><a href="../reference/convert_flow_to_yield.html">convert_flow_to_yield</a></span><span class="op">(</span><span class="op">)</span></span>
@@ -223,7 +229,7 @@ est conservé si :</p>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"=== Filtre d'humidité ===\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; === Filtre d'humidité ===</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Points avant filtrage:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">data</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Points avant filtrage: 21905</span></span>
+<span><span class="co">#&gt; Points avant filtrage: 2998</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Humidité (%):\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Humidité (%):</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"  Moyenne:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">data</span><span class="op">$</span><span class="va">Moisture</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>, <span class="fl">1</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
@@ -231,7 +237,7 @@ est conservé si :</p>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"  Min:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">min</a></span><span class="op">(</span><span class="va">data</span><span class="op">$</span><span class="va">Moisture</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>, <span class="fl">1</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt;   Min: 0.1</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"  Max:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">max</a></span><span class="op">(</span><span class="va">data</span><span class="op">$</span><span class="va">Moisture</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>, <span class="fl">1</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt;   Max: 12.3</span></span>
+<span><span class="co">#&gt;   Max: 11.9</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"  Écart-type:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/sd.html" class="external-link">sd</a></span><span class="op">(</span><span class="va">data</span><span class="op">$</span><span class="va">Moisture</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>, <span class="fl">1</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt;   Écart-type: 0.6</span></span></code></pre></div>
 </div>
@@ -260,9 +266,9 @@ est conservé si :</p>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Plage (moyenne ± 3 SD):\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Plage (moyenne ± 3 SD):</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"  Minimum:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">min_moisture_auto</span>, <span class="fl">1</span><span class="op">)</span>, <span class="st">"%\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt;   Minimum: 7.9 %</span></span>
+<span><span class="co">#&gt;   Minimum: 7.8 %</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"  Maximum:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">max_moisture_auto</span>, <span class="fl">1</span><span class="op">)</span>, <span class="st">"%\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt;   Maximum: 11.3 %</span></span></code></pre></div>
+<span><span class="co">#&gt;   Maximum: 11.4 %</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="distribution-de-lhumidité">Distribution de l’humidité<a class="anchor" aria-label="anchor" href="#distribution-de-lhumidit%C3%A9"></a>
@@ -310,9 +316,9 @@ est conservé si :</p>
 <span><span class="va">data_filtered</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/filter_data.html">filter_data</a></span><span class="op">(</span><span class="va">data</span>, type <span class="op">=</span> <span class="st">"moisture"</span>, n_std <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Points après filtrage:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">data_filtered</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Points après filtrage: 21602</span></span>
+<span><span class="co">#&gt; Points après filtrage: 2957</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Points retirés:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">data</span><span class="op">)</span> <span class="op">-</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">data_filtered</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Points retirés: 303</span></span>
+<span><span class="co">#&gt; Points retirés: 41</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Taux de rétention:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">data_filtered</span><span class="op">)</span><span class="op">/</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">data</span><span class="op">)</span><span class="op">*</span><span class="fl">100</span>, <span class="fl">1</span><span class="op">)</span>, <span class="st">"%\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Taux de rétention: 98.6 %</span></span></code></pre></div>
 </div>
@@ -337,9 +343,9 @@ est conservé si :</p>
 <span>                           max_moisture <span class="op">=</span> <span class="va">max_manual</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Points après filtrage manuel:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">data_manual</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Points après filtrage manuel: 21886</span></span>
+<span><span class="co">#&gt; Points après filtrage manuel: 2994</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Points retirés:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">data</span><span class="op">)</span> <span class="op">-</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">data_manual</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Points retirés: 19</span></span></code></pre></div>
+<span><span class="co">#&gt; Points retirés: 4</span></span></code></pre></div>
 </div>
 </div>
 <div class="section level2">
@@ -354,7 +360,7 @@ est conservé si :</p>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"\nPoints éliminés par humidité:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">removed</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Points éliminés par humidité: 303</span></span>
+<span><span class="co">#&gt; Points éliminés par humidité: 41</span></span>
 <span></span>
 <span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">removed</span><span class="op">)</span> <span class="op">&gt;</span> <span class="fl">0</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="va">sf_removed</span> <span class="op">&lt;-</span> <span class="fu">sf</span><span class="fu">::</span><span class="fu"><a href="https://r-spatial.github.io/sf/reference/st_as_sf.html" class="external-link">st_as_sf</a></span><span class="op">(</span><span class="va">removed</span>, coords <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Longitude"</span>, <span class="st">"Latitude"</span><span class="op">)</span>, crs <span class="op">=</span> <span class="fl">4326</span><span class="op">)</span></span>
@@ -431,11 +437,11 @@ est conservé si :</p>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Avant filtrage:\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Avant filtrage:</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"  Rendement humide moyen:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">rendement_humide</span>, <span class="fl">1</span><span class="op">)</span>, <span class="st">"kg/ha\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt;   Rendement humide moyen: 3517 kg/ha</span></span>
+<span><span class="co">#&gt;   Rendement humide moyen: 3523.5 kg/ha</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"  Humidité moyenne:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">humidite_moyenne</span>, <span class="fl">1</span><span class="op">)</span>, <span class="st">"%\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt;   Humidité moyenne: 9.6 %</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"  Rendement sec équivalent:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">rendement_sec_brut</span>, <span class="fl">1</span><span class="op">)</span>, <span class="st">"kg/ha\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt;   Rendement sec équivalent: 3653.6 kg/ha</span></span>
+<span><span class="co">#&gt;   Rendement sec équivalent: 3660.6 kg/ha</span></span>
 <span></span>
 <span><span class="co"># Après filtrage</span></span>
 <span><span class="va">rendement_humide_filt</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">data_filtered</span><span class="op">$</span><span class="va">Yield_kg_ha</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
@@ -446,15 +452,15 @@ est conservé si :</p>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Après filtrage:</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"  Rendement humide moyen:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">rendement_humide_filt</span>, <span class="fl">1</span><span class="op">)</span>, <span class="st">"kg/ha\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt;   Rendement humide moyen: 3518.9 kg/ha</span></span>
+<span><span class="co">#&gt;   Rendement humide moyen: 3524.3 kg/ha</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"  Humidité moyenne:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">humidite_moyenne_filt</span>, <span class="fl">1</span><span class="op">)</span>, <span class="st">"%\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt;   Humidité moyenne: 9.6 %</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"  Rendement sec équivalent:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">rendement_sec_filt</span>, <span class="fl">1</span><span class="op">)</span>, <span class="st">"kg/ha\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt;   Rendement sec équivalent: 3656.3 kg/ha</span></span>
+<span><span class="co">#&gt;   Rendement sec équivalent: 3661.9 kg/ha</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"\nDifférence:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">rendement_sec_filt</span> <span class="op">-</span> <span class="va">rendement_sec_brut</span>, <span class="fl">1</span><span class="op">)</span>, <span class="st">"kg/ha\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Différence: 2.7 kg/ha</span></span></code></pre></div>
+<span><span class="co">#&gt; Différence: 1.3 kg/ha</span></span></code></pre></div>
 </div>
 </div>
 <div class="section level2">

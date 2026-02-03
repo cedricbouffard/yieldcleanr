@@ -69,6 +69,12 @@ library(dplyr)
 file_path <- system.file("extdata", "sample1.txt", package = "yieldcleanr")
 data_raw <- read_yield_data(file_path)
 
+# Réduire la taille pour accélérer le build (échantillon représentatif)
+set.seed(42)
+if (nrow(data_raw) > 3000) {
+  data_raw <- data_raw[sample(nrow(data_raw), 3000), ]
+}
+
 # Préparation
 data <- latlon_to_utm(data_raw) %>%
   convert_flow_to_yield()
@@ -76,7 +82,7 @@ data <- latlon_to_utm(data_raw) %>%
 cat("=== Filtre d'humidité ===\n")
 #> === Filtre d'humidité ===
 cat("Points avant filtrage:", nrow(data), "\n")
-#> Points avant filtrage: 21905
+#> Points avant filtrage: 2998
 cat("Humidité (%):\n")
 #> Humidité (%):
 cat("  Moyenne:", round(mean(data$Moisture, na.rm = TRUE), 1), "\n")
@@ -84,7 +90,7 @@ cat("  Moyenne:", round(mean(data$Moisture, na.rm = TRUE), 1), "\n")
 cat("  Min:", round(min(data$Moisture, na.rm = TRUE), 1), "\n")
 #>   Min: 0.1
 cat("  Max:", round(max(data$Moisture, na.rm = TRUE), 1), "\n")
-#>   Max: 12.3
+#>   Max: 11.9
 cat("  Écart-type:", round(sd(data$Moisture, na.rm = TRUE), 1), "\n")
 #>   Écart-type: 0.6
 ```
@@ -112,9 +118,9 @@ cat("Écart-type:", round(sd_moisture, 1), "%\n")
 cat("Plage (moyenne ± 3 SD):\n")
 #> Plage (moyenne ± 3 SD):
 cat("  Minimum:", round(min_moisture_auto, 1), "%\n")
-#>   Minimum: 7.9 %
+#>   Minimum: 7.8 %
 cat("  Maximum:", round(max_moisture_auto, 1), "%\n")
-#>   Maximum: 11.3 %
+#>   Maximum: 11.4 %
 ```
 
 ### Distribution de l’humidité
@@ -161,9 +167,9 @@ cat("\n=== Application du filtre automatique ===\n")
 data_filtered <- filter_data(data, type = "moisture", n_std = 3)
 
 cat("Points après filtrage:", nrow(data_filtered), "\n")
-#> Points après filtrage: 21602
+#> Points après filtrage: 2957
 cat("Points retirés:", nrow(data) - nrow(data_filtered), "\n")
-#> Points retirés: 303
+#> Points retirés: 41
 cat("Taux de rétention:", round(nrow(data_filtered)/nrow(data)*100, 1), "%\n")
 #> Taux de rétention: 98.6 %
 ```
@@ -188,9 +194,9 @@ data_manual <- filter_data(data,
                            max_moisture = max_manual)
 
 cat("Points après filtrage manuel:", nrow(data_manual), "\n")
-#> Points après filtrage manuel: 21886
+#> Points après filtrage manuel: 2994
 cat("Points retirés:", nrow(data) - nrow(data_manual), "\n")
-#> Points retirés: 19
+#> Points retirés: 4
 ```
 
 ## Visualisation des points éliminés
@@ -204,7 +210,7 @@ removed <- data %>%
 
 cat("\nPoints éliminés par humidité:", nrow(removed), "\n")
 #> 
-#> Points éliminés par humidité: 303
+#> Points éliminés par humidité: 41
 
 if (nrow(removed) > 0) {
   sf_removed <- sf::st_as_sf(removed, coords = c("Longitude", "Latitude"), crs = 4326)
@@ -280,11 +286,11 @@ rendement_sec_brut <- rendement_humide * (100 - humidite_moyenne) / (100 - humid
 cat("Avant filtrage:\n")
 #> Avant filtrage:
 cat("  Rendement humide moyen:", round(rendement_humide, 1), "kg/ha\n")
-#>   Rendement humide moyen: 3517 kg/ha
+#>   Rendement humide moyen: 3523.5 kg/ha
 cat("  Humidité moyenne:", round(humidite_moyenne, 1), "%\n")
 #>   Humidité moyenne: 9.6 %
 cat("  Rendement sec équivalent:", round(rendement_sec_brut, 1), "kg/ha\n")
-#>   Rendement sec équivalent: 3653.6 kg/ha
+#>   Rendement sec équivalent: 3660.6 kg/ha
 
 # Après filtrage
 rendement_humide_filt <- mean(data_filtered$Yield_kg_ha, na.rm = TRUE)
@@ -295,15 +301,15 @@ cat("\nAprès filtrage:\n")
 #> 
 #> Après filtrage:
 cat("  Rendement humide moyen:", round(rendement_humide_filt, 1), "kg/ha\n")
-#>   Rendement humide moyen: 3518.9 kg/ha
+#>   Rendement humide moyen: 3524.3 kg/ha
 cat("  Humidité moyenne:", round(humidite_moyenne_filt, 1), "%\n")
 #>   Humidité moyenne: 9.6 %
 cat("  Rendement sec équivalent:", round(rendement_sec_filt, 1), "kg/ha\n")
-#>   Rendement sec équivalent: 3656.3 kg/ha
+#>   Rendement sec équivalent: 3661.9 kg/ha
 
 cat("\nDifférence:", round(rendement_sec_filt - rendement_sec_brut, 1), "kg/ha\n")
 #> 
-#> Différence: 2.7 kg/ha
+#> Différence: 1.3 kg/ha
 ```
 
 ## Paramètres recommandés
