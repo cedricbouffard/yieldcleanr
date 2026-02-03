@@ -118,13 +118,13 @@ ylim_max <- quantile(yields, 0.995)
 
 p1 <- ggplot(data.frame(yield = yields), aes(x = yield)) +
   geom_histogram(bins = 50, fill = "#3498db", alpha = 0.7, color = "white") +
-  geom_vline(xintercept = thresholds$min_yield, color = "#27ae60", 
+  geom_vline(xintercept = thresholds$yield$min_yield, color = "#27ae60",
              linetype = "dashed", size = 1) +
-  geom_vline(xintercept = thresholds$max_yield, color = "#27ae60", 
+  geom_vline(xintercept = thresholds$yield$max_yield, color = "#27ae60",
              linetype = "dashed", size = 1) +
-  annotate("text", x = thresholds$min_yield, y = Inf, 
+  annotate("text", x = thresholds$yield$min_yield, y = Inf,
            label = "Min", vjust = 2, color = "#27ae60") +
-  annotate("text", x = thresholds$max_yield, y = Inf, 
+  annotate("text", x = thresholds$yield$max_yield, y = Inf,
            label = "Max", vjust = 2, color = "#27ae60") +
   labs(title = "Distribution du rendement",
        subtitle = "Seuils de filtrage indiqués en vert",
