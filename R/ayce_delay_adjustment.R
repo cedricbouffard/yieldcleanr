@@ -466,15 +466,17 @@ apply_delay_adjustment <- function(data, delay_range = -25:25, n_iterations = 5,
 
    thresholds <- list()
 
-   # ---- Seuils de rendement (MINY / MAXY) ----
-   # Utiliser Yield_buacre si disponible, sinon Flow
-   if ("Yield_buacre" %in% names(data)) {
-     y_col <- "Yield_buacre"
-   } else if ("Flow" %in% names(data)) {
-     y_col <- "Flow"
-   } else {
-     y_col <- NULL
-   }
+    # ---- Seuils de rendement (MINY / MAXY) ----
+    # Utiliser Yield_kg_ha si disponible, sinon Yield_buacre, sinon Flow
+    if ("Yield_kg_ha" %in% names(data)) {
+      y_col <- "Yield_kg_ha"
+    } else if ("Yield_buacre" %in% names(data)) {
+      y_col <- "Yield_buacre"
+    } else if ("Flow" %in% names(data)) {
+      y_col <- "Flow"
+    } else {
+      y_col <- NULL
+    }
 
    if (!is.null(y_col)) {
      # Exclure les Inf pour le calcul des quantiles

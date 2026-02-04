@@ -46,6 +46,11 @@ clean_yield_fast <- function(data, phase = "full", preprocessed_data = NULL,
  preprocess_yield_data <- function(data, params = list(), metrique = TRUE) {
   rlang::inform("=== Phase 1: Pré-traitement ===")
   
+  # Ajouter un identifiant de ligne original pour tracker les suppressions
+  if (!"orig_row_id" %in% names(data)) {
+    data$orig_row_id <- seq_len(nrow(data))
+  }
+  
   # Étape 1: Conversion UTM
   rlang::inform("Étape 1: conversion en coordonnées UTM...")
   data <- latlon_to_utm(data)
@@ -154,6 +159,9 @@ clean_yield_fast <- function(data, phase = "full", preprocessed_data = NULL,
   
   data <- preprocessed_data
   
+  # Sauvegarder une copie des donnees avec rendement pour les diagnostics
+  all_data_with_yield <- data
+  
   # Initialiser le suivi des suppressions par étape
   deletions <- list()
   deletions$step <- character()
@@ -161,10 +169,12 @@ clean_yield_fast <- function(data, phase = "full", preprocessed_data = NULL,
   
   # Initialiser le suivi des points supprimés avec leurs coordonnées
   deleted_points <- list()
+  deleted_points$orig_row_id <- integer()
   deleted_points$X <- numeric()
   deleted_points$Y <- numeric()
   deleted_points$Longitude <- numeric()
   deleted_points$Latitude <- numeric()
+  deleted_points$valeur <- numeric()
   deleted_points$step <- character()
   deleted_points$reason <- character()
   
@@ -215,10 +225,12 @@ clean_yield_fast <- function(data, phase = "full", preprocessed_data = NULL,
     # Identifier les points à supprimer avant le filtrage
     rows_to_delete <- which(!(data$HeaderStatus %in% c(0, 1, 33) | is.na(data$HeaderStatus)))
     if (length(rows_to_delete) > 0) {
+      deleted_points$orig_row_id <- c(deleted_points$orig_row_id, data$orig_row_id[rows_to_delete])
       deleted_points$X <- c(deleted_points$X, data$X[rows_to_delete])
       deleted_points$Y <- c(deleted_points$Y, data$Y[rows_to_delete])
       deleted_points$Longitude <- c(deleted_points$Longitude, data$Longitude[rows_to_delete])
       deleted_points$Latitude <- c(deleted_points$Latitude, data$Latitude[rows_to_delete])
+      deleted_points$valeur <- c(deleted_points$valeur, data$Flow[rows_to_delete])
       deleted_points$step <- c(deleted_points$step, rep("Filtre header", length(rows_to_delete)))
       deleted_points$reason <- c(deleted_points$reason, rep("HeaderStatus invalide", length(rows_to_delete)))
     }
@@ -237,10 +249,12 @@ clean_yield_fast <- function(data, phase = "full", preprocessed_data = NULL,
     # Identifier les points à supprimer avant le filtrage
     rows_to_delete <- which(!is.na(data$GPSStatus) & data$GPSStatus < 4)
     if (length(rows_to_delete) > 0) {
+      deleted_points$orig_row_id <- c(deleted_points$orig_row_id, data$orig_row_id[rows_to_delete])
       deleted_points$X <- c(deleted_points$X, data$X[rows_to_delete])
       deleted_points$Y <- c(deleted_points$Y, data$Y[rows_to_delete])
       deleted_points$Longitude <- c(deleted_points$Longitude, data$Longitude[rows_to_delete])
       deleted_points$Latitude <- c(deleted_points$Latitude, data$Latitude[rows_to_delete])
+      deleted_points$valeur <- c(deleted_points$valeur, data$Flow[rows_to_delete])
       deleted_points$step <- c(deleted_points$step, rep("Filtre GPS", length(rows_to_delete)))
       deleted_points$reason <- c(deleted_points$reason, rep("GPSStatus < 4 (signal faible)", length(rows_to_delete)))
     }
@@ -264,10 +278,12 @@ clean_yield_fast <- function(data, phase = "full", preprocessed_data = NULL,
     # Identifier les points à supprimer avant le filtrage
     rows_to_delete <- which(data$velocity < thresholds$min_velocity | data$velocity > thresholds$max_velocity)
     if (length(rows_to_delete) > 0) {
+      deleted_points$orig_row_id <- c(deleted_points$orig_row_id, data$orig_row_id[rows_to_delete])
       deleted_points$X <- c(deleted_points$X, data$X[rows_to_delete])
       deleted_points$Y <- c(deleted_points$Y, data$Y[rows_to_delete])
       deleted_points$Longitude <- c(deleted_points$Longitude, data$Longitude[rows_to_delete])
       deleted_points$Latitude <- c(deleted_points$Latitude, data$Latitude[rows_to_delete])
+      deleted_points$valeur <- c(deleted_points$valeur, data$velocity[rows_to_delete])
       deleted_points$step <- c(deleted_points$step, rep("Filtre vitesse", length(rows_to_delete)))
       reason_msg <- paste0("Vitesse hors limites [", round(thresholds$min_velocity, 2), "-", round(thresholds$max_velocity, 2), "]")
       deleted_points$reason <- c(deleted_points$reason, rep(reason_msg, length(rows_to_delete)))
@@ -289,10 +305,12 @@ clean_yield_fast <- function(data, phase = "full", preprocessed_data = NULL,
                                     max_deceleration = params$max_deceleration %||% -8)
     # Tracker les points supprimés
     if (nrow(result$removed) > 0) {
+      deleted_points$orig_row_id <- c(deleted_points$orig_row_id, result$removed$orig_row_id)
       deleted_points$X <- c(deleted_points$X, result$removed$X)
       deleted_points$Y <- c(deleted_points$Y, result$removed$Y)
       deleted_points$Longitude <- c(deleted_points$Longitude, result$removed$Longitude)
       deleted_points$Latitude <- c(deleted_points$Latitude, result$removed$Latitude)
+      deleted_points$valeur <- c(deleted_points$valeur, if("velocity" %in% names(result$removed)) result$removed$velocity else result$removed$Flow)
       deleted_points$step <- c(deleted_points$step, rep("Filtre changement de vitesse", nrow(result$removed)))
       reason_msg <- paste0("Changement de vitesse brusque [acc>", params$max_acceleration %||% 5, ", dec<", params$max_deceleration %||% -8, "]")
       deleted_points$reason <- c(deleted_points$reason, rep(reason_msg, nrow(result$removed)))
@@ -312,10 +330,12 @@ clean_yield_fast <- function(data, phase = "full", preprocessed_data = NULL,
                                        max_heading_change = params$max_heading_change %||% 60)
     # Tracker les points supprimés
     if (nrow(result$removed) > 0) {
+      deleted_points$orig_row_id <- c(deleted_points$orig_row_id, result$removed$orig_row_id)
       deleted_points$X <- c(deleted_points$X, result$removed$X)
       deleted_points$Y <- c(deleted_points$Y, result$removed$Y)
       deleted_points$Longitude <- c(deleted_points$Longitude, result$removed$Longitude)
       deleted_points$Latitude <- c(deleted_points$Latitude, result$removed$Latitude)
+      deleted_points$valeur <- c(deleted_points$valeur, result$removed$Flow)
       deleted_points$step <- c(deleted_points$step, rep("Filtre direction", nrow(result$removed)))
       reason_msg <- paste0("Changement de direction anormal [>", params$max_heading_change %||% 60, "°]")
       deleted_points$reason <- c(deleted_points$reason, rep(reason_msg, nrow(result$removed)))
@@ -334,10 +354,12 @@ clean_yield_fast <- function(data, phase = "full", preprocessed_data = NULL,
     # Identifier les points à supprimer avant le filtrage
     rows_to_delete <- which(data$Yield_kg_ha <= 0 | is.na(data$Yield_kg_ha))
     if (length(rows_to_delete) > 0) {
+      deleted_points$orig_row_id <- c(deleted_points$orig_row_id, data$orig_row_id[rows_to_delete])
       deleted_points$X <- c(deleted_points$X, data$X[rows_to_delete])
       deleted_points$Y <- c(deleted_points$Y, data$Y[rows_to_delete])
       deleted_points$Longitude <- c(deleted_points$Longitude, data$Longitude[rows_to_delete])
       deleted_points$Latitude <- c(deleted_points$Latitude, data$Latitude[rows_to_delete])
+      deleted_points$valeur <- c(deleted_points$valeur, data$Yield_kg_ha[rows_to_delete])
       deleted_points$step <- c(deleted_points$step, rep("Rendement nul", length(rows_to_delete)))
       deleted_points$reason <- c(deleted_points$reason, rep("Rendement nul ou manquant", length(rows_to_delete)))
     }
@@ -361,10 +383,12 @@ clean_yield_fast <- function(data, phase = "full", preprocessed_data = NULL,
         data[[yield_col]] > thresholds$max_yield
       )
       if (length(rows_to_delete) > 0) {
+         deleted_points$orig_row_id <- c(deleted_points$orig_row_id, data$orig_row_id[rows_to_delete])
          deleted_points$X <- c(deleted_points$X, data$X[rows_to_delete])
          deleted_points$Y <- c(deleted_points$Y, data$Y[rows_to_delete])
          deleted_points$Longitude <- c(deleted_points$Longitude, data$Longitude[rows_to_delete])
          deleted_points$Latitude <- c(deleted_points$Latitude, data$Latitude[rows_to_delete])
+         deleted_points$valeur <- c(deleted_points$valeur, data[[yield_col]][rows_to_delete])
          deleted_points$step <- c(deleted_points$step, rep("Filtre plage rendement", length(rows_to_delete)))
         reason_msg <- paste0("Rendement hors plage [", round(thresholds$min_yield, 1), "-", round(thresholds$max_yield, 1), "]")
         deleted_points$reason <- c(deleted_points$reason, rep(reason_msg, length(rows_to_delete)))
@@ -396,11 +420,13 @@ clean_yield_fast <- function(data, phase = "full", preprocessed_data = NULL,
       data$Moisture > max_moisture
     )
     if (length(rows_to_delete) > 0) {
-       deleted_points$X <- c(deleted_points$X, data$X[rows_to_delete])
-       deleted_points$Y <- c(deleted_points$Y, data$Y[rows_to_delete])
-       deleted_points$Longitude <- c(deleted_points$Longitude, data$Longitude[rows_to_delete])
-       deleted_points$Latitude <- c(deleted_points$Latitude, data$Latitude[rows_to_delete])
-       deleted_points$step <- c(deleted_points$step, rep("Filtre humidité", length(rows_to_delete)))
+        deleted_points$orig_row_id <- c(deleted_points$orig_row_id, data$orig_row_id[rows_to_delete])
+        deleted_points$X <- c(deleted_points$X, data$X[rows_to_delete])
+        deleted_points$Y <- c(deleted_points$Y, data$Y[rows_to_delete])
+        deleted_points$Longitude <- c(deleted_points$Longitude, data$Longitude[rows_to_delete])
+        deleted_points$Latitude <- c(deleted_points$Latitude, data$Latitude[rows_to_delete])
+        deleted_points$valeur <- c(deleted_points$valeur, data$Moisture[rows_to_delete])
+        deleted_points$step <- c(deleted_points$step, rep("Filtre humidité", length(rows_to_delete)))
       reason_msg <- paste0("Humidité hors plage [", round(min_moisture, 1), "-", round(max_moisture, 1), "] (mean ±", n_std, "SD)")
       deleted_points$reason <- c(deleted_points$reason, rep(reason_msg, length(rows_to_delete)))
     }
@@ -425,10 +451,12 @@ clean_yield_fast <- function(data, phase = "full", preprocessed_data = NULL,
     if ("overlap_ratio" %in% names(data_with_overlap)) {
       rows_to_delete <- which(data_with_overlap$overlap_ratio > overlap_threshold)
       if (length(rows_to_delete) > 0) {
+         deleted_points$orig_row_id <- c(deleted_points$orig_row_id, data$orig_row_id[rows_to_delete])
          deleted_points$X <- c(deleted_points$X, data$X[rows_to_delete])
          deleted_points$Y <- c(deleted_points$Y, data$Y[rows_to_delete])
          deleted_points$Longitude <- c(deleted_points$Longitude, data$Longitude[rows_to_delete])
          deleted_points$Latitude <- c(deleted_points$Latitude, data$Latitude[rows_to_delete])
+         deleted_points$valeur <- c(deleted_points$valeur, data$Flow[rows_to_delete])
          deleted_points$step <- c(deleted_points$step, rep("Filtre chevauchement", length(rows_to_delete)))
         reason_msg <- paste0("Chevauchement excessif [ratio >", overlap_threshold, "]")
         deleted_points$reason <- c(deleted_points$reason, rep(reason_msg, length(rows_to_delete)))
@@ -492,10 +520,12 @@ clean_yield_fast <- function(data, phase = "full", preprocessed_data = NULL,
       # Identifier les points à supprimer
       rows_to_delete <- which(data_temp$is_outlier)
       if (length(rows_to_delete) > 0) {
+         deleted_points$orig_row_id <- c(deleted_points$orig_row_id, data$orig_row_id[rows_to_delete])
          deleted_points$X <- c(deleted_points$X, data$X[rows_to_delete])
          deleted_points$Y <- c(deleted_points$Y, data$Y[rows_to_delete])
          deleted_points$Longitude <- c(deleted_points$Longitude, data$Longitude[rows_to_delete])
          deleted_points$Latitude <- c(deleted_points$Latitude, data$Latitude[rows_to_delete])
+         deleted_points$valeur <- c(deleted_points$valeur, data$Flow[rows_to_delete])
          deleted_points$step <- c(deleted_points$step, rep("Filtre ET local", length(rows_to_delete)))
         reason_msg <- paste0("Outlier local [Flow hors ", lsd_limit, "×ET local]")
         deleted_points$reason <- c(deleted_points$reason, rep(reason_msg, length(rows_to_delete)))
@@ -522,10 +552,12 @@ clean_yield_fast <- function(data, phase = "full", preprocessed_data = NULL,
   # Convertir la liste des points supprimés en data frame
   deleted_points_df <- if (length(deleted_points$X) > 0) {
     data.frame(
+      orig_row_id = if (!is.null(deleted_points$orig_row_id)) deleted_points$orig_row_id else integer(),
       X = deleted_points$X,
       Y = deleted_points$Y,
       Longitude = if (!is.null(deleted_points$Longitude)) deleted_points$Longitude else numeric(),
       Latitude = if (!is.null(deleted_points$Latitude)) deleted_points$Latitude else numeric(),
+      valeur = if (!is.null(deleted_points$valeur)) deleted_points$valeur else numeric(),
       step = deleted_points$step,
       reason = deleted_points$reason,
       stringsAsFactors = FALSE
@@ -533,10 +565,12 @@ clean_yield_fast <- function(data, phase = "full", preprocessed_data = NULL,
   } else {
     # Retourner un data frame vide avec la bonne structure
     data.frame(
+      orig_row_id = integer(),
       X = numeric(),
       Y = numeric(),
       Longitude = numeric(),
       Latitude = numeric(),
+      valeur = numeric(),
       step = character(),
       reason = character(),
       stringsAsFactors = FALSE
@@ -545,10 +579,14 @@ clean_yield_fast <- function(data, phase = "full", preprocessed_data = NULL,
   
   return(list(
     data = data,
+    all_data = all_data_with_yield,
     deletions = data.frame(
       step = deletions$step,
       n = deletions$n
     ),
-    deleted_points = deleted_points_df
+    deleted_points = deleted_points_df,
+    thresholds = thresholds,
+    flow_delay = flow_delay,
+    moisture_delay = moisture_delay
   ))
 }

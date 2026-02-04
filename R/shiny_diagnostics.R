@@ -90,15 +90,34 @@ build_filter_diagnostics <- function(data_raw, deletions, metrique = TRUE) {
   steps <- unique(deletions$step)
 
   diagnostics <- lapply(steps, function(step_name) {
-    removed_ids <- deletions |>
-      dplyr::filter(step == step_name) |>
-      dplyr::pull(orig_row_id)
-
-    base_data |>
+    # Recuperer les suppressions pour cette etape avec leurs valeurs
+    step_deletions <- deletions |>
+      dplyr::filter(step == step_name)
+    
+    removed_ids <- step_deletions$orig_row_id
+    
+    # Creer les donnees pour cette etape
+    step_data <- base_data |>
       dplyr::mutate(
         etape = step_name,
         statut = dplyr::if_else(orig_row_id %in% removed_ids, "Supprime", "Conserve")
       )
+    
+    # Si les suppressions ont des valeurs, les utiliser pour les points supprimes
+    if ("valeur" %in% names(step_deletions) && nrow(step_deletions) > 0) {
+      # Fusionner avec les valeurs des suppressions
+      step_data <- step_data |>
+        dplyr::left_join(
+          step_deletions |> dplyr::select(orig_row_id, valeur_suppr = valeur),
+          by = "orig_row_id"
+        ) |>
+        dplyr::mutate(
+          valeur = dplyr::if_else(!is.na(valeur_suppr), valeur_suppr, valeur)
+        ) |>
+        dplyr::select(-valeur_suppr)
+    }
+    
+    step_data
   })
 
   names(diagnostics) <- steps
@@ -180,7 +199,7 @@ create_diagnostic_plot <- function(diag_data, step_name, base_size = 11) {
   }
 
   p <- ggplot2::ggplot(plot_data, ggplot2::aes(x = valeur, fill = statut)) +
-    ggplot2::geom_histogram(alpha = 0.7, bins = 40, position = "identity") +
+    ggplot2::geom_histogram(alpha = 0.7, binwidth = 250, position = "identity") +
     ggplot2::scale_fill_manual(
       values = c("Conserve" = "#5b6470", "Supprime" = "#b04a3b"),
       labels = c(paste0("Conserve (n=", kept_count, ")"), 
@@ -231,6 +250,15 @@ create_diagnostic_plot <- function(diag_data, step_name, base_size = 11) {
       name = "Statistiques",
       values = c("Mediane" = "solid", "Moyenne" = "dashed")
     )
+  }
+  
+  # Limiter l'axe X pour eviter les valeurs extremes
+  if (nrow(plot_data) > 0) {
+    x_min <- stats::quantile(plot_data$valeur, 0.001, na.rm = TRUE)
+    x_max <- stats::quantile(plot_data$valeur, 0.999, na.rm = TRUE)
+    if (is.finite(x_min) && is.finite(x_max) && x_max > x_min) {
+      p <- p + ggplot2::coord_cartesian(xlim = c(x_min, x_max))
+    }
   }
   
   p

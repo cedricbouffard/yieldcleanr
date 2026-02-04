@@ -325,11 +325,7 @@ ui <- fluidPage(
   ),
   
   titlePanel(
-    tags$div(
-      tags$div(class = "app-title", "Explorateur de nettoyage des rendements"),
-      tags$div(class = "app-subtitle", "Analyse, filtrage et export des donnees de moissonneuse")
-    )
-  ),
+    "Explorateur de nettoyage des rendements"),
   
    fluidRow(
      column(3,
@@ -1695,28 +1691,34 @@ server <- function(input, output, session) {
             polygon = TRUE
           )
          
-          # Extraire les donnees et les suppressions
-          data_clean <- filter_result$data
-          deletions_by_step <- filter_result$deletions
-          deleted_points <- filter_result$deleted_points
-          
-          # Creer le resultat au format attendu
-          incProgress(0.7, detail = "Mise a jour des resultats...")
-          
-           # Calculer les suppressions totales
-           n_deleted <- nrow(data_df) - nrow(data_clean)
-           
-           result <- list(
-             data_clean = data_clean,
-             data_raw = data_df,
-             stats = list(
-               n_raw = nrow(data_df),
-               n_clean = nrow(data_clean),
-               n_deleted = n_deleted,
-               retention_rate = nrow(data_clean) / nrow(data_df) * 100,
-               deletions_by_step = deletions_by_step
-             )
-           )
+            # Extraire les donnees et les suppressions
+            data_clean <- filter_result$data
+            all_data <- filter_result$all_data
+            deletions_by_step <- filter_result$deletions
+            deleted_points <- filter_result$deleted_points
+            thresholds <- filter_result$thresholds
+            flow_delay <- filter_result$flow_delay
+            
+            # Creer le resultat au format attendu
+            incProgress(0.7, detail = "Mise a jour des resultats...")
+            
+             # Calculer les suppressions totales
+             n_deleted <- nrow(data_df) - nrow(data_clean)
+             
+              result <- list(
+                data_clean = data_clean,
+                all_data = all_data,
+                deletions = deleted_points,
+                stats = list(
+                  n_raw = nrow(data_df),
+                  n_clean = nrow(data_clean),
+                  n_deleted = n_deleted,
+                  retention_rate = nrow(data_clean) / nrow(data_df) * 100,
+                  deletions_by_step = deletions_by_step,
+                  thresholds = thresholds,
+                  flow_delay = flow_delay
+                )
+              )
          
           rv$result <- result
           rv$processed <- TRUE
@@ -1896,8 +1898,10 @@ server <- function(input, output, session) {
     
     # Helper function to safely round values
     safe_round <- function(x, digits = 1) {
-      if (is.null(x) || is.na(x) || !is.numeric(x)) return("N/A")
-      round(x, digits)
+      if (is.null(x) || length(x) == 0 || !is.numeric(x) || all(is.na(x))) return("N/A")
+      if (any(is.na(x))) x <- x[!is.na(x)]
+      if (length(x) == 0) return("N/A")
+      round(x[1], digits)
     }
     
     data.frame(
@@ -1933,8 +1937,10 @@ server <- function(input, output, session) {
     
     # Helper function to safely round values
     safe_round <- function(x, digits = 1) {
-      if (is.null(x) || is.na(x) || !is.numeric(x)) return("N/A")
-      round(x, digits)
+      if (is.null(x) || length(x) == 0 || !is.numeric(x) || all(is.na(x))) return("N/A")
+      if (any(is.na(x))) x <- x[!is.na(x)]
+      if (length(x) == 0) return("N/A")
+      round(x[1], digits)
     }
     
     cat("Plage de rendement :", safe_round(thr$min_yield * yield_factor, 1), "-",
@@ -1969,8 +1975,9 @@ server <- function(input, output, session) {
     req(rv$processed)
     req(rv$result)
 
+    # Utiliser all_data qui contient toutes les lignes avec Yield_kg_ha
     diagnostics <- yieldcleanr:::build_filter_diagnostics(
-      rv$result$data_raw,
+      rv$result$all_data,
       rv$result$deletions,
       metrique = TRUE
     )
@@ -2005,8 +2012,9 @@ server <- function(input, output, session) {
     req(rv$processed)
     req(rv$result)
 
+    # Utiliser all_data qui contient toutes les lignes avec Yield_kg_ha
     diagnostics <- yieldcleanr:::build_filter_diagnostics(
-      rv$result$data_raw,
+      rv$result$all_data,
       rv$result$deletions,
       metrique = TRUE
     )

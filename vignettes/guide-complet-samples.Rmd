@@ -66,24 +66,24 @@ cat("  Min-Max:", round(min(data_raw_s1$Flow, na.rm = TRUE), 2), "-",
 ### Pipeline de nettoyage étape par étape
 
 ```{r sample1-pipeline}
-# Étape 1: Conversion UTM et rendement
+# Étape 1: Conversion UTM (sans conversion en rendement)
 data_s1 <- latlon_to_utm(data_raw_s1)
-data_s1 <- convert_flow_to_yield(data_s1)
 
-cat("\n📊 APRÈS CONVERSION\n")
-cat("Rendement moyen:", round(mean(data_s1$Yield_kg_ha, na.rm = TRUE), 1), "kg/ha\n")
-cat("CV:", round(sd(data_s1$Yield_kg_ha, na.rm = TRUE) / mean(data_s1$Yield_kg_ha, na.rm = TRUE) * 100, 1), "%\n")
+# Étape 2: Filtre position (hors champ) - AVANT delay adjustment
+data_s1 <- filter_position_outliers(data_s1)$data
 
-# Étape 2: Delay Adjustment
-delay_result_s1 <- optimize_delays(data_s1, type = "flow", delay_range = -25:25, n_iterations = 3)
+# Étape 3: Delay Adjustment (sur Flow, pas sur Yield)
+delay_result_s1 <- optimize_delays(data_s1, type = "flow", delay_range = -25:25, n_iterations = 10, noise_level = 0.03)
 cat("\n🔧 Delay Adjustment - Délai optimal:", delay_result_s1$delays$flow, "secondes\n")
 
 if (!is.null(delay_result_s1$data)) {
   data_s1 <- delay_result_s1$data
-  cat("Points après correction délai:", nrow(data_s1), "\n")
 }
 
-# Étape 3: Seuils automatiques
+# Étape 4: Conversion en rendement APRÈS delay adjustment
+data_s1 <- convert_flow_to_yield(data_s1)
+
+# Étape 5: Seuils automatiques
 thresholds_s1 <- calculate_thresholds(data_s1)
 cat("\n📈 Seuils calculés:\n")
 cat("  Vitesse:", round(thresholds_s1$velocity$min_velocity, 2), "-", round(thresholds_s1$velocity$max_velocity, 2), "m/s\n")
@@ -161,19 +161,22 @@ cat("  Écart-type:", round(sd(data_raw_s2$Flow, na.rm = TRUE), 2), "\n")
 ### Pipeline de nettoyage
 
 ```{r sample2-pipeline}
+# Étape 1: Conversion UTM (sans conversion en rendement)
 data_s2 <- latlon_to_utm(data_raw_s2)
-data_s2 <- convert_flow_to_yield(data_s2)
 
-# Delay Adjustment avec délai important
-delay_result_s2 <- optimize_delays(data_s2, type = "flow", delay_range = -25:25, n_iterations = 3)
+# Étape 2: Filtre position (hors champ) - AVANT delay adjustment
+data_s2 <- filter_position_outliers(data_s2)$data
+
+# Étape 3: Delay Adjustment avec délai important (sur Flow, pas sur Yield)
+delay_result_s2 <- optimize_delays(data_s2, type = "flow", delay_range = -25:25, n_iterations = 10, noise_level = 0.03)
 cat("🔧 Delay Adjustment - Délai optimal:", delay_result_s2$delays$flow, "secondes\n")
 
 if (!is.null(delay_result_s2$data)) {
-  n_before <- nrow(data_s2)
   data_s2 <- delay_result_s2$data
-  removed_delay_adjustment <- n_before - nrow(data_s2)
-  cat("Points retirés par Delay Adjustment:", removed_delay_adjustment, "\n")
 }
+
+# Étape 4: Conversion en rendement APRÈS delay adjustment
+data_s2 <- convert_flow_to_yield(data_s2)
 
 thresholds_s2 <- calculate_thresholds(data_s2)
 
@@ -229,15 +232,21 @@ data_raw_s3 <- read_yield_data(file_path)
 cat("=== SAMPLE 3 - MAÏS ===\n")
 cat("Points bruts:", nrow(data_raw_s3), "\n")
 
-data_s3 <- latlon_to_utm(data_raw_s3) %>%
-  convert_flow_to_yield()
+data_s3 <- latlon_to_utm(data_raw_s3)
 
-delay_result_s3 <- optimize_delays(data_s3, type = "flow", delay_range = -25:25, n_iterations = 3)
+# Filtre position AVANT delay adjustment
+data_s3 <- filter_position_outliers(data_s3)$data
+
+# Delay Adjustment sur Flow (pas sur Yield)
+delay_result_s3 <- optimize_delays(data_s3, type = "flow", delay_range = -25:25, n_iterations = 10, noise_level = 0.03)
 cat("Delay Adjustment - Délai optimal:", delay_result_s3$delays$flow, "secondes\n")
 
 if (!is.null(delay_result_s3$data)) {
   data_s3 <- delay_result_s3$data
 }
+
+# Conversion en rendement APRÈS delay adjustment
+data_s3 <- convert_flow_to_yield(data_s3)
 
 thresholds_s3 <- calculate_thresholds(data_s3)
 
@@ -279,15 +288,21 @@ data_raw_s4 <- read_yield_data(file_path)
 cat("=== SAMPLE 4 - MAÏS BLANC ===\n")
 cat("Points bruts:", nrow(data_raw_s4), "\n")
 
-data_s4 <- latlon_to_utm(data_raw_s4) %>%
-  convert_flow_to_yield()
+data_s4 <- latlon_to_utm(data_raw_s4)
 
-delay_result_s4 <- optimize_delays(data_s4, type = "flow", delay_range = -25:25, n_iterations = 3)
+# Filtre position AVANT delay adjustment
+data_s4 <- filter_position_outliers(data_s4)$data
+
+# Delay Adjustment sur Flow (pas sur Yield)
+delay_result_s4 <- optimize_delays(data_s4, type = "flow", delay_range = -25:25, n_iterations = 10, noise_level = 0.03)
 cat("Delay Adjustment - Délai optimal:", delay_result_s4$delays$flow, "secondes\n")
 
 if (!is.null(delay_result_s4$data)) {
   data_s4 <- delay_result_s4$data
 }
+
+# Conversion en rendement APRÈS delay adjustment
+data_s4 <- convert_flow_to_yield(data_s4)
 
 thresholds_s4 <- calculate_thresholds(data_s4)
 
