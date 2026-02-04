@@ -139,14 +139,13 @@ library(dplyr)
 file_path <- system.file("extdata", "sample2.txt", package = "yieldcleanr")
 data_raw <- read_yield_data(file_path)
 
-# Préparation des données
-data <- latlon_to_utm(data_raw) %>%
-  convert_flow_to_yield()
+# Préparation des données (UTM seulement, pas de conversion en rendement)
+data <- latlon_to_utm(data_raw)
 
-# Appliquer Delay Adjustment avec plage étendue
+# Appliquer Delay Adjustment avec plage étendue sur Flow (pas sur Yield)
 cat("=== Application du Delay Adjustment ===\n")
 #> === Application du Delay Adjustment ===
-delay_result <- optimize_delays(data, type = "flow", delay_range = -25:25, n_iterations = 3)
+delay_result <- optimize_delays(data, type = "flow", delay_range = -25:25, n_iterations = 3, noise_level = 0.03)
 
 cat("Délai optimal détecté:", delay_result$delays$flow, "secondes\n")
 #> Délai optimal détecté: 13 secondes
@@ -156,7 +155,7 @@ if (length(optimal_rsc) > 0 && !is.na(optimal_rsc[1])) {
 } else {
   cat("Score Moran moyen au délai optimal: NA\n")
 }
-#> Score Moran moyen au délai optimal: 0.6524
+#> Score Moran moyen au délai optimal: 0.7919
 ```
 
 ## Visualisation des résultats Delay Adjustment
@@ -164,11 +163,11 @@ if (length(optimal_rsc) > 0 && !is.na(optimal_rsc[1])) {
 ### Comparaison avant/après correction
 
 ``` r
-# Données avant correction
-data_before <- data
+# Données avant correction (converties en rendement pour visualisation)
+data_before <- convert_flow_to_yield(data)
 
-# Données après correction
-data_after <- optimize_delays(data, type = "flow")$data
+# Données après correction (avec conversion en rendement)
+data_after <- convert_flow_to_yield(delay_result$data)
 
 # Créer les objets sf
 sf_before <- sf::st_as_sf(data_before, coords = c("Longitude", "Latitude"), crs = 4326)

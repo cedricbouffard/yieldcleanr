@@ -519,7 +519,7 @@ formats d’export.</p>
 <span><span class="va">temp_csv</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempfile</a></span><span class="op">(</span>fileext <span class="op">=</span> <span class="st">".csv"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/export_data.html">export_data</a></span><span class="op">(</span><span class="va">data</span>, <span class="va">temp_csv</span>, format <span class="op">=</span> <span class="st">"csv"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Export CSV:"</span>, <span class="va">temp_csv</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Export CSV: /tmp/RtmpHAobdO/file2f3c128fdee6.csv</span></span>
+<span><span class="co">#&gt; Export CSV: /tmp/RtmpU17U4q/file2c11478ef885.csv</span></span>
 <span></span>
 <span><span class="co"># Export GeoJSON (si sf est installé)</span></span>
 <span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"sf"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
@@ -528,11 +528,11 @@ formats d’export.</p>
 <span>  <span class="fu"><a href="../reference/export_data.html">export_data</a></span><span class="op">(</span><span class="va">data_sf</span>, <span class="va">temp_geojson</span><span class="op">)</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Export GeoJSON:"</span>, <span class="va">temp_geojson</span>, <span class="st">"\n"</span><span class="op">)</span></span>
 <span><span class="op">}</span></span>
-<span><span class="co">#&gt; Deleting source `/tmp/RtmpHAobdO/file2f3c402c879a.geojson' failed</span></span>
-<span><span class="co">#&gt; Writing layer `file2f3c402c879a' to data source </span></span>
-<span><span class="co">#&gt;   `/tmp/RtmpHAobdO/file2f3c402c879a.geojson' using driver `GeoJSON'</span></span>
+<span><span class="co">#&gt; Deleting source `/tmp/RtmpU17U4q/file2c1171619637.geojson' failed</span></span>
+<span><span class="co">#&gt; Writing layer `file2c1171619637' to data source </span></span>
+<span><span class="co">#&gt;   `/tmp/RtmpU17U4q/file2c1171619637.geojson' using driver `GeoJSON'</span></span>
 <span><span class="co">#&gt; Writing 2 features with 1 fields and geometry type Point.</span></span>
-<span><span class="co">#&gt; Export GeoJSON: /tmp/RtmpHAobdO/file2f3c402c879a.geojson</span></span>
+<span><span class="co">#&gt; Export GeoJSON: /tmp/RtmpU17U4q/file2c1171619637.geojson</span></span>
 <span></span>
 <span><span class="co"># Export avec détection automatique du format</span></span>
 <span><span class="va">temp_file</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempfile</a></span><span class="op">(</span>fileext <span class="op">=</span> <span class="st">".csv"</span><span class="op">)</span></span>

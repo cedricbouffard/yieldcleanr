@@ -57,31 +57,23 @@ cat("  Min-Max:", round(min(data_raw_s1$Flow, na.rm = TRUE), 2), "-",
 #### Pipeline de nettoyage étape par étape
 
 ``` r
-# Étape 1: Conversion UTM et rendement
+# Étape 1: Conversion UTM (sans conversion en rendement)
 data_s1 <- latlon_to_utm(data_raw_s1)
-data_s1 <- convert_flow_to_yield(data_s1)
 
-cat("\n📊 APRÈS CONVERSION\n")
-#> 
-#> 📊 APRÈS CONVERSION
-cat("Rendement moyen:", round(mean(data_s1$Yield_kg_ha, na.rm = TRUE), 1), "kg/ha\n")
-#> Rendement moyen: 3517 kg/ha
-cat("CV:", round(sd(data_s1$Yield_kg_ha, na.rm = TRUE) / mean(data_s1$Yield_kg_ha, na.rm = TRUE) * 100, 1), "%\n")
-#> CV: 24.8 %
-
-# Étape 2: Delay Adjustment
-delay_result_s1 <- optimize_delays(data_s1, type = "flow", delay_range = -25:25, n_iterations = 3)
+# Étape 2: Delay Adjustment (sur Flow, pas sur Yield)
+delay_result_s1 <- optimize_delays(data_s1, type = "flow", delay_range = -25:25, n_iterations = 3, noise_level = 0.03)
 cat("\n🔧 Delay Adjustment - Délai optimal:", delay_result_s1$delays$flow, "secondes\n")
 #> 
-#> 🔧 Delay Adjustment - Délai optimal: 3 secondes
+#> 🔧 Delay Adjustment - Délai optimal: 2 secondes
 
 if (!is.null(delay_result_s1$data)) {
   data_s1 <- delay_result_s1$data
-  cat("Points après correction délai:", nrow(data_s1), "\n")
 }
-#> Points après correction délai: 21905
 
-# Étape 3: Seuils automatiques
+# Étape 3: Conversion en rendement APRÈS delay adjustment
+data_s1 <- convert_flow_to_yield(data_s1)
+
+# Étape 4: Seuils automatiques
 thresholds_s1 <- calculate_thresholds(data_s1)
 cat("\n📈 Seuils calculés:\n")
 #> 
@@ -89,9 +81,9 @@ cat("\n📈 Seuils calculés:\n")
 cat("  Vitesse:", round(thresholds_s1$velocity$min_velocity, 2), "-", round(thresholds_s1$velocity$max_velocity, 2), "m/s\n")
 #>   Vitesse: 0.5 - 2.52 m/s
 cat("  Rendement:", round(thresholds_s1$yield$min_yield, 1), "-", round(thresholds_s1$yield$max_yield, 1), "kg/ha\n")
-#>   Rendement: 1071.8 - 5958.6 kg/ha
+#>   Rendement: 1103 - 5932.1 kg/ha
 
-# Étape 4-7: Filtres successifs
+# Étape 5-8: Filtres successifs
 cat("\n🔧 FILTRES APPLIQUÉS:\n")
 #> 
 #> 🔧 FILTRES APPLIQUÉS:
@@ -124,20 +116,20 @@ n_before <- nrow(data_s1)
 data_s1 <- detect_anomalies(data_s1, type = "local_sd", n_swaths = 5, lsd_limit = 3)
 removed_lsd <- n_before - nrow(data_s1)
 cat("  Écart-type local:", removed_lsd, "points retirés (", round(removed_lsd/n_before*100, 1), "%)\n")
-#>   Écart-type local: 144 points retirés ( 0.7 %)
+#>   Écart-type local: 145 points retirés ( 0.7 %)
 
 # Résultat final
 cat("\n📊 RÉSULTAT FINAL\n")
 #> 
 #> 📊 RÉSULTAT FINAL
 cat("Points nettoyés:", nrow(data_s1), "\n")
-#> Points nettoyés: 21424
+#> Points nettoyés: 21423
 cat("Taux de rétention:", round(nrow(data_s1)/nrow(data_raw_s1)*100, 1), "%\n")
-#> Taux de rétention: 97.8 %
+#> Taux de rétention: 97.7 %
 cat("Rendement moyen:", round(mean(data_s1$Yield_kg_ha, na.rm = TRUE), 1), "kg/ha\n")
-#> Rendement moyen: 3538.1 kg/ha
+#> Rendement moyen: 3541.3 kg/ha
 cat("CV final:", round(sd(data_s1$Yield_kg_ha, na.rm = TRUE) / mean(data_s1$Yield_kg_ha, na.rm = TRUE) * 100, 1), "%\n")
-#> CV final: 21.8 %
+#> CV final: 21.3 %
 ```
 
 #### Visualisation avant/après
@@ -187,21 +179,20 @@ cat("  Écart-type:", round(sd(data_raw_s2$Flow, na.rm = TRUE), 2), "\n")
 #### Pipeline de nettoyage
 
 ``` r
+# Étape 1: Conversion UTM (sans conversion en rendement)
 data_s2 <- latlon_to_utm(data_raw_s2)
-data_s2 <- convert_flow_to_yield(data_s2)
 
-# Delay Adjustment avec délai important
-delay_result_s2 <- optimize_delays(data_s2, type = "flow", delay_range = -25:25, n_iterations = 3)
+# Étape 2: Delay Adjustment avec délai important (sur Flow, pas sur Yield)
+delay_result_s2 <- optimize_delays(data_s2, type = "flow", delay_range = -25:25, n_iterations = 3, noise_level = 0.03)
 cat("🔧 Delay Adjustment - Délai optimal:", delay_result_s2$delays$flow, "secondes\n")
 #> 🔧 Delay Adjustment - Délai optimal: 13 secondes
 
 if (!is.null(delay_result_s2$data)) {
-  n_before <- nrow(data_s2)
   data_s2 <- delay_result_s2$data
-  removed_delay_adjustment <- n_before - nrow(data_s2)
-  cat("Points retirés par Delay Adjustment:", removed_delay_adjustment, "\n")
 }
-#> Points retirés par Delay Adjustment: 0
+
+# Étape 3: Conversion en rendement APRÈS delay adjustment
+data_s2 <- convert_flow_to_yield(data_s2)
 
 thresholds_s2 <- calculate_thresholds(data_s2)
 
@@ -215,12 +206,12 @@ data_s2 <- filter_data(data_s2, type = "velocity",
                        min_velocity = thresholds_s2$velocity$min_velocity, 
                        max_velocity = thresholds_s2$velocity$max_velocity)
 cat("  Vitesse:", n_before - nrow(data_s2), "points\n")
-#>   Vitesse: 699 points
+#>   Vitesse: 577 points
 
 n_before <- nrow(data_s2)
 data_s2 <- filter_data(data_s2, type = "moisture", n_std = 3)
 cat("  Humidité:", n_before - nrow(data_s2), "points\n")
-#>   Humidité: 147 points
+#>   Humidité: 140 points
 
 n_before <- nrow(data_s2)
 data_s2 <- detect_anomalies(data_s2, type = "overlap", cellsize = 0.3, overlap_threshold = 0.5)
@@ -236,9 +227,9 @@ cat("\n📊 RÉSULTAT FINAL\n")
 #> 
 #> 📊 RÉSULTAT FINAL
 cat("Points nettoyés:", nrow(data_s2), "\n")
-#> Points nettoyés: 32757
+#> Points nettoyés: 32936
 cat("Taux de rétention:", round(nrow(data_s2)/nrow(data_raw_s2)*100, 1), "%\n")
-#> Taux de rétention: 88.8 %
+#> Taux de rétention: 89.3 %
 ```
 
 #### Visualisation avant/après
@@ -276,16 +267,19 @@ cat("=== SAMPLE 3 - MAÏS ===\n")
 cat("Points bruts:", nrow(data_raw_s3), "\n")
 #> Points bruts: 31815
 
-data_s3 <- latlon_to_utm(data_raw_s3) %>%
-  convert_flow_to_yield()
+data_s3 <- latlon_to_utm(data_raw_s3)
 
-delay_result_s3 <- optimize_delays(data_s3, type = "flow", delay_range = -25:25, n_iterations = 3)
+# Delay Adjustment sur Flow (pas sur Yield)
+delay_result_s3 <- optimize_delays(data_s3, type = "flow", delay_range = -25:25, n_iterations = 3, noise_level = 0.03)
 cat("Delay Adjustment - Délai optimal:", delay_result_s3$delays$flow, "secondes\n")
-#> Delay Adjustment - Délai optimal: 0 secondes
+#> Delay Adjustment - Délai optimal: 1 secondes
 
 if (!is.null(delay_result_s3$data)) {
   data_s3 <- delay_result_s3$data
 }
+
+# Conversion en rendement APRÈS delay adjustment
+data_s3 <- convert_flow_to_yield(data_s3)
 
 thresholds_s3 <- calculate_thresholds(data_s3)
 
@@ -298,9 +292,9 @@ data_s3 <- data_s3 %>%
   detect_anomalies(type = "local_sd", n_swaths = 5, lsd_limit = 3)
 
 cat("Points nettoyés:", nrow(data_s3), "\n")
-#> Points nettoyés: 29912
+#> Points nettoyés: 29928
 cat("Taux de rétention:", round(nrow(data_s3)/nrow(data_raw_s3)*100, 1), "%\n")
-#> Taux de rétention: 94 %
+#> Taux de rétention: 94.1 %
 ```
 
 #### Visualisation avant/après
@@ -338,16 +332,19 @@ cat("=== SAMPLE 4 - MAÏS BLANC ===\n")
 cat("Points bruts:", nrow(data_raw_s4), "\n")
 #> Points bruts: 19495
 
-data_s4 <- latlon_to_utm(data_raw_s4) %>%
-  convert_flow_to_yield()
+data_s4 <- latlon_to_utm(data_raw_s4)
 
-delay_result_s4 <- optimize_delays(data_s4, type = "flow", delay_range = -25:25, n_iterations = 3)
+# Delay Adjustment sur Flow (pas sur Yield)
+delay_result_s4 <- optimize_delays(data_s4, type = "flow", delay_range = -25:25, n_iterations = 3, noise_level = 0.03)
 cat("Delay Adjustment - Délai optimal:", delay_result_s4$delays$flow, "secondes\n")
 #> Delay Adjustment - Délai optimal: 0 secondes
 
 if (!is.null(delay_result_s4$data)) {
   data_s4 <- delay_result_s4$data
 }
+
+# Conversion en rendement APRÈS delay adjustment
+data_s4 <- convert_flow_to_yield(data_s4)
 
 thresholds_s4 <- calculate_thresholds(data_s4)
 

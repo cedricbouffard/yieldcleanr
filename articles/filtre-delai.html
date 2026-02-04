@@ -273,14 +273,13 @@ est la plage de délais testés (typiquement -25 à +25 secondes).</p>
 <span><span class="va">file_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"sample2.txt"</span>, package <span class="op">=</span> <span class="st">"yieldcleanr"</span><span class="op">)</span></span>
 <span><span class="va">data_raw</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/read_yield_data.html">read_yield_data</a></span><span class="op">(</span><span class="va">file_path</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Préparation des données</span></span>
-<span><span class="va">data</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/latlon_to_utm.html">latlon_to_utm</a></span><span class="op">(</span><span class="va">data_raw</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
-<span>  <span class="fu"><a href="../reference/convert_flow_to_yield.html">convert_flow_to_yield</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="co"># Préparation des données (UTM seulement, pas de conversion en rendement)</span></span>
+<span><span class="va">data</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/latlon_to_utm.html">latlon_to_utm</a></span><span class="op">(</span><span class="va">data_raw</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Appliquer Delay Adjustment avec plage étendue</span></span>
+<span><span class="co"># Appliquer Delay Adjustment avec plage étendue sur Flow (pas sur Yield)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"=== Application du Delay Adjustment ===\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; === Application du Delay Adjustment ===</span></span>
-<span><span class="va">delay_result</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/optimize_delays.html">optimize_delays</a></span><span class="op">(</span><span class="va">data</span>, type <span class="op">=</span> <span class="st">"flow"</span>, delay_range <span class="op">=</span> <span class="op">-</span><span class="fl">25</span><span class="op">:</span><span class="fl">25</span>, n_iterations <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span>
+<span><span class="va">delay_result</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/optimize_delays.html">optimize_delays</a></span><span class="op">(</span><span class="va">data</span>, type <span class="op">=</span> <span class="st">"flow"</span>, delay_range <span class="op">=</span> <span class="op">-</span><span class="fl">25</span><span class="op">:</span><span class="fl">25</span>, n_iterations <span class="op">=</span> <span class="fl">3</span>, noise_level <span class="op">=</span> <span class="fl">0.03</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Délai optimal détecté:"</span>, <span class="va">delay_result</span><span class="op">$</span><span class="va">delays</span><span class="op">$</span><span class="va">flow</span>, <span class="st">"secondes\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Délai optimal détecté: 13 secondes</span></span>
@@ -290,7 +289,7 @@ est la plage de délais testés (typiquement -25 à +25 secondes).</p>
 <span><span class="op">}</span> <span class="kw">else</span> <span class="op">{</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Score Moran moyen au délai optimal: NA\n"</span><span class="op">)</span></span>
 <span><span class="op">}</span></span>
-<span><span class="co">#&gt; Score Moran moyen au délai optimal: 0.6524</span></span></code></pre></div>
+<span><span class="co">#&gt; Score Moran moyen au délai optimal: 0.7919</span></span></code></pre></div>
 </div>
 </div>
 <div class="section level2">
@@ -300,11 +299,11 @@ est la plage de délais testés (typiquement -25 à +25 secondes).</p>
 <h3 id="comparaison-avantaprès-correction">Comparaison avant/après correction<a class="anchor" aria-label="anchor" href="#comparaison-avantapr%C3%A8s-correction"></a>
 </h3>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Données avant correction</span></span>
-<span><span class="va">data_before</span> <span class="op">&lt;-</span> <span class="va">data</span></span>
+<code class="sourceCode R"><span><span class="co"># Données avant correction (converties en rendement pour visualisation)</span></span>
+<span><span class="va">data_before</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/convert_flow_to_yield.html">convert_flow_to_yield</a></span><span class="op">(</span><span class="va">data</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Données après correction</span></span>
-<span><span class="va">data_after</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/optimize_delays.html">optimize_delays</a></span><span class="op">(</span><span class="va">data</span>, type <span class="op">=</span> <span class="st">"flow"</span><span class="op">)</span><span class="op">$</span><span class="va">data</span></span>
+<span><span class="co"># Données après correction (avec conversion en rendement)</span></span>
+<span><span class="va">data_after</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/convert_flow_to_yield.html">convert_flow_to_yield</a></span><span class="op">(</span><span class="va">delay_result</span><span class="op">$</span><span class="va">data</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Créer les objets sf</span></span>
 <span><span class="va">sf_before</span> <span class="op">&lt;-</span> <span class="fu">sf</span><span class="fu">::</span><span class="fu"><a href="https://r-spatial.github.io/sf/reference/st_as_sf.html" class="external-link">st_as_sf</a></span><span class="op">(</span><span class="va">data_before</span>, coords <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Longitude"</span>, <span class="st">"Latitude"</span><span class="op">)</span>, crs <span class="op">=</span> <span class="fl">4326</span><span class="op">)</span></span>

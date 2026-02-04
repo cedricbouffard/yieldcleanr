@@ -179,31 +179,23 @@ pipeline AYCE (Auto Yield Cleaning Engine).</p>
 <h4 id="pipeline-de-nettoyage-étape-par-étape">Pipeline de nettoyage étape par étape<a class="anchor" aria-label="anchor" href="#pipeline-de-nettoyage-%C3%A9tape-par-%C3%A9tape"></a>
 </h4>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Étape 1: Conversion UTM et rendement</span></span>
+<code class="sourceCode R"><span><span class="co"># Étape 1: Conversion UTM (sans conversion en rendement)</span></span>
 <span><span class="va">data_s1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/latlon_to_utm.html">latlon_to_utm</a></span><span class="op">(</span><span class="va">data_raw_s1</span><span class="op">)</span></span>
-<span><span class="va">data_s1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/convert_flow_to_yield.html">convert_flow_to_yield</a></span><span class="op">(</span><span class="va">data_s1</span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"\n📊 APRÈS CONVERSION\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; 📊 APRÈS CONVERSION</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Rendement moyen:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">data_s1</span><span class="op">$</span><span class="va">Yield_kg_ha</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>, <span class="fl">1</span><span class="op">)</span>, <span class="st">"kg/ha\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Rendement moyen: 3517 kg/ha</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"CV:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/sd.html" class="external-link">sd</a></span><span class="op">(</span><span class="va">data_s1</span><span class="op">$</span><span class="va">Yield_kg_ha</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span> <span class="op">/</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">data_s1</span><span class="op">$</span><span class="va">Yield_kg_ha</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span> <span class="op">*</span> <span class="fl">100</span>, <span class="fl">1</span><span class="op">)</span>, <span class="st">"%\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; CV: 24.8 %</span></span>
-<span></span>
-<span><span class="co"># Étape 2: Delay Adjustment</span></span>
-<span><span class="va">delay_result_s1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/optimize_delays.html">optimize_delays</a></span><span class="op">(</span><span class="va">data_s1</span>, type <span class="op">=</span> <span class="st">"flow"</span>, delay_range <span class="op">=</span> <span class="op">-</span><span class="fl">25</span><span class="op">:</span><span class="fl">25</span>, n_iterations <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span>
+<span><span class="co"># Étape 2: Delay Adjustment (sur Flow, pas sur Yield)</span></span>
+<span><span class="va">delay_result_s1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/optimize_delays.html">optimize_delays</a></span><span class="op">(</span><span class="va">data_s1</span>, type <span class="op">=</span> <span class="st">"flow"</span>, delay_range <span class="op">=</span> <span class="op">-</span><span class="fl">25</span><span class="op">:</span><span class="fl">25</span>, n_iterations <span class="op">=</span> <span class="fl">3</span>, noise_level <span class="op">=</span> <span class="fl">0.03</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"\n🔧 Delay Adjustment - Délai optimal:"</span>, <span class="va">delay_result_s1</span><span class="op">$</span><span class="va">delays</span><span class="op">$</span><span class="va">flow</span>, <span class="st">"secondes\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; 🔧 Delay Adjustment - Délai optimal: 3 secondes</span></span>
+<span><span class="co">#&gt; 🔧 Delay Adjustment - Délai optimal: 2 secondes</span></span>
 <span></span>
 <span><span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NULL.html" class="external-link">is.null</a></span><span class="op">(</span><span class="va">delay_result_s1</span><span class="op">$</span><span class="va">data</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="va">data_s1</span> <span class="op">&lt;-</span> <span class="va">delay_result_s1</span><span class="op">$</span><span class="va">data</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Points après correction délai:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">data_s1</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
 <span><span class="op">}</span></span>
-<span><span class="co">#&gt; Points après correction délai: 21905</span></span>
 <span></span>
-<span><span class="co"># Étape 3: Seuils automatiques</span></span>
+<span><span class="co"># Étape 3: Conversion en rendement APRÈS delay adjustment</span></span>
+<span><span class="va">data_s1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/convert_flow_to_yield.html">convert_flow_to_yield</a></span><span class="op">(</span><span class="va">data_s1</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Étape 4: Seuils automatiques</span></span>
 <span><span class="va">thresholds_s1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/calculate_thresholds.html">calculate_thresholds</a></span><span class="op">(</span><span class="va">data_s1</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"\n📈 Seuils calculés:\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
@@ -211,9 +203,9 @@ pipeline AYCE (Auto Yield Cleaning Engine).</p>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"  Vitesse:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">thresholds_s1</span><span class="op">$</span><span class="va">velocity</span><span class="op">$</span><span class="va">min_velocity</span>, <span class="fl">2</span><span class="op">)</span>, <span class="st">"-"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">thresholds_s1</span><span class="op">$</span><span class="va">velocity</span><span class="op">$</span><span class="va">max_velocity</span>, <span class="fl">2</span><span class="op">)</span>, <span class="st">"m/s\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt;   Vitesse: 0.5 - 2.52 m/s</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"  Rendement:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">thresholds_s1</span><span class="op">$</span><span class="va">yield</span><span class="op">$</span><span class="va">min_yield</span>, <span class="fl">1</span><span class="op">)</span>, <span class="st">"-"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">thresholds_s1</span><span class="op">$</span><span class="va">yield</span><span class="op">$</span><span class="va">max_yield</span>, <span class="fl">1</span><span class="op">)</span>, <span class="st">"kg/ha\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt;   Rendement: 1071.8 - 5958.6 kg/ha</span></span>
+<span><span class="co">#&gt;   Rendement: 1103 - 5932.1 kg/ha</span></span>
 <span></span>
-<span><span class="co"># Étape 4-7: Filtres successifs</span></span>
+<span><span class="co"># Étape 5-8: Filtres successifs</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"\n🔧 FILTRES APPLIQUÉS:\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; 🔧 FILTRES APPLIQUÉS:</span></span>
@@ -246,20 +238,20 @@ pipeline AYCE (Auto Yield Cleaning Engine).</p>
 <span><span class="va">data_s1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/detect_anomalies.html">detect_anomalies</a></span><span class="op">(</span><span class="va">data_s1</span>, type <span class="op">=</span> <span class="st">"local_sd"</span>, n_swaths <span class="op">=</span> <span class="fl">5</span>, lsd_limit <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span>
 <span><span class="va">removed_lsd</span> <span class="op">&lt;-</span> <span class="va">n_before</span> <span class="op">-</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">data_s1</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"  Écart-type local:"</span>, <span class="va">removed_lsd</span>, <span class="st">"points retirés ("</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">removed_lsd</span><span class="op">/</span><span class="va">n_before</span><span class="op">*</span><span class="fl">100</span>, <span class="fl">1</span><span class="op">)</span>, <span class="st">"%)\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt;   Écart-type local: 144 points retirés ( 0.7 %)</span></span>
+<span><span class="co">#&gt;   Écart-type local: 145 points retirés ( 0.7 %)</span></span>
 <span></span>
 <span><span class="co"># Résultat final</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"\n📊 RÉSULTAT FINAL\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; 📊 RÉSULTAT FINAL</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Points nettoyés:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">data_s1</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Points nettoyés: 21424</span></span>
+<span><span class="co">#&gt; Points nettoyés: 21423</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Taux de rétention:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">data_s1</span><span class="op">)</span><span class="op">/</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">data_raw_s1</span><span class="op">)</span><span class="op">*</span><span class="fl">100</span>, <span class="fl">1</span><span class="op">)</span>, <span class="st">"%\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Taux de rétention: 97.8 %</span></span>
+<span><span class="co">#&gt; Taux de rétention: 97.7 %</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Rendement moyen:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">data_s1</span><span class="op">$</span><span class="va">Yield_kg_ha</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>, <span class="fl">1</span><span class="op">)</span>, <span class="st">"kg/ha\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Rendement moyen: 3538.1 kg/ha</span></span>
+<span><span class="co">#&gt; Rendement moyen: 3541.3 kg/ha</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"CV final:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/sd.html" class="external-link">sd</a></span><span class="op">(</span><span class="va">data_s1</span><span class="op">$</span><span class="va">Yield_kg_ha</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span> <span class="op">/</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">data_s1</span><span class="op">$</span><span class="va">Yield_kg_ha</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span> <span class="op">*</span> <span class="fl">100</span>, <span class="fl">1</span><span class="op">)</span>, <span class="st">"%\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; CV final: 21.8 %</span></span></code></pre></div>
+<span><span class="co">#&gt; CV final: 21.3 %</span></span></code></pre></div>
 </div>
 <div class="section level4">
 <h4 id="visualisation-avantaprès">Visualisation avant/après<a class="anchor" aria-label="anchor" href="#visualisation-avantapr%C3%A8s"></a>
@@ -307,21 +299,20 @@ pipeline AYCE (Auto Yield Cleaning Engine).</p>
 <h4 id="pipeline-de-nettoyage">Pipeline de nettoyage<a class="anchor" aria-label="anchor" href="#pipeline-de-nettoyage"></a>
 </h4>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">data_s2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/latlon_to_utm.html">latlon_to_utm</a></span><span class="op">(</span><span class="va">data_raw_s2</span><span class="op">)</span></span>
-<span><span class="va">data_s2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/convert_flow_to_yield.html">convert_flow_to_yield</a></span><span class="op">(</span><span class="va">data_s2</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="co"># Étape 1: Conversion UTM (sans conversion en rendement)</span></span>
+<span><span class="va">data_s2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/latlon_to_utm.html">latlon_to_utm</a></span><span class="op">(</span><span class="va">data_raw_s2</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Delay Adjustment avec délai important</span></span>
-<span><span class="va">delay_result_s2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/optimize_delays.html">optimize_delays</a></span><span class="op">(</span><span class="va">data_s2</span>, type <span class="op">=</span> <span class="st">"flow"</span>, delay_range <span class="op">=</span> <span class="op">-</span><span class="fl">25</span><span class="op">:</span><span class="fl">25</span>, n_iterations <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span>
+<span><span class="co"># Étape 2: Delay Adjustment avec délai important (sur Flow, pas sur Yield)</span></span>
+<span><span class="va">delay_result_s2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/optimize_delays.html">optimize_delays</a></span><span class="op">(</span><span class="va">data_s2</span>, type <span class="op">=</span> <span class="st">"flow"</span>, delay_range <span class="op">=</span> <span class="op">-</span><span class="fl">25</span><span class="op">:</span><span class="fl">25</span>, n_iterations <span class="op">=</span> <span class="fl">3</span>, noise_level <span class="op">=</span> <span class="fl">0.03</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"🔧 Delay Adjustment - Délai optimal:"</span>, <span class="va">delay_result_s2</span><span class="op">$</span><span class="va">delays</span><span class="op">$</span><span class="va">flow</span>, <span class="st">"secondes\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; 🔧 Delay Adjustment - Délai optimal: 13 secondes</span></span>
 <span></span>
 <span><span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NULL.html" class="external-link">is.null</a></span><span class="op">(</span><span class="va">delay_result_s2</span><span class="op">$</span><span class="va">data</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="va">n_before</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">data_s2</span><span class="op">)</span></span>
 <span>  <span class="va">data_s2</span> <span class="op">&lt;-</span> <span class="va">delay_result_s2</span><span class="op">$</span><span class="va">data</span></span>
-<span>  <span class="va">removed_delay_adjustment</span> <span class="op">&lt;-</span> <span class="va">n_before</span> <span class="op">-</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">data_s2</span><span class="op">)</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Points retirés par Delay Adjustment:"</span>, <span class="va">removed_delay_adjustment</span>, <span class="st">"\n"</span><span class="op">)</span></span>
 <span><span class="op">}</span></span>
-<span><span class="co">#&gt; Points retirés par Delay Adjustment: 0</span></span>
+<span></span>
+<span><span class="co"># Étape 3: Conversion en rendement APRÈS delay adjustment</span></span>
+<span><span class="va">data_s2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/convert_flow_to_yield.html">convert_flow_to_yield</a></span><span class="op">(</span><span class="va">data_s2</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">thresholds_s2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/calculate_thresholds.html">calculate_thresholds</a></span><span class="op">(</span><span class="va">data_s2</span><span class="op">)</span></span>
 <span></span>
@@ -335,12 +326,12 @@ pipeline AYCE (Auto Yield Cleaning Engine).</p>
 <span>                       min_velocity <span class="op">=</span> <span class="va">thresholds_s2</span><span class="op">$</span><span class="va">velocity</span><span class="op">$</span><span class="va">min_velocity</span>, </span>
 <span>                       max_velocity <span class="op">=</span> <span class="va">thresholds_s2</span><span class="op">$</span><span class="va">velocity</span><span class="op">$</span><span class="va">max_velocity</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"  Vitesse:"</span>, <span class="va">n_before</span> <span class="op">-</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">data_s2</span><span class="op">)</span>, <span class="st">"points\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt;   Vitesse: 699 points</span></span>
+<span><span class="co">#&gt;   Vitesse: 577 points</span></span>
 <span></span>
 <span><span class="va">n_before</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">data_s2</span><span class="op">)</span></span>
 <span><span class="va">data_s2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/filter_data.html">filter_data</a></span><span class="op">(</span><span class="va">data_s2</span>, type <span class="op">=</span> <span class="st">"moisture"</span>, n_std <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"  Humidité:"</span>, <span class="va">n_before</span> <span class="op">-</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">data_s2</span><span class="op">)</span>, <span class="st">"points\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt;   Humidité: 147 points</span></span>
+<span><span class="co">#&gt;   Humidité: 140 points</span></span>
 <span></span>
 <span><span class="va">n_before</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">data_s2</span><span class="op">)</span></span>
 <span><span class="va">data_s2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/detect_anomalies.html">detect_anomalies</a></span><span class="op">(</span><span class="va">data_s2</span>, type <span class="op">=</span> <span class="st">"overlap"</span>, cellsize <span class="op">=</span> <span class="fl">0.3</span>, overlap_threshold <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span></span>
@@ -356,9 +347,9 @@ pipeline AYCE (Auto Yield Cleaning Engine).</p>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; 📊 RÉSULTAT FINAL</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Points nettoyés:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">data_s2</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Points nettoyés: 32757</span></span>
+<span><span class="co">#&gt; Points nettoyés: 32936</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Taux de rétention:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">data_s2</span><span class="op">)</span><span class="op">/</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">data_raw_s2</span><span class="op">)</span><span class="op">*</span><span class="fl">100</span>, <span class="fl">1</span><span class="op">)</span>, <span class="st">"%\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Taux de rétention: 88.8 %</span></span></code></pre></div>
+<span><span class="co">#&gt; Taux de rétention: 89.3 %</span></span></code></pre></div>
 </div>
 <div class="section level4">
 <h4 id="visualisation-avantaprès-1">Visualisation avant/après<a class="anchor" aria-label="anchor" href="#visualisation-avantapr%C3%A8s-1"></a>
@@ -393,16 +384,19 @@ pipeline AYCE (Auto Yield Cleaning Engine).</p>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Points bruts:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">data_raw_s3</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Points bruts: 31815</span></span>
 <span></span>
-<span><span class="va">data_s3</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/latlon_to_utm.html">latlon_to_utm</a></span><span class="op">(</span><span class="va">data_raw_s3</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
-<span>  <span class="fu"><a href="../reference/convert_flow_to_yield.html">convert_flow_to_yield</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="va">data_s3</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/latlon_to_utm.html">latlon_to_utm</a></span><span class="op">(</span><span class="va">data_raw_s3</span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">delay_result_s3</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/optimize_delays.html">optimize_delays</a></span><span class="op">(</span><span class="va">data_s3</span>, type <span class="op">=</span> <span class="st">"flow"</span>, delay_range <span class="op">=</span> <span class="op">-</span><span class="fl">25</span><span class="op">:</span><span class="fl">25</span>, n_iterations <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span>
+<span><span class="co"># Delay Adjustment sur Flow (pas sur Yield)</span></span>
+<span><span class="va">delay_result_s3</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/optimize_delays.html">optimize_delays</a></span><span class="op">(</span><span class="va">data_s3</span>, type <span class="op">=</span> <span class="st">"flow"</span>, delay_range <span class="op">=</span> <span class="op">-</span><span class="fl">25</span><span class="op">:</span><span class="fl">25</span>, n_iterations <span class="op">=</span> <span class="fl">3</span>, noise_level <span class="op">=</span> <span class="fl">0.03</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Delay Adjustment - Délai optimal:"</span>, <span class="va">delay_result_s3</span><span class="op">$</span><span class="va">delays</span><span class="op">$</span><span class="va">flow</span>, <span class="st">"secondes\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Delay Adjustment - Délai optimal: 0 secondes</span></span>
+<span><span class="co">#&gt; Delay Adjustment - Délai optimal: 1 secondes</span></span>
 <span></span>
 <span><span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NULL.html" class="external-link">is.null</a></span><span class="op">(</span><span class="va">delay_result_s3</span><span class="op">$</span><span class="va">data</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="va">data_s3</span> <span class="op">&lt;-</span> <span class="va">delay_result_s3</span><span class="op">$</span><span class="va">data</span></span>
 <span><span class="op">}</span></span>
+<span></span>
+<span><span class="co"># Conversion en rendement APRÈS delay adjustment</span></span>
+<span><span class="va">data_s3</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/convert_flow_to_yield.html">convert_flow_to_yield</a></span><span class="op">(</span><span class="va">data_s3</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">thresholds_s3</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/calculate_thresholds.html">calculate_thresholds</a></span><span class="op">(</span><span class="va">data_s3</span><span class="op">)</span></span>
 <span></span>
@@ -415,9 +409,9 @@ pipeline AYCE (Auto Yield Cleaning Engine).</p>
 <span>  <span class="fu"><a href="../reference/detect_anomalies.html">detect_anomalies</a></span><span class="op">(</span>type <span class="op">=</span> <span class="st">"local_sd"</span>, n_swaths <span class="op">=</span> <span class="fl">5</span>, lsd_limit <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Points nettoyés:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">data_s3</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Points nettoyés: 29912</span></span>
+<span><span class="co">#&gt; Points nettoyés: 29928</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Taux de rétention:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">data_s3</span><span class="op">)</span><span class="op">/</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">data_raw_s3</span><span class="op">)</span><span class="op">*</span><span class="fl">100</span>, <span class="fl">1</span><span class="op">)</span>, <span class="st">"%\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Taux de rétention: 94 %</span></span></code></pre></div>
+<span><span class="co">#&gt; Taux de rétention: 94.1 %</span></span></code></pre></div>
 <div class="section level4">
 <h4 id="visualisation-avantaprès-2">Visualisation avant/après<a class="anchor" aria-label="anchor" href="#visualisation-avantapr%C3%A8s-2"></a>
 </h4>
@@ -451,16 +445,19 @@ pipeline AYCE (Auto Yield Cleaning Engine).</p>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Points bruts:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">data_raw_s4</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Points bruts: 19495</span></span>
 <span></span>
-<span><span class="va">data_s4</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/latlon_to_utm.html">latlon_to_utm</a></span><span class="op">(</span><span class="va">data_raw_s4</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
-<span>  <span class="fu"><a href="../reference/convert_flow_to_yield.html">convert_flow_to_yield</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="va">data_s4</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/latlon_to_utm.html">latlon_to_utm</a></span><span class="op">(</span><span class="va">data_raw_s4</span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">delay_result_s4</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/optimize_delays.html">optimize_delays</a></span><span class="op">(</span><span class="va">data_s4</span>, type <span class="op">=</span> <span class="st">"flow"</span>, delay_range <span class="op">=</span> <span class="op">-</span><span class="fl">25</span><span class="op">:</span><span class="fl">25</span>, n_iterations <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span>
+<span><span class="co"># Delay Adjustment sur Flow (pas sur Yield)</span></span>
+<span><span class="va">delay_result_s4</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/optimize_delays.html">optimize_delays</a></span><span class="op">(</span><span class="va">data_s4</span>, type <span class="op">=</span> <span class="st">"flow"</span>, delay_range <span class="op">=</span> <span class="op">-</span><span class="fl">25</span><span class="op">:</span><span class="fl">25</span>, n_iterations <span class="op">=</span> <span class="fl">3</span>, noise_level <span class="op">=</span> <span class="fl">0.03</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Delay Adjustment - Délai optimal:"</span>, <span class="va">delay_result_s4</span><span class="op">$</span><span class="va">delays</span><span class="op">$</span><span class="va">flow</span>, <span class="st">"secondes\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Delay Adjustment - Délai optimal: 0 secondes</span></span>
 <span></span>
 <span><span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NULL.html" class="external-link">is.null</a></span><span class="op">(</span><span class="va">delay_result_s4</span><span class="op">$</span><span class="va">data</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="va">data_s4</span> <span class="op">&lt;-</span> <span class="va">delay_result_s4</span><span class="op">$</span><span class="va">data</span></span>
 <span><span class="op">}</span></span>
+<span></span>
+<span><span class="co"># Conversion en rendement APRÈS delay adjustment</span></span>
+<span><span class="va">data_s4</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/convert_flow_to_yield.html">convert_flow_to_yield</a></span><span class="op">(</span><span class="va">data_s4</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">thresholds_s4</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/calculate_thresholds.html">calculate_thresholds</a></span><span class="op">(</span><span class="va">data_s4</span><span class="op">)</span></span>
 <span></span>
