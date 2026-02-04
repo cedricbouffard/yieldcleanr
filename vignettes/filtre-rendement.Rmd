@@ -3,7 +3,7 @@ title: "Filtre de Plage de Rendement"
 subtitle: "Élimination des valeurs aberrantes de rendement"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Filtre de Plage de Rendement - Théorie mathématique}
+  %\VignetteIndexEntry{Filtre de Plage de Rendement}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---

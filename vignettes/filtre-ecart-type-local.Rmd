@@ -3,7 +3,7 @@ title: "Filtre d'Écart-type Local (Local SD)"
 subtitle: "Détection des outliers par analyse locale"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Filtre d'Écart-type Local - Théorie mathématique}
+  %\VignetteIndexEntry{Filtre d'Écart-type Local (Local SD)}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---

@@ -3,7 +3,7 @@ title: "Filtre Delay Adjustment - Position-Coordinate Delay Identification"
 subtitle: "Théorie mathématique et implémentation"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Filtre Delay Adjustment - Théorie mathématique}
+  %\VignetteIndexEntry{Filtre Delay Adjustment - Position-Coordinate Delay Identification}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---

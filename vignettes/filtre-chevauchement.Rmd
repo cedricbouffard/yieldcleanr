@@ -3,7 +3,7 @@ title: "Filtre de Chevauchement (Overlap)"
 subtitle: "Détection et élimination des zones de recouvrement"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Filtre de Chevauchement - Théorie mathématique}
+  %\VignetteIndexEntry{Filtre de Chevauchement (Overlap)}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---

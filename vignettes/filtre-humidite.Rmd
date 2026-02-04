@@ -3,7 +3,7 @@ title: "Filtre d'Humidité"
 subtitle: "Détection et correction des anomalies d'humidité"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Filtre d'Humidité - Théorie mathématique}
+  %\VignetteIndexEntry{Filtre d'Humidité}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---

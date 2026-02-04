@@ -3,7 +3,7 @@ title: "Filtre de Vitesse - Théorie et Applications"
 subtitle: "Détection et élimination des anomalies de vitesse"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Filtre de Vitesse - Théorie mathématique}
+  %\VignetteIndexEntry{Filtre de Vitesse - Théorie et Applications}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
