@@ -73,10 +73,10 @@ jobs:
             library(covr)
             cov <- package_coverage(type = 'all', quiet = FALSE)
             print(cov)
-            if (sum(cov) > 0) {
+            if (length(cov) > 0) {
               covr::report(cov, file = 'coverage/index.html')
             } else {
-              message('Coverage is 0% - no code was exercised by tests')
+              message('No coverage data available')
             }
           "
         continue-on-error: true
