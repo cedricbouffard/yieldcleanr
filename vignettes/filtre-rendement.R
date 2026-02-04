@@ -1,0 +1,223 @@
+## ----include = FALSE----------------------------------------------------------
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 10,
+  fig.height = 6,
+  warning = FALSE,
+  message = FALSE
+)
+
+## ----yield-filter-setup-------------------------------------------------------
+library(yieldcleanr)
+library(ggplot2)
+library(dplyr)
+
+# Charger les données
+file_path <- system.file("extdata", "sample2.txt", package = "yieldcleanr")
+data_raw <- read_yield_data(file_path)
+
+# Préparation
+data <- latlon_to_utm(data_raw) %>%
+  convert_flow_to_yield()
+
+cat("=== Filtre de plage de rendement ===\n")
+cat("Points avant filtrage:", nrow(data), "\n")
+cat("Rendement (kg/ha):\n")
+cat("  Moyenne:", round(mean(data$Yield_kg_ha, na.rm = TRUE), 1), "\n")
+cat("  Min:", round(min(data$Yield_kg_ha, na.rm = TRUE), 1), "\n")
+cat("  Max:", round(max(data$Yield_kg_ha, na.rm = TRUE), 1), "\n")
+cat("  Écart-type:", round(sd(data$Yield_kg_ha, na.rm = TRUE), 1), "\n")
+
+## ----auto-thresholds----------------------------------------------------------
+# Calculer les seuils automatiques
+thresholds <- calculate_thresholds(data, type = "yield")
+
+cat("\n=== Seuils calculés automatiquement ===\n")
+cat("Quantile 5%:", round(quantile(data$Yield_kg_ha, 0.05, na.rm = TRUE), 1), "kg/ha\n")
+cat("Quantile 95%:", round(quantile(data$Yield_kg_ha, 0.95, na.rm = TRUE), 1), "kg/ha\n")
+cat("\nSeuil minimum:", round(thresholds$yield$min_yield, 1), "kg/ha\n")
+cat("Seuil maximum:", round(thresholds$yield$max_yield, 1), "kg/ha\n")
+
+## ----yield-dist, fig.width=12, fig.height=6-----------------------------------
+# Distribution du rendement
+yields <- data$Yield_kg_ha[is.finite(data$Yield_kg_ha)]
+
+# Limiter l'affichage pour éviter les valeurs extrêmes
+ylim_max <- quantile(yields, 0.995)
+
+p1 <- ggplot(data.frame(yield = yields), aes(x = yield)) +
+  geom_histogram(bins = 50, fill = "#3498db", alpha = 0.7, color = "white") +
+  geom_vline(xintercept = thresholds$yield$min_yield, color = "#27ae60",
+             linetype = "dashed", size = 1) +
+  geom_vline(xintercept = thresholds$yield$max_yield, color = "#27ae60",
+             linetype = "dashed", size = 1) +
+  annotate("text", x = thresholds$yield$min_yield, y = Inf,
+           label = "Min", vjust = 2, color = "#27ae60") +
+  annotate("text", x = thresholds$yield$max_yield, y = Inf,
+           label = "Max", vjust = 2, color = "#27ae60") +
+  labs(title = "Distribution du rendement",
+       subtitle = "Seuils de filtrage indiqués en vert",
+       x = "Rendement (kg/ha)",
+       y = "Fréquence") +
+  theme_minimal() +
+  xlim(0, ylim_max)
+
+p1
+
+## ----manual-filter------------------------------------------------------------
+cat("\n=== Filtrage avec seuils manuels ===\n")
+
+# Définir des seuils raisonnables pour le maïs (en kg/ha)
+min_yield_manual <- 2000  # ~32 bu/acre
+max_yield_manual <- 15000  # ~238 bu/acre
+
+cat("Seuils manuels:", min_yield_manual, "-", max_yield_manual, "kg/ha\n")
+
+# Appliquer le filtre
+data_manual <- filter_data(data, 
+                           type = "yield",
+                           min_yield = min_yield_manual,
+                           max_yield = max_yield_manual)
+
+cat("Points après filtrage manuel:", nrow(data_manual), "\n")
+cat("Points retirés:", nrow(data) - nrow(data_manual), "\n")
+
+## ----auto-filter--------------------------------------------------------------
+cat("\n=== Filtrage avec seuils automatiques ===\n")
+
+# Appliquer avec les seuils calculés
+data_auto <- filter_data(data,
+                         type = "yield",
+                         min_yield = thresholds$yield$min_yield,
+                         max_yield = thresholds$yield$max_yield)
+
+cat("Points après filtrage auto:", nrow(data_auto), "\n")
+cat("Points retirés:", nrow(data) - nrow(data_auto), "\n")
+
+## ----removed-points, fig.width=14, fig.height=6-------------------------------
+# Identifier les points éliminés
+removed <- data %>%
+  filter(Yield_kg_ha < thresholds$yield$min_yield | 
+         Yield_kg_ha > thresholds$yield$max_yield |
+         !is.finite(Yield_kg_ha))
+
+cat("\nPoints éliminés:", nrow(removed), "\n")
+cat("Détails:\n")
+cat("  Sous le minimum:", sum(removed$Yield_kg_ha < thresholds$yield$min_yield, na.rm = TRUE), "\n")
+cat("  Au-dessus du maximum:", sum(removed$Yield_kg_ha > thresholds$yield$max_yield, na.rm = TRUE), "\n")
+cat("  Valeurs infinies/NaN:", sum(!is.finite(removed$Yield_kg_ha)), "\n")
+
+# Visualiser les points éliminés sur la carte
+if (nrow(removed) > 0) {
+  sf_removed <- sf::st_as_sf(removed, coords = c("Longitude", "Latitude"), crs = 4326)
+  sf_all <- sf::st_as_sf(data, coords = c("Longitude", "Latitude"), crs = 4326)
+  
+  par(mfrow = c(1, 2))
+  
+  plot(sf_all["Yield_kg_ha"], main = "Tous les points", 
+       pch = 19, cex = 0.3, breaks = "jenks", key.pos = NULL)
+  
+  plot(sf_removed["Yield_kg_ha"], main = "Points éliminés", 
+       pch = 19, cex = 0.5, breaks = "jenks", key.pos = NULL)
+}
+
+## ----low-yield, fig.width=10, fig.height=5------------------------------------
+# Points avec rendement très faible
+low_yield <- data %>%
+  filter(Yield_kg_ha < 1000)
+
+cat("Points avec rendement < 1000 kg/ha:", nrow(low_yield), "\n")
+cat("Causes possibles:\n")
+cat("  - Capteur de flux obstrué\n")
+cat("  - Manœuvres de demi-tour\n")
+cat("  - Zones non récoltées\n")
+cat("  - Erreurs de calibration\n")
+
+if (nrow(low_yield) > 0) {
+  ggplot(low_yield, aes(x = X, y = Y, color = Yield_kg_ha)) +
+    geom_point(size = 1, alpha = 0.7) +
+    scale_color_gradient(low = "yellow", high = "red") +
+    labs(title = "Points à rendement très faible",
+         subtitle = "Rendement < 1000 kg/ha",
+         x = "X (m)", y = "Y (m)", color = "kg/ha") +
+    theme_minimal()
+}
+
+## ----high-yield, fig.width=10, fig.height=5-----------------------------------
+# Points avec rendement très élevé
+high_yield <- data %>%
+  filter(Yield_kg_ha > 20000)
+
+cat("\nPoints avec rendement > 20000 kg/ha:", nrow(high_yield), "\n")
+cat("Causes possibles:\n")
+cat("  - Capteur de flux défectueux\n")
+cat("  - Accumulation de grain dans la vis\n")
+cat("  - Erreurs de conversion d'unités\n")
+cat("  - Valeurs de Distance ou Swath aberrantes\n")
+
+if (nrow(high_yield) > 0) {
+  ggplot(high_yield, aes(x = X, y = Y, color = Yield_kg_ha)) +
+    geom_point(size = 1, alpha = 0.7) +
+    scale_color_gradient(low = "yellow", high = "red") +
+    labs(title = "Points à rendement excessivement élevé",
+         subtitle = "Rendement > 20000 kg/ha",
+         x = "X (m)", y = "Y (m)", color = "kg/ha") +
+    theme_minimal()
+}
+
+## ----params-table, echo=FALSE-------------------------------------------------
+params_df <- data.frame(
+  Paramètre = c("type", "min_value", "max_value", "yield_column", "yllim", "yulim", "yscale"),
+  Description = c(
+    "Type de filtre ('yield')",
+    "Rendement minimum",
+    "Rendement maximum",
+    "Nom de la colonne de rendement",
+    "Quantile bas pour calcul auto",
+    "Quantile haut pour calcul auto",
+    "Facteur d'échelle"
+  ),
+  Défaut = c("'yield'", "0", "Inf", "'Yield_buacre'", "0.05", "0.95", "1.5")
+)
+
+knitr::kable(params_df, caption = "Paramètres du filtre de rendement")
+
+## ----stats-comparison---------------------------------------------------------
+cat("\n=== Impact sur les statistiques ===\n")
+
+# Avant filtrage
+stats_before <- data.frame(
+  metric = c("Moyenne", "Médiane", "Écart-type", "CV (%)", "Min", "Max"),
+  value = c(
+    mean(data$Yield_kg_ha, na.rm = TRUE),
+    median(data$Yield_kg_ha, na.rm = TRUE),
+    sd(data$Yield_kg_ha, na.rm = TRUE),
+    sd(data$Yield_kg_ha, na.rm = TRUE) / mean(data$Yield_kg_ha, na.rm = TRUE) * 100,
+    min(data$Yield_kg_ha, na.rm = TRUE),
+    max(data$Yield_kg_ha, na.rm = TRUE)
+  )
+)
+
+# Après filtrage
+stats_after <- data.frame(
+  metric = c("Moyenne", "Médiane", "Écart-type", "CV (%)", "Min", "Max"),
+  value = c(
+    mean(data_auto$Yield_kg_ha, na.rm = TRUE),
+    median(data_auto$Yield_kg_ha, na.rm = TRUE),
+    sd(data_auto$Yield_kg_ha, na.rm = TRUE),
+    sd(data_auto$Yield_kg_ha, na.rm = TRUE) / mean(data_auto$Yield_kg_ha, na.rm = TRUE) * 100,
+    min(data_auto$Yield_kg_ha, na.rm = TRUE),
+    max(data_auto$Yield_kg_ha, na.rm = TRUE)
+  )
+)
+
+comparison <- data.frame(
+  Métrique = stats_before$metric,
+  Avant = round(stats_before$value, 1),
+  Après = round(stats_after$value, 1),
+  Variation = round((stats_after$value - stats_before$value) / stats_before$value * 100, 1)
+)
+
+print(comparison, row.names = FALSE)
+

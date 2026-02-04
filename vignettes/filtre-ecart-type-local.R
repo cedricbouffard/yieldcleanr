@@ -1,0 +1,315 @@
+## ----include = FALSE----------------------------------------------------------
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 10,
+  fig.height = 6,
+  warning = FALSE,
+  message = FALSE
+)
+
+## ----lsd-setup----------------------------------------------------------------
+library(yieldcleanr)
+library(ggplot2)
+library(dplyr)
+
+# Charger les données
+file_path <- system.file("extdata", "sample1.txt", package = "yieldcleanr")
+data_raw <- read_yield_data(file_path)
+
+# Préparation complète jusqu'au filtre LSD
+data <- latlon_to_utm(data_raw) %>%
+  convert_flow_to_yield() %>%
+  filter_data(type = "velocity", min_velocity = 0.5, max_velocity = 10) %>%
+  filter_data(type = "moisture", n_std = 3) %>%
+  detect_anomalies(type = "overlap", cellsize = 0.3, overlap_threshold = 0.5)
+
+cat("=== Filtre d'écart-type local ===\n")
+cat("Points avant filtrage:", nrow(data), "\n")
+cat("Nombre de passages:", length(unique(data$Pass)), "\n")
+cat("Rendement moyen:", round(mean(data$Yield_kg_ha, na.rm = TRUE), 1), "kg/ha\n")
+cat("Écart-type global:", round(sd(data$Yield_kg_ha, na.rm = TRUE), 1), "kg/ha\n")
+
+## ----local-stats--------------------------------------------------------------
+# Paramètres
+n_swaths <- 5
+lsd_limit <- 3
+
+cat("\n=== Paramètres du filtre ===\n")
+cat("Nombre de swaths (fenêtre):", n_swaths, "\n")
+cat("Seuil d'écart-type:", lsd_limit, "\n")
+cat("Plage de confiance:", lsd_limit, "σ (", round(pnorm(lsd_limit)*100 - 50, 1), "% des points)\n")
+
+# Calcul manuel des statistiques locales pour illustration
+calc_local_stats <- function(data, n_swaths) {
+  data <- data %>%
+    mutate(
+      local_mean = NA_real_,
+      local_sd = NA_real_,
+      z_score = NA_real_
+    )
+  
+  for (i in 1:nrow(data)) {
+    pass_i <- data$Pass[i]
+    # Voisinage : n_swaths passages de chaque côté
+    neighbors <- data %>%
+      filter(abs(Pass - pass_i) <= n_swaths)
+    
+    if (nrow(neighbors) > 1) {
+      data$local_mean[i] <- mean(neighbors$Yield_kg_ha, na.rm = TRUE)
+      data$local_sd[i] <- sd(neighbors$Yield_kg_ha, na.rm = TRUE)
+      if (data$local_sd[i] > 0) {
+        data$z_score[i] <- (data$Yield_kg_ha[i] - data$local_mean[i]) / data$local_sd[i]
+      }
+    }
+  }
+  
+  return(data)
+}
+
+# Calculer sur un échantillon
+data_sample <- data %>%
+  group_by(Pass) %>%
+  slice_sample(n = 50) %>%
+  ungroup()
+
+data_with_stats <- calc_local_stats(data_sample, n_swaths)
+
+cat("\n=== Exemple de statistiques locales ===\n")
+example_rows <- data_with_stats %>%
+  filter(!is.na(z_score)) %>%
+  slice(1:5) %>%
+  select(Pass, Yield_kg_ha, local_mean, local_sd, z_score)
+
+print(example_rows, row.names = FALSE)
+
+## ----zscore-dist, fig.width=12, fig.height=6----------------------------------
+# Distribution des scores Z
+z_scores <- data_with_stats$z_score[!is.na(data_with_stats$z_score)]
+
+df_z <- data.frame(z_score = z_scores)
+
+p1 <- ggplot(df_z, aes(x = z_score)) +
+  geom_histogram(bins = 30, fill = "#3498db", alpha = 0.7, color = "white") +
+  geom_vline(xintercept = c(-lsd_limit, lsd_limit), color = "#e74c3c", 
+             linetype = "dashed", size = 1) +
+  annotate("text", x = -lsd_limit, y = Inf, 
+           label = paste("-", lsd_limit, "σ"), vjust = 2, color = "#e74c3c") +
+  annotate("text", x = lsd_limit, y = Inf, 
+           label = paste("+", lsd_limit, "σ"), vjust = 2, color = "#e74c3c") +
+  labs(title = "Distribution des scores Z locaux",
+       subtitle = paste("Points hors", paste0("±", lsd_limit, "σ"), "seront éliminés"),
+       x = "Score Z (écarts-types)",
+       y = "Fréquence") +
+  theme_minimal()
+
+p1
+
+## ----lsd-application----------------------------------------------------------
+cat("\n=== Application du filtre LSD ===\n")
+
+# Avant filtrage
+n_before <- nrow(data)
+cat("Points avant filtrage:", n_before, "\n")
+
+# Appliquer le filtre
+data_filtered <- detect_anomalies(data, 
+                                  type = "local_sd",
+                                  n_swaths = n_swaths,
+                                  lsd_limit = lsd_limit)
+
+# Après filtrage
+n_after <- nrow(data_filtered)
+cat("Points après filtrage:", n_after, "\n")
+cat("Points retirés:", n_before - n_after, "\n")
+cat("Taux de rétention:", round(n_after/n_before*100, 1), "%\n")
+
+## ----outliers-viz, fig.width=14, fig.height=6---------------------------------
+# Identifier les points éliminés
+removed <- anti_join(data, data_filtered, by = c("X", "Y", "GPS_Time"))
+
+cat("\n=== Points éliminés comme outliers ===\n")
+cat("Nombre d'outliers:", nrow(removed), "\n")
+
+if (nrow(removed) > 0) {
+  cat("\nStatistiques des outliers:\n")
+  cat("  Rendement moyen:", round(mean(removed$Yield_kg_ha, na.rm = TRUE), 1), "kg/ha\n")
+  cat("  vs données conservées:", round(mean(data_filtered$Yield_kg_ha, na.rm = TRUE), 1), "kg/ha\n")
+  
+  # Distribution par passage
+  removed_by_pass <- removed %>%
+    group_by(Pass) %>%
+    summarise(n = n(), mean_yield = mean(Yield_kg_ha, na.rm = TRUE)) %>%
+    arrange(desc(n))
+  
+  cat("\nTop 5 passages avec le plus d'outliers:\n")
+  print(head(removed_by_pass, 5))
+  
+  # Visualisation cartographique
+  sf_removed <- sf::st_as_sf(removed, coords = c("Longitude", "Latitude"), crs = 4326)
+  sf_all <- sf::st_as_sf(data, coords = c("Longitude", "Latitude"), crs = 4326)
+  
+  par(mfrow = c(1, 2))
+  
+  plot(sf_all["Yield_kg_ha"], main = "Tous les points", 
+       pch = 19, cex = 0.3, breaks = "jenks", key.pos = NULL)
+  
+  plot(sf_removed["Yield_kg_ha"], main = "Outliers détectés (LSD)", 
+       pch = 19, cex = 0.5, breaks = "jenks", key.pos = NULL)
+}
+
+## ----outlier-simulation, fig.width=14, fig.height=10--------------------------
+# Créer des données avec des outliers connus
+set.seed(42)
+
+# Données normales
+n_normal <- 100
+x_normal <- seq(0, 100, length.out = n_normal)
+y_normal <- rep(50, n_normal)
+yield_normal <- rnorm(n_normal, mean = 5000, sd = 200)
+
+# Ajouter des outliers
+outlier_indices <- c(25, 50, 75)
+yield_with_outliers <- yield_normal
+yield_with_outliers[outlier_indices] <- c(9000, 1500, 8500)  # Outliers évidents
+
+# Créer dataframe
+df_sim <- data.frame(
+  x = x_normal,
+  y = y_normal,
+  yield = yield_with_outliers,
+  is_outlier = 1:n_normal %in% outlier_indices
+)
+
+# Visualisation
+p2 <- ggplot(df_sim, aes(x = x, y = y)) +
+  geom_point(aes(color = yield, shape = is_outlier), size = 3) +
+  scale_color_gradient(low = "blue", high = "red") +
+  scale_shape_manual(values = c(16, 17), labels = c("Normal", "Outlier")) +
+  labs(title = "Simulation avec outliers connus",
+       subtitle = "Triangles = outliers artificiels",
+       x = "Position", y = "Y", color = "Rendement", shape = "Type") +
+  theme_minimal()
+
+# Calculer les statistiques locales
+window_size <- 10
+df_sim$local_mean <- NA
+df_sim$local_sd <- NA
+df_sim$z_score <- NA
+
+for (i in 1:nrow(df_sim)) {
+  start_idx <- max(1, i - window_size/2)
+  end_idx <- min(nrow(df_sim), i + window_size/2)
+  window_data <- df_sim$yield[start_idx:end_idx]
+  
+  df_sim$local_mean[i] <- mean(window_data)
+  df_sim$local_sd[i] <- sd(window_data)
+  if (df_sim$local_sd[i] > 0) {
+    df_sim$z_score[i] <- (df_sim$yield[i] - df_sim$local_mean[i]) / df_sim$local_sd[i]
+  }
+}
+
+# Visualisation des scores Z
+p3 <- ggplot(df_sim, aes(x = x, y = z_score)) +
+  geom_line(color = "gray60") +
+  geom_point(aes(color = is_outlier), size = 3) +
+  geom_hline(yintercept = c(-3, 3), color = "#e74c3c", linetype = "dashed") +
+  annotate("text", x = 10, y = 3.2, label = "+3σ", color = "#e74c3c") +
+  annotate("text", x = 10, y = -3.2, label = "-3σ", color = "#e74c3c") +
+  scale_color_manual(values = c("black", "red"), labels = c("Normal", "Outlier")) +
+  labs(title = "Scores Z locaux",
+       subtitle = "Points rouges = outliers détectés",
+       x = "Position", y = "Score Z", color = "Type") +
+  theme_minimal()
+
+gridExtra::grid.arrange(p2, p3, ncol = 1)
+
+## ----outlier-detection--------------------------------------------------------
+cat("\n=== Détection des outliers simulés ===\n")
+
+# Identifier les outliers avec Z > 3
+detected_outliers <- df_sim %>%
+  filter(abs(z_score) > 3)
+
+cat("Outliers détectés:", nrow(detected_outliers), "\n")
+cat("Outliers réels:", length(outlier_indices), "\n")
+cat("Précision:", round(nrow(detected_outliers) / length(outlier_indices) * 100, 1), "%\n")
+
+if (nrow(detected_outliers) > 0) {
+  cat("\nDétails des outliers détectés:\n")
+  print(detected_outliers %>% select(x, yield, local_mean, local_sd, z_score))
+}
+
+## ----params-table-lsd, echo=FALSE---------------------------------------------
+params_df <- data.frame(
+  Paramètre = c("type", "n_swaths", "lsd_limit", "yield_column"),
+  Description = c(
+    "Type de détection ('local_sd')",
+    "Nombre de passages dans le voisinage",
+    "Seuil d'écart-type pour élimination",
+    "Nom de la colonne de rendement"
+  ),
+  Défaut = c("'local_sd'", "5", "3", "'Yield_kg_ha'")
+)
+
+knitr::kable(params_df, caption = "Paramètres du filtre d'écart-type local")
+
+## ----lsd-stats----------------------------------------------------------------
+cat("\n=== Impact sur les statistiques ===\n")
+
+# Avant filtrage
+stats_before <- data.frame(
+  metric = c("Nombre de points", "Rendement moyen", "Écart-type", "CV (%)"),
+  value = c(
+    nrow(data),
+    mean(data$Yield_kg_ha, na.rm = TRUE),
+    sd(data$Yield_kg_ha, na.rm = TRUE),
+    sd(data$Yield_kg_ha, na.rm = TRUE) / mean(data$Yield_kg_ha, na.rm = TRUE) * 100
+  )
+)
+
+# Après filtrage
+stats_after <- data.frame(
+  metric = c("Nombre de points", "Rendement moyen", "Écart-type", "CV (%)"),
+  value = c(
+    nrow(data_filtered),
+    mean(data_filtered$Yield_kg_ha, na.rm = TRUE),
+    sd(data_filtered$Yield_kg_ha, na.rm = TRUE),
+    sd(data_filtered$Yield_kg_ha, na.rm = TRUE) / mean(data_filtered$Yield_kg_ha, na.rm = TRUE) * 100
+  )
+)
+
+comparison <- data.frame(
+  Métrique = stats_before$metric,
+  Avant = round(stats_before$value, 1),
+  Après = round(stats_after$value, 1),
+  Variation = round((stats_after$value - stats_before$value) / stats_before$value * 100, 2)
+)
+
+print(comparison, row.names = FALSE)
+
+cat("\n✓ Réduction du CV:", 
+    round(stats_before$value[4] - stats_after$value[4], 1), "points\n")
+
+## ----comparison-methods-------------------------------------------------------
+# Filtre global (seuils absolus)
+threshold_global <- mean(data$Yield_kg_ha, na.rm = TRUE) + c(-3, 3) * sd(data$Yield_kg_ha, na.rm = TRUE)
+
+cat("\n=== Comparaison des méthodes ===\n")
+
+# Filtre global
+removed_global <- data %>%
+  filter(Yield_kg_ha < threshold_global[1] | Yield_kg_ha > threshold_global[2])
+
+cat("Filtre global (±3σ global):\n")
+cat("  Points retirés:", nrow(removed_global), "\n")
+
+# Filtre local
+cat("Filtre local (±3σ local par voisinage):\n")
+cat("  Points retirés:", nrow(removed), "\n")
+
+cat("\nAvantage du filtre local:\n")
+cat("  - Adapte le seuil à la variabilité locale\n")
+cat("  - Préserve les variations réelles de rendement\n")
+cat("  - Plus précis dans les zones hétérogènes\n")
+
