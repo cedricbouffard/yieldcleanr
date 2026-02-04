@@ -70,7 +70,7 @@ cat("  Min-Max:", round(min(data_raw_s1$Flow, na.rm = TRUE), 2), "-",
 data_s1 <- latlon_to_utm(data_raw_s1)
 
 # Étape 2: Delay Adjustment (sur Flow, pas sur Yield)
-delay_result_s1 <- optimize_delays(data_s1, type = "flow", delay_range = -25:25, n_iterations = 10, noise_level = 0.03)
+delay_result_s1 <- optimize_delays(data_s1, type = "flow", delay_range = -25:25, n_iterations = 3, noise_level = 0.03)
 cat("\n🔧 Delay Adjustment - Délai optimal:", delay_result_s1$delays$flow, "secondes\n")
 
 if (!is.null(delay_result_s1$data)) {
@@ -162,7 +162,7 @@ cat("  Écart-type:", round(sd(data_raw_s2$Flow, na.rm = TRUE), 2), "\n")
 data_s2 <- latlon_to_utm(data_raw_s2)
 
 # Étape 2: Delay Adjustment avec délai important (sur Flow, pas sur Yield)
-delay_result_s2 <- optimize_delays(data_s2, type = "flow", delay_range = -25:25, n_iterations = 10, noise_level = 0.03)
+delay_result_s2 <- optimize_delays(data_s2, type = "flow", delay_range = -25:25, n_iterations = 3, noise_level = 0.03)
 cat("🔧 Delay Adjustment - Délai optimal:", delay_result_s2$delays$flow, "secondes\n")
 
 if (!is.null(delay_result_s2$data)) {
@@ -229,7 +229,7 @@ cat("Points bruts:", nrow(data_raw_s3), "\n")
 data_s3 <- latlon_to_utm(data_raw_s3)
 
 # Delay Adjustment sur Flow (pas sur Yield)
-delay_result_s3 <- optimize_delays(data_s3, type = "flow", delay_range = -25:25, n_iterations = 10, noise_level = 0.03)
+delay_result_s3 <- optimize_delays(data_s3, type = "flow", delay_range = -25:25, n_iterations = 3, noise_level = 0.03)
 cat("Delay Adjustment - Délai optimal:", delay_result_s3$delays$flow, "secondes\n")
 
 if (!is.null(delay_result_s3$data)) {
@@ -282,7 +282,7 @@ cat("Points bruts:", nrow(data_raw_s4), "\n")
 data_s4 <- latlon_to_utm(data_raw_s4)
 
 # Delay Adjustment sur Flow (pas sur Yield)
-delay_result_s4 <- optimize_delays(data_s4, type = "flow", delay_range = -25:25, n_iterations = 10, noise_level = 0.03)
+delay_result_s4 <- optimize_delays(data_s4, type = "flow", delay_range = -25:25, n_iterations = 3, noise_level = 0.03)
 cat("Delay Adjustment - Délai optimal:", delay_result_s4$delays$flow, "secondes\n")
 
 if (!is.null(delay_result_s4$data)) {
