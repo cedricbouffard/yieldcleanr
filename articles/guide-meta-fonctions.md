@@ -419,7 +419,7 @@ data <- tibble::tibble(
 temp_csv <- tempfile(fileext = ".csv")
 export_data(data, temp_csv, format = "csv")
 cat("Export CSV:", temp_csv, "\n")
-#> Export CSV: /tmp/RtmpU17U4q/file2c11478ef885.csv
+#> Export CSV: /tmp/RtmpwMs40M/file2c206d7f9261.csv
 
 # Export GeoJSON (si sf est installé)
 if (requireNamespace("sf", quietly = TRUE)) {
@@ -428,11 +428,11 @@ if (requireNamespace("sf", quietly = TRUE)) {
   export_data(data_sf, temp_geojson)
   cat("Export GeoJSON:", temp_geojson, "\n")
 }
-#> Deleting source `/tmp/RtmpU17U4q/file2c1171619637.geojson' failed
-#> Writing layer `file2c1171619637' to data source 
-#>   `/tmp/RtmpU17U4q/file2c1171619637.geojson' using driver `GeoJSON'
+#> Deleting source `/tmp/RtmpwMs40M/file2c2033ba1f0d.geojson' failed
+#> Writing layer `file2c2033ba1f0d' to data source 
+#>   `/tmp/RtmpwMs40M/file2c2033ba1f0d.geojson' using driver `GeoJSON'
 #> Writing 2 features with 1 fields and geometry type Point.
-#> Export GeoJSON: /tmp/RtmpU17U4q/file2c1171619637.geojson
+#> Export GeoJSON: /tmp/RtmpwMs40M/file2c2033ba1f0d.geojson
 
 # Export avec détection automatique du format
 temp_file <- tempfile(fileext = ".csv")
