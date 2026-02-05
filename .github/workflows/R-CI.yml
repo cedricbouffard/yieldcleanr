@@ -73,21 +73,12 @@ jobs:
             library(covr)
             cov <- package_coverage(type = 'all', quiet = FALSE)
             print(cov)
-            if (length(cov) > 0) {
-              covr::report(cov, file = 'coverage/index.html')
-            } else {
-              message('No coverage data available')
-            }
           "
         continue-on-error: true
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
-        with:
-          fail_ci_if_error: false
-          verbose: true
-        env:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+        run: Rscript -e "covr::codecov(token = '${{ secrets.CODECOV_TOKEN }}')"
+        continue-on-error: true
 
   pkgdown:
     runs-on: ubuntu-latest
