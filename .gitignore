@@ -57,7 +57,7 @@ rsconnect/
 # Generated reports
 *.html
 !inst/rapport/*.Rmd
-inst/rapport/*.html
+!inst/rapport/header_overrides.html
 
 # Test files
 test_*.R
