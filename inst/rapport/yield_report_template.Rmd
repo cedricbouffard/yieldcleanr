@@ -1,0 +1,711 @@
+---
+# ==============================================================================
+# PROFESSIONAL REPORT TEMPLATE
+# ==============================================================================
+# 
+# This template provides styled components for professional paged reports.
+#
+# FILES REQUIRED:
+#   - brochure.css (component styles)
+#   - header_overrides.html (headers/footers/footnotes)
+#
+# AVAILABLE COMPONENTS (see examples below):
+#   - Infoboxes: .infobox .info|.success|.warning|.danger|.primary|.secondary
+#   - Callouts: .callout .tip|.warning|.danger|.info|.success
+#   - Value boxes: .value-box .primary|.secondary|.accent|.warning|.danger
+#   - Badges: .badge .primary|.success|.warning|.danger|.info|.light
+#   - Progress bars: .progress-container with .progress-fill
+#   - Timeline: .timeline with .timeline-item
+#   - Process steps: .process-steps with .process-step
+#   - Metric cards: .metric-card
+#   - Key findings: .key-finding .success|.warning|.danger|.info
+#   - Summary box: .summary-box
+#   - Quote box: .quote-box
+#   - Scorecard: .scorecard with .scorecard-item
+#   - Tables: standard or .comparison-table
+#   - Lists: .striped-list, .feature-list, .icon-list
+#   - Grids: .grid-2, .grid-3, .grid-4
+#   - Section breaks: .section-break .primary|.secondary|.accent
+#   - Footnotes: <span class="footnote">text</span>
+#
+# ==============================================================================
+
+# --- Document Metadata ---
+title: "Rapport de nettoyage des rendements"
+subtitle: "Analyse des donnees de rendement"
+author: "YieldCleanr"
+date: "Date : Février 2026"
+
+# --- Header/Footer Text ---
+header-left: "Rapport de nettoyage des rendements"           # Top-left
+header-middle: ""                         # Top-center (optional)
+header-right: "IRDA"                      # Top-right
+footer-left: ""                           # Bottom-left (hidden when page number is here)
+footer-middle: ""                         # Bottom-center (optional)
+footer-right: "Février 2026"              # Bottom-right (hidden when page number is here)
+
+# --- Page Number Position ---
+# "right" = always right | "alternate" = book-style (left on even, right on odd)
+page-number-position: "alternate"
+
+# --- Output Settings ---
+output:
+  pagedown::html_paged:
+    css: 
+      - "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+      - "default-page"
+      - "default"
+      - "brochure.css"
+    number_sections: false
+    toc: true
+    toc_depth: 2
+    toc_title: "Table des matières"
+    includes:
+      in_header: header_overrides.html
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE, fig.width = 6, fig.height = 2.5, out.width = "100%")
+library(ggplot2)
+library(sf)
+library(dplyr)
+library(fontawesome)
+library(ggspatial)
+if (!exists("n_raw")) n_raw <- 0
+if (!exists("n_clean")) n_clean <- 0
+if (!exists("n_deleted")) n_deleted <- 0
+if (!exists("retention_rate")) retention_rate <- 0
+if (!exists("yield_mean")) yield_mean <- 0
+if (!exists("yield_sd")) yield_sd <- 0
+if (!exists("yield_min")) yield_min <- 0
+if (!exists("yield_max")) yield_max <- 0
+if (!exists("gdf")) gdf <- NULL
+
+safe_val <- function(x, default = 0) {
+  if (is.null(x) || length(x) == 0) return(default)
+  val <- suppressWarnings(as.numeric(x))
+  if (is.na(val) || is.nan(val) || is.infinite(val)) return(default)
+  return(val)
+}
+
+# Calculer toutes les statistiques
+yield_median <- 0
+moisture_mean <- 0
+
+# Initialiser les variables de champ si elles n'existent pas
+if (!exists("field_name")) field_name <- NA_character_
+if (!exists("season_year")) season_year <- NA_integer_
+if (!exists("crop_name")) crop_name <- NA_character_
+if (!exists("farm_name")) farm_name <- NA_character_
+if (!exists("harvest_date")) harvest_date <- NA_character_
+
+# Preparer les libelles pour l'affichage
+field_label <- if (!is.na(field_name) && field_name != "") paste0( field_name) else "Champ"
+
+# Utiliser year_label tel que défini dans l'app (déjà formaté avec la date de récolte)
+# ou le créer à partir de harvest_date/season_year si nécessaire
+if (!exists("year_label") || is.null(year_label) || year_label == "") {
+  if (!is.na(harvest_date) && harvest_date != "") {
+    tryCatch({
+      date_parsed <- as.Date(harvest_date)
+      year_label <- format(date_parsed, "%d %b %Y")
+    }, error = function(e) {
+      year_label <- if (!is.na(season_year)) as.character(season_year) else ""
+    })
+  } else {
+    year_label <- if (!is.na(season_year)) as.character(season_year) else ""
+  }
+}
+# Fonction de traduction des cultures
+translate_crop <- function(crop) {
+  crop_lower <- tolower(crop)
+  translations <- list(
+    "corn" = "Maïs",
+    "maize" = "Maïs",
+    "soybean" = "Soya",
+    "soy" = "Soya",
+    "wheat" = "Blé",
+    "barley" = "Orge",
+    "oats" = "Avoine",
+    "canola" = "Canola",
+    "rapeseed" = "Canola",
+    "alfalfa" = "Luzerne"
+  )
+  if (crop_lower %in% names(translations)) {
+    return(translations[[crop_lower]])
+  } else {
+    # Retourner avec première lettre en majuscule
+    return(paste0(toupper(substring(crop, 1, 1)), substring(crop, 2)))
+  }
+}
+
+# Utiliser crop_label tel que défini dans l'app (déjà traduit)
+# ou créer à partir de crop_name si nécessaire
+if (!exists("crop_label") || is.null(crop_label) || crop_label == "") {
+  crop_label <- if (!is.na(crop_name) && crop_name != "") crop_name else ""
+}
+
+if (exists("gdf") && !is.null(gdf) && inherits(gdf, "sf") && nrow(gdf) > 0) {
+  if ("Yield_kg_ha" %in% names(gdf)) {
+    valid_yield <- gdf$Yield_kg_ha[!is.na(gdf$Yield_kg_ha) & !is.nan(gdf$Yield_kg_ha) & is.finite(gdf$Yield_kg_ha)]
+    if (length(valid_yield) > 0) {
+      yield_mean <- mean(valid_yield)
+      yield_sd <- sd(valid_yield)
+      yield_min <- min(valid_yield)
+      yield_max <- max(valid_yield)
+      yield_median <- median(valid_yield)
+    }
+  }
+  # Chercher colonne humidite
+  moisture_col <- NULL
+  for (col in names(gdf)) {
+    if (grepl("(?i)moisture|humid|water", col)) {
+      moisture_col <- col
+      break
+    }
+  }
+  if (!is.null(moisture_col)) {
+    valid_moisture <- gdf[[moisture_col]][!is.na(gdf[[moisture_col]]) & !is.nan(gdf[[moisture_col]]) & is.finite(gdf[[moisture_col]])]
+    if (length(valid_moisture) > 0) {
+      moisture_mean <- mean(valid_moisture)
+    }
+  }
+}
+
+n_raw <- safe_val(n_raw)
+n_clean <- safe_val(n_clean)
+n_deleted <- safe_val(n_deleted)
+retention_rate <- safe_val(retention_rate)
+yield_mean <- safe_val(yield_mean)
+yield_sd <- safe_val(yield_sd)
+yield_min <- safe_val(yield_min)
+yield_max <- safe_val(yield_max)
+yield_median <- safe_val(yield_median)
+```
+
+
+::: {.section-break .secondary}
+
+# `r year_label` {#`r year_label`}
+
+:::
+
+
+## `r field_label`
+`r if (crop_label != "") { crop_lower <- tolower(crop_label); crop_color <- if (crop_lower %in% c("maïs", "corn", "maize")) "#F1C40F" else if (crop_lower %in% c("soya", "soybean", "soy")) "#27AE60" else if (crop_lower %in% c("blé", "orge", "avoine", "wheat", "barley", "oats")) "#F9E79F" else "#9B59B6"; paste0('<span style="background-color:', crop_color, '; color: black; padding: 3px 8px; border-radius: 4px; font-weight: bold;">', crop_label, '</span>') }`
+`r if (exists("date_label") && date_label != "") paste0('<span class="badge primary">', date_label, '</span>') else if (year_label != "") paste0('<span class="badge primary">', year_label, '</span>')`
+```{r calculate-bins, include=FALSE}
+# Calculer les bins centrés sur la médiane avec le bin médian en jaune
+yield_bins <- NULL
+bin_colors <- NULL
+breaks_custom <- NULL
+median_bin_index <- NULL
+
+if (exists("gdf") && !is.null(gdf) && inherits(gdf, "sf") && nrow(gdf) > 0) {
+  if ("Yield_kg_ha" %in% names(gdf)) {
+    valid_yield <- gdf$Yield_kg_ha[!is.na(gdf$Yield_kg_ha) & !is.nan(gdf$Yield_kg_ha) & is.finite(gdf$Yield_kg_ha)]
+    
+    if (length(valid_yield) > 0) {
+      # Calculer la médiane directement
+      med <- median(valid_yield)
+      
+      # Objectif: ajuster la granularité selon la concentration aux extrémités
+      yield_min <- min(valid_yield)
+      yield_max <- max(valid_yield)
+      med <- median(valid_yield, na.rm = TRUE)
+      
+      # Fonction pour calculer les breaks et obtenir les pourcentages des extrémités
+      calc_edge_percentages <- function(bin_size, valid_yield, med, yield_min, yield_max) {
+        med_bin_start <- floor(med / bin_size) * bin_size
+        n_side <- 3
+        n_bins_target <- 7
+        
+        breaks_custom <- c()
+        start_val <- med_bin_start - (n_side * bin_size)
+        
+        for (i in 0:n_bins_target) {
+          breaks_custom <- c(breaks_custom, start_val + (i * bin_size))
+        }
+        
+        # Étendre si nécessaire
+        if (yield_min < breaks_custom[1]) breaks_custom[1] <- yield_min - 1
+        if (yield_max > breaks_custom[length(breaks_custom)]) breaks_custom[length(breaks_custom)] <- yield_max + 1
+        
+        # Calculer les pourcentages
+        labels <- 1:(length(breaks_custom)-1)
+        yield_cut <- cut(valid_yield, breaks = breaks_custom, labels = labels, include.lowest = TRUE)
+        bin_counts <- table(yield_cut)
+        bin_percentages <- as.numeric(bin_counts) / sum(bin_counts) * 100
+        
+        # Retourner le pourcentage moyen du premier et dernier bin
+        first_pct <- bin_percentages[1]
+        last_pct <- bin_percentages[length(bin_percentages)]
+        avg_edge <- (first_pct + last_pct) / 2
+        
+        return(list(avg_edge = avg_edge, breaks = breaks_custom, bin_size = bin_size))
+      }
+      
+      # Tester avec 0.5t d'abord
+      result_05 <- calc_edge_percentages(500, valid_yield, med, yield_min, yield_max)
+      avg_edge_05 <- result_05$avg_edge
+      
+      # Progression: augmenter la taille des bins jusqu'à ce que les extrémités < 10%
+      if (avg_edge_05 < 2) {
+        # Très peu de données aux extrémités → utiliser 0.25t
+        bin_size <- 250
+      } else if (avg_edge_05 <= 10) {
+        # Cas idéal → rester à 0.5t
+        bin_size <- 500
+      } else {
+        # Trop de données aux extrémités → tester avec des bins plus larges
+        # Tester 1t
+        result_1 <- calc_edge_percentages(1000, valid_yield, med, yield_min, yield_max)
+        avg_edge_1 <- result_1$avg_edge
+        
+        if (avg_edge_1 <= 10) {
+          bin_size <- 1000
+        } else {
+          # Tester 1.5t
+          result_15 <- calc_edge_percentages(1500, valid_yield, med, yield_min, yield_max)
+          avg_edge_15 <- result_15$avg_edge
+          
+          if (avg_edge_15 <= 10) {
+            bin_size <- 1500
+            } else {
+              # Tester 2t
+              result_2 <- calc_edge_percentages(2000, valid_yield, med, yield_min, yield_max)
+              avg_edge_2 <- result_2$avg_edge
+              
+              if (avg_edge_2 <= 10) {
+                bin_size <- 2000
+              } else {
+                # Tester 2.5t
+                result_25 <- calc_edge_percentages(2500, valid_yield, med, yield_min, yield_max)
+                avg_edge_25 <- result_25$avg_edge
+                
+                if (avg_edge_25 <= 10) {
+                  bin_size <- 2500
+                } else {
+                  # Tester 3t
+                  result_3 <- calc_edge_percentages(3000, valid_yield, med, yield_min, yield_max)
+                  avg_edge_3 <- result_3$avg_edge
+                  
+                  if (avg_edge_3 <= 10) {
+                    bin_size <- 3000
+                  } else {
+                    # Tester 3.5t
+                    result_35 <- calc_edge_percentages(3500, valid_yield, med, yield_min, yield_max)
+                    avg_edge_35 <- result_35$avg_edge
+                    
+                    if (avg_edge_35 <= 10) {
+                      bin_size <- 3500
+                    } else {
+                      # Tester 4t
+                      result_4 <- calc_edge_percentages(4000, valid_yield, med, yield_min, yield_max)
+                      avg_edge_4 <- result_4$avg_edge
+                      
+                      if (avg_edge_4 <= 10) {
+                        bin_size <- 4000
+                      } else {
+                        # Tester 4.5t
+                        result_45 <- calc_edge_percentages(4500, valid_yield, med, yield_min, yield_max)
+                        avg_edge_45 <- result_45$avg_edge
+                        
+                        if (avg_edge_45 <= 10) {
+                          bin_size <- 4500
+                        } else {
+                          # Utiliser 5t
+                          bin_size <- 5000
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      
+      # Créer les breaks avec des bins de taille uniforme (sauf extrémités)
+      n_bins_target <- 7
+      
+      # Calculer la valeur de départ pour avoir exactement 7 bins avec la médiane au centre
+      # On veut 3 bins complets sous la médiane, la médiane dans le 4ème, et 3 au-dessus
+      # Partir d'une valeur alignée sur la taille des bins
+      med_rounded <- floor(med / bin_size) * bin_size
+      
+      # Créer les breaks centrés sur la médiane
+      breaks_custom <- c()
+      for (i in -3:3) {
+        breaks_custom <- c(breaks_custom, med_rounded + (i * bin_size))
+      }
+      # Ajouter le dernier break pour le 7ème bin
+      breaks_custom <- c(breaks_custom, med_rounded + (4 * bin_size))
+      
+      # Ajuster les extrémités pour couvrir toutes les données
+      # Le premier break doit être < yield_min, le dernier > yield_max
+      if (yield_min < breaks_custom[1]) {
+        breaks_custom[1] <- floor(yield_min / bin_size) * bin_size - bin_size
+      }
+      if (yield_max > breaks_custom[length(breaks_custom)]) {
+        breaks_custom[length(breaks_custom)] <- ceiling(yield_max / bin_size) * bin_size + bin_size
+      }
+      
+      # Recalculer le nombre de bins après ajustement
+      n_bins <- length(breaks_custom) - 1
+      
+      # Identifier l'index du bin qui contient la médiane
+      median_bin_index <- which(breaks_custom[-length(breaks_custom)] <= med & med < breaks_custom[-1])
+      if (length(median_bin_index) == 0) median_bin_index <- 4  # Fallback
+      
+      # Créer les labels
+      labels <- c()
+      for (i in 1:n_bins) {
+        val1 <- breaks_custom[i] / 1000
+        val2 <- breaks_custom[i+1] / 1000
+        # Nombre de décimales selon la taille des bins
+        decimals <- ifelse(bin_size == 250, 2, ifelse(bin_size == 500, 1, 0))
+        val1_rounded <- round(val1, decimals)
+        val2_rounded <- round(val2, decimals)
+        
+        if (i == 1) {
+          labels <- c(labels, paste0("< ", val2_rounded, " t/ha"))
+        } else if (i == n_bins) {
+          labels <- c(labels, paste0("> ", val1_rounded, " t/ha"))
+        } else {
+          labels <- c(labels, paste0(val1_rounded, " - ", val2_rounded, " t/ha"))
+        }
+      }
+      
+      # Calculer les pourcentages et superficies
+      yield_cut <- cut(valid_yield, breaks = breaks_custom, labels = labels, include.lowest = TRUE)
+      bin_counts <- table(yield_cut)
+      bin_percentages <- round(bin_counts / sum(bin_counts) * 100, 1)
+      
+      # Calculer la superficie par bin (en hectares)
+      bin_areas <- numeric(length(labels))
+      gdf$yield_bin <- cut(gdf$Yield_kg_ha, breaks = breaks_custom, labels = labels, include.lowest = TRUE)
+      
+      for (i in 1:length(labels)) {
+        bin_data <- gdf[gdf$yield_bin == labels[i] & !is.na(gdf$yield_bin), ]
+        if (nrow(bin_data) > 0) {
+          area_m2 <- sum(as.numeric(st_area(bin_data)), na.rm = TRUE)
+          bin_areas[i] <- round(area_m2 / 10000, 1)
+        } else {
+          bin_areas[i] <- 0
+        }
+      }
+      
+      # Créer le dataframe
+      yield_bins <- data.frame(
+        Classe = labels,
+        Pourcentage = as.numeric(bin_percentages),
+        Superficie = bin_areas
+      )
+      
+      # Palette de couleurs avec LE BIN MÉDIAN EN JAUNE
+      bin_colors <- character(n_bins)
+      
+      # Couleurs pour les bins sous la médiane (rouge à orange)
+      if (median_bin_index > 1) {
+        reds <- colorRampPalette(c("#C0392B", "#E74C3C", "#E67E22"))(median_bin_index - 1)
+        bin_colors[1:(median_bin_index-1)] <- reds
+      }
+      
+      # Le bin médian en JAUNE
+      bin_colors[median_bin_index] <- "#F1C40F"
+      
+      # Couleurs pour les bins au-dessus de la médiane (vert clair à vert foncé)
+      if (median_bin_index < n_bins) {
+        greens <- colorRampPalette(c("#AED136", "#27AE60", "#1E8449"))(n_bins - median_bin_index)
+        bin_colors[(median_bin_index+1):n_bins] <- greens
+      }
+    }
+  }
+}
+```
+
+```{r calculate-orientation, include=FALSE}
+# Valeurs par défaut
+map_orientation <- list(angle = 0, width = 7, height = 5, coord_ratio = 7/5)
+
+  tryCatch({
+  if (exists("gdf") && !is.null(gdf) && inherits(gdf, "sf") && nrow(gdf) > 0) {
+    if ("Yield_kg_ha" %in% names(gdf)) {
+      valid_idx <- !is.na(gdf$Yield_kg_ha) & !is.nan(gdf$Yield_kg_ha) & is.finite(gdf$Yield_kg_ha)
+      if (sum(valid_idx) > 0) {
+        field_angle <- NULL
+        
+        # Calculer l'angle a partir des positions (segment directions)
+        tryCatch({
+          coords <- sf::st_coordinates(sf::st_centroid(gdf))
+          if (!is.null(coords) && nrow(coords) > 1) {
+            lat <- mean(coords[,2], na.rm = TRUE)
+            meters_per_degree_lon <- 111320 * cos(lat * pi / 180)
+            meters_per_degree_lat <- 111320
+            dx_m <- diff(coords[,1]) * meters_per_degree_lon
+            dy_m <- diff(coords[,2]) * meters_per_degree_lat
+            angles <- atan2(dy_m, dx_m) * 180 / pi
+            angles_valid <- angles[!is.na(angles) & (abs(dx_m) > 0.1 | abs(dy_m) > 0.1)]
+            if (length(angles_valid) > 10) {
+              angles_180 <- angles_valid %% 180
+              h <- hist(angles_180, breaks = 36, plot = FALSE)
+              peak_idx <- which.max(h$counts)
+              peak_angle <- h$mids[peak_idx]
+              field_angle <- peak_angle
+            }
+          }
+        }, error = function(e) NULL)
+        
+        # Si pas de segments valides, utiliser le bounding box
+        if (is.null(field_angle)) {
+          invisible(capture.output({
+            bbox_calc <- sf::st_bbox(sf::st_geometry(gdf))
+          }))
+          lat <- (as.numeric(bbox_calc["ymin"]) + as.numeric(bbox_calc["ymax"])) / 2
+          meters_per_degree_lat <- 111320
+          meters_per_degree_lon <- 111320 * cos(lat * pi / 180)
+          
+          bbox_width_m <- (as.numeric(bbox_calc["xmax"]) - as.numeric(bbox_calc["xmin"])) * meters_per_degree_lon
+          bbox_height_m <- (as.numeric(bbox_calc["ymax"]) - as.numeric(bbox_calc["ymin"])) * meters_per_degree_lat
+          
+          bbox_angle <- atan2(bbox_height_m, bbox_width_m) * 180 / pi
+          field_angle <- -bbox_angle
+        }
+
+        # Normaliser l'angle final pour qu'il soit entre -90 et 90
+        while (field_angle > 90) field_angle <- field_angle - 180
+        while (field_angle <= -90) field_angle <- field_angle + 180
+        
+        # Mettre à jour map_orientation
+        map_orientation <- list(
+          angle = field_angle,
+          width = 7,
+          height = 5,
+          coord_ratio = 7/5
+        )
+      }
+    }
+  }
+}, error = function(e) {
+  message("Error in calculate-orientation: ", e$message)
+})
+
+if (exists("gdf") && !is.null(gdf) && inherits(gdf, "sf") && nrow(gdf) > 0) {
+    if ("Yield_kg_ha" %in% names(gdf) && !is.null(yield_bins)) {
+      valid_idx <- !is.na(gdf$Yield_kg_ha) & !is.nan(gdf$Yield_kg_ha) & is.finite(gdf$Yield_kg_ha)
+      if (sum(valid_idx) > 0) {
+        valid_data <- gdf[valid_idx, ]
+        valid_data <- valid_data |> sf::st_transform(3857)
+        # Créer une variable discrète pour les bins
+        valid_data$yield_bin <- cut(valid_data$Yield_kg_ha, 
+                                    breaks = breaks_custom, 
+                                    labels = yield_bins$Classe, 
+                                    include.lowest = TRUE)
+        
+        # Créer une palette nommée pour les couleurs
+        names(bin_colors) <- yield_bins$Classe
+        
+        # Récupérer l'orientation pré-calculée
+        rotation_angle <- map_orientation$angle
+        
+        # Créer la carte avec rotation si nécessaire
+        if (abs(rotation_angle) > 5) {  # Seulement si l'angle est significatif (> 5 degrés)
+          # Utiliser coord_rotate pour faire tourner la carte avec le ratio optimisé
+          rot <- ggbasemap::coord_rotate(valid_data, rotation_angle, ratio = map_orientation$coord_ratio)
+          
+          p <- ggplot() +
+            ggbasemap::add_basemap(
+                                   bbox = rot$bbox,
+                                   url = "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+                                   alpha = 0.3, 
+                                   zoom_offset = 0) +
+            geom_sf(data = valid_data, aes(fill = yield_bin), color = NA, size = 0.1) +
+            scale_fill_manual(
+              values = bin_colors,
+              name = "Rendement",
+              drop = FALSE
+            ) +
+            ggspatial::annotation_north_arrow(
+              which_north = "true",
+              location = "tr",
+              pad_x = unit(0.4, "cm"),
+              pad_y = unit(0.4, "cm"),
+              height = unit(1.8, "cm"),
+              width = unit(1.5, "cm"),
+              style = ggspatial::north_arrow_fancy_orienteering(
+                fill = c("#002752", "white"),
+                line_col = "#002752",
+                line_width = 1,
+                text_col = "#002752",
+                text_face = "bold",
+                text_size = 12
+              )
+            )+
+            ggspatial::annotation_scale(
+              location = "br",
+              pad_x = unit(0.4, "cm"),
+              pad_y = unit(0.4, "cm"),
+              width_hint = 0.2,
+              line_width = 1,
+              line_col = "#002752",
+              text_col = "#002752",
+              text_cex = 0.9
+            )+
+            annotate(
+              "text",
+              x = -Inf,
+              y = -Inf,
+              label = "Source: Esri World Imagery",
+              hjust = 0,
+              vjust = -0.5,
+              size = 3,
+              color = "#002752",
+              fontface = "italic"
+            )+
+            rot$coord +
+            theme_minimal() +
+            theme(
+              axis.text = element_blank(),
+              axis.title = element_blank(),
+              panel.grid = element_blank(),
+              legend.position = "none",
+              plot.margin = margin(2, 0, 2, 0)
+            )
+        } else {
+          # Sans rotation
+          p <- ggplot(valid_data) +
+            ggbasemap::add_basemap(valid_data,
+                                   url = "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+                                   alpha = 0.3, 
+                                   zoom_offset = 0) +
+            geom_sf(aes(fill = yield_bin), color = NA, size = 0.1) +
+            scale_fill_manual(
+              values = bin_colors,
+              name = "Rendement",
+              drop = FALSE
+            ) +
+            ggspatial::annotation_north_arrow(
+              which_north = "true",
+              location = "tr",
+              pad_x = unit(0.4, "cm"),
+              pad_y = unit(0.4, "cm"),
+              height = unit(1.8, "cm"),
+              width = unit(1.5, "cm"),
+              style = ggspatial::north_arrow_fancy_orienteering(
+                fill = c("#002752", "white"),
+                line_col = "#002752",
+                line_width = 1,
+                text_col = "#002752",
+                text_face = "bold",
+                text_size = 12
+              )
+            ) +
+            ggspatial::annotation_scale(
+              location = "br",
+              pad_x = unit(0.4, "cm"),
+              pad_y = unit(0.4, "cm"),
+              width_hint = 0.2,
+              line_width = 1,
+              line_col = "#002752",
+              text_col = "#002752",
+              text_cex = 0.9
+            ) +
+            annotate(
+              "text",
+              x = -Inf,
+              y = -Inf,
+              label = "Source: Esri World Imagery",
+              hjust = 0,
+              vjust = -0.5,
+              size = 3,
+              color = "#002752",
+              fontface = "italic"
+            )+
+            theme_minimal() +
+            theme(
+              axis.text = element_blank(),
+              axis.title = element_blank(),
+              panel.grid = element_blank(),
+              legend.position = "none",
+              plot.margin = margin(2, 2, 2, 2)
+            )
+        }}}}
+```
+
+<div style="border-radius: 8pt; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
+```{r yield-map, fig.height=7, eval=TRUE}
+tryCatch({
+        print(p)
+}, error = function(e) {
+  message("Error in yield-map: ", e$message)
+  NULL
+})
+```
+
+:::: {style="display: flex; gap: 20px; margin-top: 15px;"}
+
+::: {style="flex: 0 0 50%; max-width: 50%;"}
+
+```{r yield-table, eval=TRUE, results='asis'}
+# Ensure yield_bins exists
+if (!exists("yield_bins")) yield_bins <- NULL
+if (!exists("bin_colors")) bin_colors <- NULL
+
+if (!is.null(yield_bins) && nrow(yield_bins) > 0 && !is.null(bin_colors)) {
+  html_table <- "<table class='yield-table' style='width:100%; border-collapse: collapse; font-size: 10pt;'>"
+  html_table <- paste0(html_table, "<thead><tr style='background-color: #002752; color: white;'><th style='padding: 4px; text-align: left;'>Classe</th><th style='padding: 4px; text-align: center;'>%</th><th style='padding: 4px; text-align: center;'>Superficie (ha)</th></tr></thead><tbody>")
+  
+  for (i in 1:nrow(yield_bins)) {
+    color <- bin_colors[i]
+    classe_label <- yield_bins$Classe[i]
+    
+    html_table <- paste0(html_table, 
+      "<tr style='border-bottom: 1px solid #ddd;'>",
+      "<td style='padding: 3px;'><span style='display: inline-block; width: 10px; height: 10px; background-color: ", color, "; margin-right: 6px; border-radius: 2px;'></span>", classe_label, "</td>",
+      "<td style='padding: 3px; text-align: center; font-weight: bold;'>", yield_bins$Pourcentage[i], "%</td>",
+      "<td style='padding: 3px; text-align: center; color: #666;'>", yield_bins$Superficie[i], "</td>",
+      "</tr>")
+  }
+  
+  html_table <- paste0(html_table, "</tbody></table>")
+  cat(html_table)
+} else {
+  cat("<p style='color: #666; font-style: italic;'>Données de rendement non disponibles</p>")
+}
+```
+
+:::
+
+::: {style="flex: 0 0 46%; max-width: 46%; padding-left: 15px; padding-top: 20px"}
+
+```{r value-boxes, eval=TRUE, results='asis'}
+# Ensure variables exist with defaults
+if (!exists("yield_mean")) yield_mean <- 0
+if (!exists("yield_median")) yield_median <- 0
+if (!exists("moisture_mean")) moisture_mean <- 0
+
+# Create value boxes
+cat('
+::: {.value-box .info style="padding: var(--spacing-xs); box-shadow: var(--shadow-sm);"}
+', fontawesome::fa("chart-line", height = "1.2em"), '
+<span class="label">Rendement moyen </span>
+<span class="value">', round(yield_mean/1000, 1), ' t/ha</span>
+<span class="label">Médiane: ', round(yield_median/1000, 1), ' t/ha</span>
+:::
+')
+
+cat('
+::: {.value-box .info style="margin-top: 15px; padding: var(--spacing-xs); box-shadow: var(--shadow-sm);"}
+', fontawesome::fa("tint", height = "1.2em"), '
+<span class="label">Humidité moyenne</span>
+<span class="value">', round(moisture_mean, 1), '%</span>
+:::
+')
+```
+
+:::
+
+::::
+</div>

@@ -336,7 +336,6 @@ read_yield_from_zip <- function(zip_path, field_name) {
   # Creer un repertoire temporaire
   temp_dir <- tempfile(pattern = "yield_zip_")
   dir.create(temp_dir, showWarnings = FALSE, recursive = TRUE)
-  on.exit(unlink(temp_dir, recursive = TRUE))
   
   # Lister les champs disponibles
   fields <- list_fields_from_zip(zip_path)
@@ -352,9 +351,24 @@ read_yield_from_zip <- function(zip_path, field_name) {
   # Extraire tous les fichiers associes au shapefile
   zip_contents <- utils::unzip(zip_path, list = TRUE)
   related_files <- zip_contents$Name[grepl(paste0("^", base_name, "\\."), zip_contents$Name, ignore.case = TRUE)]
+
+  # Chercher aussi le fichier JSON de metadonnees (-Deere-Metadata.json)
+  json_files <- zip_contents$Name[grepl(paste0("^", base_name, ".*-Deere-Metadata\\.json$"),
+                                        zip_contents$Name, ignore.case = TRUE)]
+  all_files <- unique(c(related_files, json_files))
   
   # Extraire les fichiers
-  utils::unzip(zip_path, files = related_files, exdir = temp_dir)
+  utils::unzip(zip_path, files = all_files, exdir = temp_dir)
+  
+  # Lire le fichier JSON de metadonnees s'il existe
+  metadata <- NULL
+  if (length(json_files) > 0) {
+    json_path <- file.path(temp_dir, json_files[1])
+    if (!file.exists(json_path)) {
+      json_path <- file.path(temp_dir, basename(json_files[1]))
+    }
+    metadata <- parse_jd_metadata(json_path)
+  }
   
   # Lire le shapefile
   shp_path <- file.path(temp_dir, shp_file)
@@ -363,12 +377,33 @@ read_yield_from_zip <- function(zip_path, field_name) {
   }
   
   data <- sf::st_read(shp_path, quiet = TRUE)
+
+  # Detacher l'objet sf de ses fichiers source en forcant une copie en memoire
+  # Cela evite un segfault quand le repertoire temporaire est supprime
+  # alors que l'objet sf maintient encore des references aux fichiers
+  data <- sf::st_sf(sf::st_drop_geometry(data), geometry = sf::st_geometry(data))
+
+  # Nettoyer le repertoire temporaire maintenant que les donnees sont en memoire
+  unlink(temp_dir, recursive = TRUE)
   
-  # Standardiser les colonnes John Deere
-  data <- standardize_jd_columns(data)
+  # Standardiser les colonnes John Deere (avec metadonnees si disponibles)
+  data <- standardize_jd_columns(data, metadata = metadata)
   
-  # Convertir les unites John Deere metriques vers le format yieldcleanr
-  data <- convert_jd_metric_to_yieldcleanr(data)
+  # Convertir les unites John Deere vers le format yieldcleanr (avec metadonnees)
+  data <- convert_jd_metric_to_yieldcleanr(data, metadata = metadata)
+
+  # Convertir en data.frame (les coordonnees sont dans Longitude/Latitude)
+  # Le pipeline de nettoyage travaille avec des data.frames, pas des sf
+  # Les polygones sf seront recrees a la fin par data_to_sf()
+  if (inherits(data, "sf")) {
+    metadata_attrs <- attributes(data)[!names(attributes(data)) %in%
+      c("names", "class", "row.names", "sf_column", "agr")]
+    data <- sf::st_drop_geometry(data)
+    # Restaurer les attributs custom (jd_metadata, etc.)
+    for (attr_name in names(metadata_attrs)) {
+      attr(data, attr_name) <- metadata_attrs[[attr_name]]
+    }
+  }
   
   return(data)
 }
@@ -381,7 +416,7 @@ read_yield_from_zip <- function(zip_path, field_name) {
 #' @param data Objet sf avec les donnees John Deere
 #' @return Objet sf avec les colonnes standardisees
 #' @noRd
-standardize_jd_columns <- function(data) {
+standardize_jd_columns <- function(data, metadata = NULL) {
   # Debug: afficher les noms de colonnes trouves
   original_names <- names(data)
   message(paste("Colonnes trouvees dans le shapefile:", paste(original_names, collapse = ", ")))
@@ -391,6 +426,11 @@ standardize_jd_columns <- function(data) {
     "DISTANCE" = "Distance",
     "SWATHWIDTH" = "Swath",
     "VRYIELDMAS" = "Flow",
+    "NetYldA" = "Flow",
+    "GrossYldA" = "Flow_Gross",
+    "GrossYld" = "GrossYld_total",
+    "NetYld" = "NetYld_total",
+    "Trash" = "Trash",
     "SECTIONID" = "Pass",
     "Crop" = "GrainType",
     "WetMass" = "Flow_Wet",
@@ -406,6 +446,15 @@ standardize_jd_columns <- function(data) {
     "DRYMATTER" = "DryMatter",
     "PRODUCTHASH" = "ProductHash"
   )
+
+  # Si NetYldA existe mais pas VRYIELDMAS, on utilise NetYldA comme Flow
+  # (NetYldA est le rendement net par acre, typiquement en ton/acre)
+  # Priorite: VRYIELDMAS > NetYldA pour le mapping vers Flow
+  if ("VRYIELDMAS" %in% original_names && "NetYldA" %in% original_names) {
+    # Les deux existent, VRYIELDMAS a la priorite
+    jd_mapping <- jd_mapping[names(jd_mapping) != "NetYldA"]
+    jd_mapping["NetYldA"] <- "NetYldA_raw"
+  }
   
   # Renommer les colonnes existantes
   renamed_count <- 0
@@ -474,13 +523,39 @@ standardize_jd_columns <- function(data) {
     }
   }
   
+  # Utiliser les metadonnees JSON pour enrichir GrainType si c'est un code numerique
+  if (!is.null(metadata) && "GrainType" %in% names(data)) {
+    # Si GrainType est numerique (code culture JD), remplacer par le nom de culture
+    if (is.numeric(data$GrainType) || is.integer(data$GrainType) ||
+        all(grepl("^[0-9]+$", as.character(unique(data$GrainType[!is.na(data$GrainType)]))))) {
+      crop_name <- metadata$crop_info$crop_name
+      crop_token <- metadata$crop_info$crop_token
+      if (!is.na(crop_name) && nchar(crop_name) > 0) {
+        message(paste("GrainType numerique (code:", unique(data$GrainType), ") remplace par:", crop_name, "(", crop_token, ")"))
+        data$GrainType <- crop_name
+      }
+    }
+  }
+
+  # Stocker les metadonnees comme attribut pour utilisation ulterieure
+  if (!is.null(metadata)) {
+    attr(data, "jd_metadata") <- metadata
+  }
+
   # S'assurer que les colonnes essentielles existent
-  essential_cols <- c("Flow", "Moisture", "Swath", "Pass", "Longitude", "Latitude")
+  # Note: Moisture n'est pas toujours presente (cultures maraicheres)
+  essential_cols <- c("Flow", "Swath", "Pass", "Longitude", "Latitude")
   for (col in essential_cols) {
     if (!col %in% names(data)) {
       data[[col]] <- NA_real_
       message(paste("Colonne", col, "manquante, initialisee avec NA"))
     }
+  }
+
+  # Moisture: initialiser a NA si absent (cultures sans humidite grain)
+  if (!"Moisture" %in% names(data)) {
+    data$Moisture <- NA_real_
+    message("Colonne Moisture absente (normal pour cultures maraicheres), initialisee avec NA")
   }
   
   # Ajouter les colonnes optionnelles si elles n'existent pas
@@ -514,17 +589,28 @@ standardize_jd_columns <- function(data) {
 #' @param data Objet sf avec les donnees John Deere metriques
 #' @return Objet sf avec les colonnes converties
 #' @noRd
-convert_jd_metric_to_yieldcleanr <- function(data) {
-  message("Conversion des donnees John Deere metriques...")
-  
-  # Si les donnees sont deja en tonnes/ha ou kg/ha, on les garde telles quelles
-  # mais on cree les colonnes attendues par le pipeline
-  
-  # Verifier si Flow existe et contient des valeurs
+convert_jd_metric_to_yieldcleanr <- function(data, metadata = NULL) {
+  message("Conversion des donnees John Deere vers le format yieldcleanr...")
+
+  # Recuperer les metadonnees (soit passees en parametre, soit en attribut)
+  if (is.null(metadata)) {
+    metadata <- attr(data, "jd_metadata")
+  }
+
+  # Extraire les unites des metadonnees JSON si disponibles
+  units <- if (!is.null(metadata)) metadata$units else list()
+  has_metadata_units <- length(units) > 0
+  if (has_metadata_units) {
+    message(paste("Unites lues depuis les metadonnees JSON:",
+                  paste(names(units), "=", unlist(units), collapse = ", ")))
+  }
+
+  # ====================================================================
+  # CONVERSION DU RENDEMENT (Flow)
+  # ====================================================================
   if (!"Flow" %in% names(data) || all(is.na(data$Flow))) {
-    yield_cols <- c("Yield_kg_ha", "Yield_t_ha", "DryYield", "WetYield", 
+    yield_cols <- c("Yield_kg_ha", "Yield_t_ha", "DryYield", "WetYield",
                     "Rendement", "RendementSec", "RendementHumide")
-    
     for (col in yield_cols) {
       if (col %in% names(data) && !all(is.na(data[[col]]))) {
         message(paste("Utilisation de", col, "comme Flow"))
@@ -533,46 +619,83 @@ convert_jd_metric_to_yieldcleanr <- function(data) {
       }
     }
   }
-  
-  # Convertir les unites si necessaire
-  # Flow contient TOUJOURS le rendement HUMIDE (quelle que soit la source)
+
   if ("Flow" %in% names(data) && !all(is.na(data$Flow))) {
     mean_flow <- mean(data$Flow[!is.na(data$Flow)], na.rm = TRUE)
-    message(paste("Rendement humide moyen:", round(mean_flow, 2)))
-    
-    # Si le rendement est > 100, c'est probablement en kg/ha
-    # Si le rendement est < 20, c'est probablement en tonnes/ha
-    if (mean_flow < 20 && mean_flow > 0) {
+    message(paste("Rendement moyen brut:", round(mean_flow, 2)))
+
+    # Determiner l'unite du rendement
+    yield_unit <- units[["NetYldA"]] %||% units[["VRYIELDMAS"]] %||% NA_character_
+
+    if (!is.na(yield_unit) && grepl("ton1ac-1|ton/ac|ton\\.ac", yield_unit, ignore.case = TRUE)) {
+      # Unite ton/acre (US short ton = 2000 lbs = 907.185 kg, 1 acre = 0.404686 ha)
+      # 1 ton/acre = 907.185 / 0.404686 = 2241.7 kg/ha
+      message(paste("Unite de rendement detectee depuis metadata:", yield_unit))
+      message("Conversion ton/acre -> kg/ha (facteur: 2241.7)")
+      data$Flow <- data$Flow * 2241.7
+    } else if (!is.na(yield_unit) && grepl("kg1ha-1|kg/ha|kg\\.ha", yield_unit, ignore.case = TRUE)) {
+      message("Rendement deja en kg/ha")
+    } else if (!is.na(yield_unit) && grepl("t1ha-1|t/ha|tonne/ha", yield_unit, ignore.case = TRUE)) {
       message("Conversion tonnes/ha -> kg/ha")
-      data$Flow <- data$Flow * 1000  # tonnes -> kg
+      data$Flow <- data$Flow * 1000
+    } else if (!is.na(yield_unit) && grepl("bu1ac-1|bu/ac|bushel", yield_unit, ignore.case = TRUE)) {
+      # Boisseaux/acre -> kg/ha (approximation mais on aura besoin du lbs_per_bushel)
+      lbs_per_bu <- get_lbs_per_bushel(data)
+      # 1 bu/ac = (lbs_per_bu * 0.453592) / 0.404686 kg/ha
+      factor <- lbs_per_bu * 0.453592 / 0.404686
+      message(paste("Conversion bu/acre -> kg/ha (facteur:", round(factor, 2), ")"))
+      data$Flow <- data$Flow * factor
+    } else {
+      # Pas de metadonnees d'unite: detection heuristique
+      if (mean_flow < 100 && mean_flow > 0) {
+        # Probablement en tonnes/ha ou ton/acre
+        # Heuristique: si < 20, possiblement tonnes/ha pour cereales
+        # Si entre 5 et 60 avec une culture maraichere, probablement ton/acre
+        crop_name <- if (!is.null(metadata)) tolower(metadata$crop_info$crop_name %||% "") else ""
+        is_vegetable <- grepl("onion|shallot|potato|carrot|beet|celery|turnip|radish|cabbage|lettuce", crop_name)
+
+        if (is_vegetable || mean_flow > 3) {
+          # Pour les cultures maraicheres avec rendement faible-moyen, c'est probablement ton/acre
+          # ou tonnes/ha -- on ne peut pas distinguer sans metadonnees
+          # Par defaut: si < 20, on suppose tonnes/ha (format JD metrique habituel)
+          message("Conversion tonnes/ha -> kg/ha (heuristique, pas de metadonnees d'unite)")
+          data$Flow <- data$Flow * 1000
+        } else {
+          message("Conversion tonnes/ha -> kg/ha")
+          data$Flow <- data$Flow * 1000
+        }
+      }
+      # Si > 100, on suppose deja en kg/ha
+      if (mean_flow >= 100 && mean_flow < 50000) {
+        message("Rendement detecte comme deja en kg/ha")
+      }
     }
-    
-    # Flow contient le rendement HUMIDE
+
+    # Stocker le rendement comme Yield_kg_ha_wet
     data$Yield_kg_ha_wet <- data$Flow
-    message(paste("Yield_kg_ha_wet (humide) cree avec", sum(!is.na(data$Yield_kg_ha_wet)), "valeurs"))
-    
-    # Yield_kg_ha (sec) sera calcule plus tard a partir de l'humidite
-    # Ne pas creer Yield_kg_ha ici pour forcer le calcul avec humidite
+    message(paste("Yield_kg_ha_wet cree:", round(mean(data$Flow, na.rm = TRUE), 1), "kg/ha (",
+                  sum(!is.na(data$Yield_kg_ha_wet)), "valeurs)"))
   }
-  
+
   # Creer Yield_kg_ha_wet si Flow_Wet existe (donnees avec rendement humide explicite)
   if ("Flow_Wet" %in% names(data) && !all(is.na(data$Flow_Wet))) {
     mean_flow_wet <- mean(data$Flow_Wet[!is.na(data$Flow_Wet)], na.rm = TRUE)
     message(paste("Rendement humide explicite moyen:", round(mean_flow_wet, 2)))
-    
+
     if (mean_flow_wet < 20 && mean_flow_wet > 0) {
       message("Conversion rendement humide tonnes/ha -> kg/ha")
-      data$Flow_Wet <- data$Flow_Wet * 1000  # tonnes -> kg
+      data$Flow_Wet <- data$Flow_Wet * 1000
     }
-    
-    # Si Yield_kg_ha_wet n'existe pas encore, le creer
+
     if (!"Yield_kg_ha_wet" %in% names(data) || all(is.na(data$Yield_kg_ha_wet))) {
       data$Yield_kg_ha_wet <- data$Flow_Wet
-      message(paste("Yield_kg_ha_wet cree a partir de Flow_Wet avec", sum(!is.na(data$Yield_kg_ha_wet)), "valeurs"))
+      message(paste("Yield_kg_ha_wet cree a partir de Flow_Wet:", sum(!is.na(data$Yield_kg_ha_wet)), "valeurs"))
     }
   }
-  
-  # Verifier Swath (largeur)
+
+  # ====================================================================
+  # CONVERSION DU SWATH (largeur de coupe)
+  # ====================================================================
   if (!"Swath" %in% names(data) || all(is.na(data$Swath))) {
     swath_cols <- c("Swath", "Width", "Largeur", "SwathWidth", "CuttingWidth")
     for (col in swath_cols) {
@@ -583,25 +706,46 @@ convert_jd_metric_to_yieldcleanr <- function(data) {
       }
     }
   }
-  
-  # Convertir Swath en metres si necessaire
+
   if ("Swath" %in% names(data) && !all(is.na(data$Swath))) {
     mean_swath <- mean(data$Swath[!is.na(data$Swath)], na.rm = TRUE)
-    message(paste("Swath moyen detecte:", round(mean_swath, 2)))
-    
-    if (mean_swath > 200 && mean_swath < 500) {
-      message("Conversion Swath (pouces) -> metres")
-      data$Swath <- data$Swath * 0.0254  # inches -> m
-    } else if (mean_swath > 50 && mean_swath <= 200) {
-      message("Conversion Swath (cm) -> metres")
-      data$Swath <- data$Swath / 100  # cm -> m
-    } else if (mean_swath > 500) {
-      message("Conversion Swath (mm) -> metres")
-      data$Swath <- data$Swath / 1000  # mm -> m
+    swath_unit <- units[["SWATHWIDTH"]] %||% NA_character_
+
+    if (!is.na(swath_unit) && grepl("^ft$|feet|foot", swath_unit, ignore.case = TRUE)) {
+      message(paste("Swath en pieds (metadata:", swath_unit, ") moyenne:", round(mean_swath, 2), "ft -> conversion en metres"))
+      data$Swath <- data$Swath * 0.3048  # pieds -> metres
+    } else if (!is.na(swath_unit) && grepl("^in$|inch|pouce", swath_unit, ignore.case = TRUE)) {
+      message(paste("Swath en pouces (metadata:", swath_unit, ") -> conversion en metres"))
+      data$Swath <- data$Swath * 0.0254
+    } else if (!is.na(swath_unit) && grepl("^m$|meter|metre", swath_unit, ignore.case = TRUE)) {
+      message(paste("Swath deja en metres (metadata:", swath_unit, ")"))
+    } else {
+      # Detection heuristique (existante)
+      message(paste("Swath moyen detecte:", round(mean_swath, 2), "(pas d'unite metadata)"))
+      if (mean_swath > 200 && mean_swath < 500) {
+        message("Conversion Swath (pouces) -> metres")
+        data$Swath <- data$Swath * 0.0254
+      } else if (mean_swath > 50 && mean_swath <= 200) {
+        message("Conversion Swath (cm) -> metres")
+        data$Swath <- data$Swath / 100
+      } else if (mean_swath > 500) {
+        message("Conversion Swath (mm) -> metres")
+        data$Swath <- data$Swath / 1000
+      } else if (mean_swath > 3 && mean_swath <= 50) {
+        # Pourrait etre en pieds (3-50 ft = 0.9-15m -> plausible)
+        # Heuristique: un swath > 15m est rare, > 20 pieds (6m) est courant
+        if (mean_swath > 15) {
+          message("Conversion Swath (pieds, heuristique) -> metres")
+          data$Swath <- data$Swath * 0.3048
+        }
+        # Sinon, deja en metres
+      }
     }
   }
-  
-  # Verifier Distance
+
+  # ====================================================================
+  # CONVERSION DE LA DISTANCE
+  # ====================================================================
   if (!"Distance" %in% names(data) || all(is.na(data$Distance))) {
     dist_cols <- c("Distance", "Dist", "Distance_m", "TravelDist")
     for (col in dist_cols) {
@@ -612,38 +756,122 @@ convert_jd_metric_to_yieldcleanr <- function(data) {
       }
     }
   }
-  
-  # Convertir Distance en metres si necessaire
+
   if ("Distance" %in% names(data) && !all(is.na(data$Distance))) {
     mean_dist <- mean(data$Distance[!is.na(data$Distance)], na.rm = TRUE)
-    message(paste("Distance moyenne detectee:", round(mean_dist, 2)))
-    
-    if (mean_dist > 30 && mean_dist < 200) {
-      message("Conversion Distance (pouces) -> metres")
-      data$Distance <- data$Distance * 0.0254  # inches -> m
-    } else if (mean_dist > 200 && mean_dist <= 1000) {
-      message("Conversion Distance (cm) -> metres")
-      data$Distance <- data$Distance / 100  # cm -> m
-    } else if (mean_dist > 1000) {
-      message("Conversion Distance (mm) -> metres")
-      data$Distance <- data$Distance / 1000  # mm -> m
+    dist_unit <- units[["DISTANCE"]] %||% NA_character_
+
+    if (!is.na(dist_unit) && grepl("^ft$|feet|foot", dist_unit, ignore.case = TRUE)) {
+      message(paste("Distance en pieds (metadata:", dist_unit, ") moyenne:", round(mean_dist, 2), "ft -> conversion en metres"))
+      data$Distance <- data$Distance * 0.3048  # pieds -> metres
+    } else if (!is.na(dist_unit) && grepl("^in$|inch|pouce", dist_unit, ignore.case = TRUE)) {
+      message(paste("Distance en pouces (metadata:", dist_unit, ") -> conversion en metres"))
+      data$Distance <- data$Distance * 0.0254
+    } else if (!is.na(dist_unit) && grepl("^m$|meter|metre", dist_unit, ignore.case = TRUE)) {
+      message(paste("Distance deja en metres (metadata:", dist_unit, ")"))
+    } else {
+      # Detection heuristique (existante)
+      message(paste("Distance moyenne detectee:", round(mean_dist, 2), "(pas d'unite metadata)"))
+      if (mean_dist > 30 && mean_dist < 200) {
+        message("Conversion Distance (pouces) -> metres")
+        data$Distance <- data$Distance * 0.0254
+      } else if (mean_dist > 200 && mean_dist <= 1000) {
+        message("Conversion Distance (cm) -> metres")
+        data$Distance <- data$Distance / 100
+      } else if (mean_dist > 1000) {
+        message("Conversion Distance (mm) -> metres")
+        data$Distance <- data$Distance / 1000
+      }
     }
   }
-  
-  # Verifier Interval
+
+  # ====================================================================
+  # CONVERSION DE LA VITESSE
+  # ====================================================================
+  if ("Velocity" %in% names(data) && !all(is.na(data$Velocity))) {
+    speed_unit <- units[["VEHICLSPEED"]] %||% NA_character_
+
+    if (!is.na(speed_unit) && grepl("mi1hr-1|mi/hr|mph|mile", speed_unit, ignore.case = TRUE)) {
+      message(paste("Vitesse en mi/hr (metadata:", speed_unit, ") -> conversion en m/s"))
+      data$Velocity <- data$Velocity * 0.44704  # mi/hr -> m/s
+    } else if (!is.na(speed_unit) && grepl("km1hr-1|km/hr|kph|km/h", speed_unit, ignore.case = TRUE)) {
+      message(paste("Vitesse en km/h (metadata:", speed_unit, ") -> conversion en m/s"))
+      data$Velocity <- data$Velocity / 3.6
+    } else if (!is.na(speed_unit) && grepl("m1s-1|m/s", speed_unit, ignore.case = TRUE)) {
+      message("Vitesse deja en m/s")
+    } else {
+      # Heuristique
+      mean_speed <- mean(data$Velocity[!is.na(data$Velocity)], na.rm = TRUE)
+      if (mean_speed > 1 && mean_speed < 15) {
+        # Probablement en mi/hr ou km/h pour une moissonneuse
+        message(paste("Vitesse moyenne:", round(mean_speed, 2), "- assume mi/hr -> m/s"))
+        data$Velocity <- data$Velocity * 0.44704
+      }
+    }
+  }
+
+  # ====================================================================
+  # CREER Swath_m ET Distance_m APRES CONVERSION
+  # Cela evite que sf_output.R refasse une detection heuristique erronee
+  # (ex: Swath de 2m pour une recolteuse d'oignons serait pris pour des pouces)
+  # ====================================================================
+  if ("Swath" %in% names(data) && !all(is.na(data$Swath))) {
+    data$Swath_m <- data$Swath
+    message(paste("Swath_m cree:", round(mean(data$Swath_m, na.rm = TRUE), 2), "m"))
+  }
+  if ("Distance" %in% names(data) && !all(is.na(data$Distance))) {
+    data$Distance_m <- data$Distance
+    message(paste("Distance_m cree:", round(mean(data$Distance_m, na.rm = TRUE), 2), "m"))
+  }
+
+  # ====================================================================
+  # CONVERSION DE L'ELEVATION
+  # ====================================================================
+  if ("Altitude" %in% names(data) && !all(is.na(data$Altitude))) {
+    elev_unit <- units[["Elevation"]] %||% NA_character_
+
+    if (!is.na(elev_unit) && grepl("^ft$|feet|foot", elev_unit, ignore.case = TRUE)) {
+      message(paste("Elevation en pieds (metadata:", elev_unit, ") -> conversion en metres"))
+      data$Altitude <- data$Altitude * 0.3048
+    }
+  }
+
+  # ====================================================================
+  # CALCUL DE L'INTERVALLE
+  # ====================================================================
   if (!"Interval" %in% names(data) || all(is.na(data$Interval))) {
     isotime_col <- if ("IsoTime" %in% names(data)) "IsoTime" else if ("isotime" %in% names(data)) "isotime" else NULL
-    
+
     if (!is.null(isotime_col) && any(!is.na(data[[isotime_col]]))) {
       message(paste("Calcul de l'intervalle a partir de", isotime_col, "..."))
-      data$Interval <- 1  # Valeur par defaut
+      # Parser les timestamps ISO et calculer les intervalles
+      tryCatch({
+        timestamps <- as.POSIXct(data[[isotime_col]], format = "%Y-%m-%dT%H:%M:%OS", tz = "UTC")
+        if (sum(!is.na(timestamps)) > 1) {
+          intervals <- c(NA, diff(as.numeric(timestamps)))
+          # Remplacer les valeurs aberrantes (> 10s ou < 0) par la mediane
+          median_interval <- stats::median(intervals[!is.na(intervals) & intervals > 0 & intervals < 10], na.rm = TRUE)
+          if (is.na(median_interval)) median_interval <- 1
+          intervals[is.na(intervals) | intervals <= 0 | intervals > 10] <- median_interval
+          data$Interval <- intervals
+          message(paste("Intervalle median calcule:", round(median_interval, 3), "secondes"))
+        } else {
+          data$Interval <- 1
+          message("Timestamps non parsables, utilisation de 1 seconde par defaut")
+        }
+      }, error = function(e) {
+        data$Interval <<- 1
+        message(paste("Erreur parsing IsoTime, utilisation de 1s par defaut:", e$message))
+      })
     } else {
       message("Interval non trouve, utilisation de 1 seconde par defaut")
       data$Interval <- 1
     }
   }
-  
-  # Verifier Moisture
+
+  # ====================================================================
+  # VERIFICATION MOISTURE
+  # ====================================================================
   if (!"Moisture" %in% names(data) || all(is.na(data$Moisture))) {
     moist_cols <- c("Moisture", "Humidite", "Moist", "Hum")
     for (col in moist_cols) {
@@ -654,8 +882,10 @@ convert_jd_metric_to_yieldcleanr <- function(data) {
       }
     }
   }
-  
-  # Verifier Pass
+
+  # ====================================================================
+  # VERIFICATION PASS
+  # ====================================================================
   if (!"Pass" %in% names(data) || all(is.na(data$Pass))) {
     pass_cols <- c("Pass", "Passage", "SwathNumber", "LineNumber", "SECTIONID")
     for (col in pass_cols) {
@@ -666,39 +896,118 @@ convert_jd_metric_to_yieldcleanr <- function(data) {
       }
     }
   }
-  
+
   if (!"Pass" %in% names(data) || all(is.na(data$Pass))) {
     message("Pass non trouve, utilisation de 1 par defaut")
     data$Pass <- 1
   }
-  
-  # Calculer le rendement sec a partir du rendement humide et de l'humidite
+
+  # ====================================================================
+  # CALCUL DU RENDEMENT SEC
+  # ====================================================================
   if ("Moisture" %in% names(data) && !all(is.na(data$Moisture))) {
     # Obtenir l'humidite standard selon la culture
     moisture_std <- get_standard_moisture(data)
-    moisture_factor <- 100 - moisture_std
-    
-    message(paste("Humidite standard pour conversion:", moisture_std, "% (facteur:", moisture_factor, ")"))
-    
-    if ("Yield_kg_ha_wet" %in% names(data) && !all(is.na(data$Yield_kg_ha_wet))) {
-      message("Calcul du rendement sec a partir du rendement humide...")
-      data$Yield_kg_ha <- data$Yield_kg_ha_wet * (100 - data$Moisture) / moisture_factor
-      message(paste("Rendement sec calcule:", round(mean(data$Yield_kg_ha, na.rm = TRUE), 1), "kg/ha"))
-    }
-    if ("Flow_Wet" %in% names(data) && !all(is.na(data$Flow_Wet))) {
-      data$Flow <- data$Flow_Wet * (100 - data$Moisture) / moisture_factor
+
+    if (moisture_std == 0) {
+      # Culture maraichere: pas d'ajustement humidite standard
+      # Le rendement est utilise tel quel (deja net)
+      message("Culture maraichere: pas d'ajustement humidite, Yield_kg_ha = Yield_kg_ha_wet")
+      if ("Yield_kg_ha_wet" %in% names(data) && !all(is.na(data$Yield_kg_ha_wet))) {
+        data$Yield_kg_ha <- data$Yield_kg_ha_wet
+        message(paste("Rendement:", round(mean(data$Yield_kg_ha, na.rm = TRUE), 1), "kg/ha"))
+      }
+    } else {
+      moisture_factor <- 100 - moisture_std
+      message(paste("Humidite standard pour conversion:", moisture_std, "% (facteur:", moisture_factor, ")"))
+
+      if ("Yield_kg_ha_wet" %in% names(data) && !all(is.na(data$Yield_kg_ha_wet))) {
+        message("Calcul du rendement sec a partir du rendement humide...")
+        data$Yield_kg_ha <- data$Yield_kg_ha_wet * (100 - data$Moisture) / moisture_factor
+        message(paste("Rendement sec calcule:", round(mean(data$Yield_kg_ha, na.rm = TRUE), 1), "kg/ha"))
+      }
+      if ("Flow_Wet" %in% names(data) && !all(is.na(data$Flow_Wet))) {
+        data$Flow <- data$Flow_Wet * (100 - data$Moisture) / moisture_factor
+      }
     }
   } else {
-    # Pas d'humidite - le rendement sec est egal au rendement humide
+    # Pas d'humidite disponible - le rendement est utilise tel quel
     message("Pas d'humidite disponible - Yield_kg_ha = Yield_kg_ha_wet")
     if ("Yield_kg_ha_wet" %in% names(data) && !all(is.na(data$Yield_kg_ha_wet))) {
       data$Yield_kg_ha <- data$Yield_kg_ha_wet
-      message(paste("Rendement utilise (pas de conversion humidite):", round(mean(data$Yield_kg_ha, na.rm = TRUE), 1), "kg/ha"))
+      message(paste("Rendement utilise:", round(mean(data$Yield_kg_ha, na.rm = TRUE), 1), "kg/ha"))
     }
   }
-  
+
   message("Conversion terminee")
   return(data)
+}
+
+
+#' Parser le fichier JSON de metadonnees John Deere
+#'
+#' Lit le fichier JSON de metadonnees associe a un shapefile John Deere
+#' pour en extraire les informations sur les unites, la culture, etc.
+#'
+#' @param json_path Chemin vers le fichier JSON de metadonnees
+#' @return Liste avec les informations de metadonnees ou NULL si absent
+#' @noRd
+parse_jd_metadata <- function(json_path) {
+  if (is.null(json_path) || !file.exists(json_path)) {
+    return(NULL)
+  }
+
+  tryCatch({
+    meta <- jsonlite::fromJSON(json_path)
+
+    # Extraire les unites par attribut
+    units <- list()
+    if (!is.null(meta$DataAttributes)) {
+      attrs <- meta$DataAttributes
+      for (i in seq_len(nrow(attrs))) {
+        name <- attrs$Name[i]
+        unit <- if ("Unit" %in% names(attrs) && !is.na(attrs$Unit[i])) attrs$Unit[i] else NA_character_
+        units[[name]] <- unit
+      }
+    }
+
+    # Extraire les infos culture
+    crop_info <- list(
+      crop_name = meta$CropName %||% NA_character_,
+      crop_token = meta$CropToken %||% NA_character_,
+      crop_id = meta$CropId %||% NA_integer_,
+      variety = if (!is.null(meta$Product)) meta$Product$ProductName else NA_character_
+    )
+
+    # Extraire les infos champ
+    # Chercher la date de recolte dans plusieurs champs possibles
+    harvest_date <- meta$FieldOperationStartDate %||% meta$HarvestDate %||% meta$StartDate %||% meta$Date %||% NA_character_
+    
+    field_info <- list(
+      client = meta$ClientName %||% NA_character_,
+      farm = meta$FarmName %||% NA_character_,
+      field = meta$FieldName %||% NA_character_,
+      operation = meta$Operation %||% NA_character_,
+      season = meta$CropSeason %||% NA_integer_,
+      date = harvest_date
+    )
+
+    result <- list(
+      units = units,
+      crop_info = crop_info,
+      field_info = field_info,
+      raw = meta
+    )
+
+    message(paste("Metadonnees JD lues:", crop_info$crop_name,
+                  "(", crop_info$crop_token, ") -",
+                  field_info$field, field_info$season))
+
+    return(result)
+  }, error = function(e) {
+    message(paste("Impossible de lire le fichier JSON de metadonnees:", e$message))
+    return(NULL)
+  })
 }
 
 
@@ -735,6 +1044,13 @@ get_standard_moisture <- function(data) {
     # Detecter ble/cereales
     if (any(grepl("ble|wheat|blé|orge|barley|avoine|oat", grain))) {
       return(13.5)  # Ble standard USDA
+    }
+
+    # Detecter les cultures maraicheres (pas d'ajustement humidite)
+    # Oignons, echalotes, pommes de terre, carottes, etc.
+    if (any(grepl("onion|oignon|shallot|echalote|potato|patate|pomme.de.terre|carrot|carotte|betterave|beet|legume|vegetable|celeri|celery|navet|turnip|radis|radish|chou|cabbage|laitue|lettuce", grain))) {
+      message(paste("Culture maraichere detectee ('", paste(grain, collapse = ", "), "'), pas d'ajustement humidite standard"))
+      return(0)  # Pas d'ajustement humidite pour les cultures maraicheres
     }
     
     # Defaut : mais

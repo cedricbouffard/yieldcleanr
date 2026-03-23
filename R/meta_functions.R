@@ -630,25 +630,81 @@ detect_anomalies <- function(data, type = "all", action = "filter", ...) {
         abs(.heading_next - .heading_prev),
         360 - abs(.heading_next - .heading_prev)
       ),
-      .is_anomaly = !is.na(.heading_change) & .heading_change > max_heading_change
+      # Distances aux voisins
+      .dist_prev = sqrt(.dx_prev^2 + .dy_prev^2),
+      .dist_next = sqrt(.dx_next^2 + .dy_next^2),
+      .dist_max_neighbor = pmax(.dist_prev, .dist_next, na.rm = TRUE),
+      # Cap direct prev->next (sans passer par le point courant)
+      .dx_skip = dplyr::lead(X) - dplyr::lag(X),
+      .dy_skip = dplyr::lead(Y) - dplyr::lag(Y),
+      .heading_skip = (atan2(.dx_skip, .dy_skip) * 180 / pi) %% 360,
+      .skip_vs_prev = pmin(
+        abs(.heading_skip - .heading_prev),
+        360 - abs(.heading_skip - .heading_prev)
+      ),
+      # --- Correction des flips du Heading capteur ---
+      .h_capteur = if ("Heading" %in% names(data)) .data$Heading else NA_real_,
+      .h_capteur_diff = pmin(
+        abs(.h_capteur - dplyr::lag(.h_capteur)),
+        360 - abs(.h_capteur - dplyr::lag(.h_capteur))
+      ),
+      .h_capteur_lead_diff = pmin(
+        abs(.h_capteur - dplyr::lead(.h_capteur)),
+        360 - abs(.h_capteur - dplyr::lead(.h_capteur))
+      ),
+      .h_capteur_is_flip = !is.na(.h_capteur_diff) & .h_capteur_diff > 90,
+      .h_is_straight = !is.na(.heading_change) & .heading_change < 30,
+      .h_neighbor_straight = !is.na(dplyr::lead(.heading_change)) & dplyr::lead(.heading_change) < 30,
+      .needs_correction = .h_capteur_is_flip & .h_is_straight & .h_neighbor_straight,
+      .h_capteur_corrected = dplyr::if_else(
+        .needs_correction,
+        (.h_capteur + 180) %% 360,
+        .h_capteur
+      )
+    )
+
+  # Calculer le seuil de distance automatiquement
+  .median_dist <- stats::median(
+    c(data_calc$.dist_prev, data_calc$.dist_next),
+    na.rm = TRUE
+  )
+  .max_neighbor_dist <- .median_dist * 3
+
+  data_calc <- data_calc |>
+    dplyr::mutate(
+      # Critere 1: changement de direction anormal
+      .has_heading_change = !is.na(.heading_change) & .heading_change > max_heading_change,
+      # Critere 2: point isole (voisins alignes entre eux, skip_vs_prev petit)
+      # Seuil fixe de 30 deg: si les voisins sont bien alignes (< 30°),
+      # le point est un outlier isole. Sinon c'est un virage coherent.
+      .is_isolated = !is.na(.skip_vs_prev) & .skip_vs_prev < 30,
+      # Critere 3: distance aux voisins courte (pas un demi-tour)
+      .is_close = !is.na(.dist_max_neighbor) & .dist_max_neighbor < .max_neighbor_dist,
+      # Anomalie = les 3 criteres reunis
+      .is_anomaly = .has_heading_change & .is_isolated & .is_close
     )
 
   n_anomalies <- sum(data_calc$.is_anomaly, na.rm = TRUE)
 
+  # Colonnes temporaires a nettoyer
+  .temp_cols <- c(".dx_next", ".dy_next", ".dx_prev", ".dy_prev",
+                  ".heading_next", ".heading_prev", ".heading_change",
+                  ".dist_prev", ".dist_next", ".dist_max_neighbor",
+                  ".dx_skip", ".dy_skip", ".heading_skip",
+                  ".skip_vs_prev", ".has_heading_change",
+                  ".is_isolated", ".is_close", ".is_anomaly")
+
   if (action == "filter") {
     data <- data_calc |>
       dplyr::filter(!.is_anomaly) |>
-      dplyr::select(-.dx_next, -.dy_next, -.dx_prev, -.dy_prev,
-                    -.heading_next, -.heading_prev, -.heading_change, -.is_anomaly)
+      dplyr::select(-dplyr::any_of(.temp_cols))
   } else if (action == "detect") {
     data <- data_calc |>
       dplyr::rename(heading_anomaly = .is_anomaly) |>
-      dplyr::select(-.dx_next, -.dy_next, -.dx_prev, -.dy_prev,
-                    -.heading_next, -.heading_prev, -.heading_change)
+      dplyr::select(-dplyr::any_of(.temp_cols[.temp_cols != ".is_anomaly"]))
   } else {
     data <- data_calc |>
-      dplyr::select(-.dx_next, -.dy_next, -.dx_prev, -.dy_prev,
-                    -.heading_next, -.heading_prev, -.heading_change, -.is_anomaly)
+      dplyr::select(-dplyr::any_of(.temp_cols))
   }
 
   return(list(data = data, count = n_anomalies))

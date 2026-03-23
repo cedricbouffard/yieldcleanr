@@ -272,8 +272,8 @@ filter_yield_range <- function(data, min_yield = NULL, max_yield = NULL,
 #' @keywords internal
 filter_moisture_range <- function(data, min_moisture = NULL, max_moisture = NULL, n_std = 3) {
 
-  if (!"Moisture" %in% names(data)) {
-    rlang::warn("Colonne Moisture non trouvee, saut du filtrage")
+  if (!"Moisture" %in% names(data) || all(is.na(data$Moisture))) {
+    rlang::warn("Colonne Moisture non trouvee ou entierement NA, saut du filtrage")
     return(data)
   }
 

@@ -30,7 +30,10 @@ Imports:
     concaveman,
     scales,
     fields,
-    zoo
+    zoo,
+    jsonlite,
+    dbscan,
+    waiter
 Suggests: 
     covr,
     pkgdown,
@@ -39,7 +42,11 @@ Suggests:
     readr,
     gridExtra,
     openssl,
-    jsonlite
+    pagedown,
+    fontawesome,
+    ggbasemap,
+    base64enc,
+    ggspatial
 VignetteBuilder: knitr
 Config/testthat/edition: 3
 URL: https://github.com/cedricbouffard/yieldcleanr, https://cedricbouffard.github.io/yieldcleanr

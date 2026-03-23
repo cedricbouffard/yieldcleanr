@@ -49,3 +49,21 @@ po/*~
 rsconnect/
 /doc/
 /Meta/
+
+# Data files
+*.zip
+*.geojson
+
+# Generated reports
+*.html
+!inst/rapport/*.Rmd
+inst/rapport/*.html
+
+# Test files
+test_*.R
+test_*.html
+debug_*.R
+
+# Temporary files
+nul
+*.tmp

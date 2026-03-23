@@ -17,17 +17,35 @@ clean_yield_fast <- function(data, phase = "full", preprocessed_data = NULL,
   
   if (phase == "preprocess") {
     # Phase 1: Pré-traitement (calculé une fois)
-    return(preprocess_yield_data(data, params, metrique))
+    result <- preprocess_yield_data(data, params, metrique)
+    # Preserver les attributs metadata de l'objet original
+    metadata <- attr(data, "jd_metadata")
+    if (!is.null(metadata)) {
+      attr(result, "jd_metadata") <- metadata
+    }
+    return(result)
   } else if (phase == "filter") {
     # Phase 2: Application des filtres (peut être répété)
     if (is.null(preprocessed_data)) {
       stop("preprocessed_data requis pour la phase 'filter'")
     }
-    return(apply_yield_filters(preprocessed_data, params))
+    result <- apply_yield_filters(preprocessed_data, params)
+    # Preserver les attributs metadata de l'objet original
+    metadata <- attr(preprocessed_data, "jd_metadata")
+    if (!is.null(metadata)) {
+      attr(result$data, "jd_metadata") <- metadata
+    }
+    return(result)
   } else {
     # Phase full: tout en une fois
     preproc <- preprocess_yield_data(data, params, metrique)
-    return(apply_yield_filters(preproc, params, polygon))
+    result <- apply_yield_filters(preproc, params, polygon)
+    # Preserver les attributs metadata de l'objet original
+    metadata <- attr(data, "jd_metadata")
+    if (!is.null(metadata)) {
+      attr(result$data, "jd_metadata") <- metadata
+    }
+    return(result)
   }
 }
 
@@ -81,7 +99,7 @@ clean_yield_fast <- function(data, phase = "full", preprocessed_data = NULL,
   
   # Étape 4: Delay Adjustment humidité
   moisture_delay <- 0
-  if (isTRUE(params$apply_delay_adjustment_moisture) && "Moisture" %in% names(data)) {
+  if (isTRUE(params$apply_delay_adjustment_moisture) && "Moisture" %in% names(data) && !all(is.na(data$Moisture))) {
     rlang::inform("Étape 4: Delay Adjustment - optimisation du délai d'humidité...")
     delay_adjustment_moisture <- apply_delay_adjustment(data,
                                 delay_range = params$delay_range %||% -25:25,
@@ -404,7 +422,7 @@ clean_yield_fast <- function(data, phase = "full", preprocessed_data = NULL,
   }
   
   # Étape 19: Filtre humidité
-  if (isTRUE(params$apply_moisture) && "Moisture" %in% names(data)) {
+  if (isTRUE(params$apply_moisture) && "Moisture" %in% names(data) && !all(is.na(data$Moisture))) {
     rlang::inform("Étape 19: filtre humidité...")
     n_before <- nrow(data)
     # Calculer les seuils d'humidité pour identifier les points à supprimer
