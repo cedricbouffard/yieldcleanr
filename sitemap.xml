@@ -30,8 +30,12 @@
 <url><loc>https://cedricbouffard.github.io/yieldcleanr/reference/convert_flow_to_yield.html</loc></url>
 <url><loc>https://cedricbouffard.github.io/yieldcleanr/reference/convert_yield_units.html</loc></url>
 <url><loc>https://cedricbouffard.github.io/yieldcleanr/reference/detect_anomalies.html</loc></url>
+<url><loc>https://cedricbouffard.github.io/yieldcleanr/reference/dot-translate_crop_to_french.html</loc></url>
 <url><loc>https://cedricbouffard.github.io/yieldcleanr/reference/export_data.html</loc></url>
 <url><loc>https://cedricbouffard.github.io/yieldcleanr/reference/filter_data.html</loc></url>
+<url><loc>https://cedricbouffard.github.io/yieldcleanr/reference/generate_batch_report.html</loc></url>
+<url><loc>https://cedricbouffard.github.io/yieldcleanr/reference/generate_batch_report_html.html</loc></url>
+<url><loc>https://cedricbouffard.github.io/yieldcleanr/reference/geom_yield_map_polygon.html</loc></url>
 <url><loc>https://cedricbouffard.github.io/yieldcleanr/reference/index.html</loc></url>
 <url><loc>https://cedricbouffard.github.io/yieldcleanr/reference/latlon_to_utm.html</loc></url>
 <url><loc>https://cedricbouffard.github.io/yieldcleanr/reference/launch_shiny_app.html</loc></url>
@@ -40,6 +44,7 @@
 <url><loc>https://cedricbouffard.github.io/yieldcleanr/reference/read_yield_data.html</loc></url>
 <url><loc>https://cedricbouffard.github.io/yieldcleanr/reference/read_yield_from_zip.html</loc></url>
 <url><loc>https://cedricbouffard.github.io/yieldcleanr/reference/remove_sensitive_attributes.html</loc></url>
+<url><loc>https://cedricbouffard.github.io/yieldcleanr/reference/render_pdf_report.html</loc></url>
 <url><loc>https://cedricbouffard.github.io/yieldcleanr/reference/restore_coordinates.html</loc></url>
 </urlset>
 

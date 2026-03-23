@@ -83,3 +83,23 @@ Fonctions pour anonymiser les données sensibles
   : Supprimer les attributs sensibles des donnees de rendement
 - [`restore_coordinates()`](https://cedricbouffard.github.io/yieldcleanr/reference/restore_coordinates.md)
   : Restaurer les coordonnées originales à partir de données anonymisées
+
+## Rapports et Visualisations
+
+Fonctions pour générer des rapports et visualisations
+
+- [`generate_batch_report()`](https://cedricbouffard.github.io/yieldcleanr/reference/generate_batch_report.md)
+  : Générer un rapport multi-champs à partir de fichiers de données
+- [`generate_batch_report_html()`](https://cedricbouffard.github.io/yieldcleanr/reference/generate_batch_report_html.md)
+  : Generate a multi-field HTML report
+- [`render_pdf_report()`](https://cedricbouffard.github.io/yieldcleanr/reference/render_pdf_report.md)
+  : Render report to PDF using Chrome
+- [`geom_yield_map_polygon()`](https://cedricbouffard.github.io/yieldcleanr/reference/geom_yield_map_polygon.md)
+  : Creer une carte de rendement avec des polygones ggplot
+
+## Utilitaires Internes
+
+Fonctions utilitaires internes
+
+- [`.translate_crop_to_french()`](https://cedricbouffard.github.io/yieldcleanr/reference/dot-translate_crop_to_french.md)
+  : Generate PDF report from cleaned yield data
