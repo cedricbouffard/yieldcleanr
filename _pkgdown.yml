@@ -139,3 +139,16 @@ reference:
       - anonymize_yield_data
       - remove_sensitive_attributes
       - restore_coordinates
+
+  - title: "Rapports et Visualisations"
+    desc: "Fonctions pour générer des rapports et visualisations"
+    contents:
+      - generate_batch_report
+      - generate_batch_report_html
+      - render_pdf_report
+      - geom_yield_map_polygon
+
+  - title: "Utilitaires Internes"
+    desc: "Fonctions utilitaires internes"
+    contents:
+      - .translate_crop_to_french
