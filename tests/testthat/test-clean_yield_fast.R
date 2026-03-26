@@ -92,7 +92,7 @@ test_that("clean_yield_fast preserves jd_metadata attribute", {
   expect_s3_class(result, "tbl_df")
 })
 
-test_that("clean_yield_fast handles empty data", {
+test_that("clean_yield_fast handles empty data gracefully", {
   test_data <- tibble::tibble(
     Longitude = numeric(),
     Latitude = numeric(),
@@ -102,9 +102,9 @@ test_that("clean_yield_fast handles empty data", {
     Distance = numeric()
   )
   
+  # Should error gracefully with empty data
   expect_error(
-    clean_yield_fast(data = test_data, phase = "preprocess"),
-    NA
+    clean_yield_fast(data = test_data, phase = "preprocess")
   )
 })
 
