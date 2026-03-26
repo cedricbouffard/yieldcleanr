@@ -14,7 +14,8 @@ test_that(".translate_crop handles NA and empty", {
 })
 
 test_that(".translate_crop handles unknown crops", {
-  expect_equal(yieldcleanr:::.translate_crop("unknown"), "unknown")
+  expect_equal(yieldcleanr:::.translate_crop("unknown"), "Unknown")
+  expect_equal(yieldcleanr:::.translate_crop("custom"), "Custom")
 })
 
 test_that("generate_batch_report validates parameters", {
