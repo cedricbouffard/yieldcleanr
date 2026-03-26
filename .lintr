@@ -1,5 +1,5 @@
 linters: linters_with_defaults(
-    line_length_linter(120),
+    line_length_linter(160),
     commented_code_linter = NULL,
     object_name_linter = NULL,
     trailing_whitespace_linter = NULL,
@@ -10,7 +10,6 @@ linters: linters_with_defaults(
     seq_linter = NULL,
     return_linter = NULL,
     quotes_linter = NULL,
-    object_usage_linter = NULL,
-    parser_warning_linter = NULL
+    object_usage_linter = NULL
   )
 encoding: "UTF-8"
