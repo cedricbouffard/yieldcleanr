@@ -41,7 +41,8 @@ Imports:
     fontawesome,
     ggbasemap,
     base64enc,
-    ggspatial
+    ggspatial,
+    rlang
 Suggests: 
     covr,
     readr,
