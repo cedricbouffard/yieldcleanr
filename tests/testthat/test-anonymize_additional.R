@@ -134,13 +134,14 @@ test_that("restore_coordinates restores original coordinates", {
   expect_true("Longitude" %in% names(result))
 })
 
-test_that("restore_coordinates handles missing orig columns", {
+test_that("restore_coordinates requires key_file or key_info", {
   data <- tibble::tibble(
     Longitude = c(-73.5, -73.51),
     Latitude = c(45.5, 45.51)
   )
   
-  result <- restore_coordinates(data)
-  
-  expect_s3_class(result, "tbl_df")
+  expect_error(
+    restore_coordinates(data),
+    "key_file|key_info"
+  )
 })
