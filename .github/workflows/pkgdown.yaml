@@ -4,13 +4,27 @@
 on:
   push:
     branches: [main, master]
+    paths:
+      - 'R/**'
+      - 'man/**'
+      - 'vignettes/**'
+      - '_pkgdown.yml'
+      - 'DESCRIPTION'
   pull_request:
     branches: [main, master]
+    paths:
+      - 'R/**'
+      - 'man/**'
+      - '_pkgdown.yml'
   release:
     types: [published]
   workflow_dispatch:
 
 name: pkgdown
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   pkgdown:

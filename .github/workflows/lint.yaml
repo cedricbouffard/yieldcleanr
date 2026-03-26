@@ -3,11 +3,21 @@
 
 on:
   push:
-    branches: [main, master, dev]
+    branches: [main, master]
+    paths:
+      - 'R/**'
+      - 'tests/**'
   pull_request:
-    branches: [main, master, dev]
+    branches: [main, master]
+    paths:
+      - 'R/**'
+      - 'tests/**'
 
 name: lint
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   lint:

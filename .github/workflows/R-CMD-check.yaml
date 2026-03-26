@@ -3,11 +3,22 @@
 
 on:
   push:
-    branches: [main, master, dev]
+    branches: [main, master]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - '.github/dependabot.yaml'
   pull_request:
-    branches: [main, master, dev]
+    branches: [main, master]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
 
 name: R-CMD-check
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   R-CMD-check:
