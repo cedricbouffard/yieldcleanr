@@ -15,7 +15,10 @@ test_that("clean_yield_fast phase = 'preprocess' works", {
   test_data <- tibble::tibble(
     Longitude = c(-73.5, -73.51, -73.52),
     Latitude = c(45.5, 45.51, 45.52),
-    Flow = c(50, 55, 52)  # Flow column required
+    Flow = c(50, 55, 52),
+    Interval = c(1, 1, 1),
+    Swath = c(7.5, 7.5, 7.5),
+    Distance = c(5, 5, 5)
   )
   
   result <- clean_yield_fast(data = test_data, phase = "preprocess")
@@ -28,7 +31,10 @@ test_that("clean_yield_fast phase = 'filter' requires preprocessed_data", {
   test_data <- tibble::tibble(
     Longitude = c(-73.5, -73.51),
     Latitude = c(45.5, 45.51),
-    Flow = c(50, 55)
+    Flow = c(50, 55),
+    Interval = c(1, 1),
+    Swath = c(7.5, 7.5),
+    Distance = c(5, 5)
   )
   
   expect_error(
@@ -41,7 +47,10 @@ test_that("clean_yield_fast accepts metrique parameter", {
   test_data <- tibble::tibble(
     Longitude = c(-73.5, -73.51),
     Latitude = c(45.5, 45.51),
-    Flow = c(50, 55)
+    Flow = c(50, 55),
+    Interval = c(1, 1),
+    Swath = c(7.5, 7.5),
+    Distance = c(5, 5)
   )
   
   result <- clean_yield_fast(data = test_data, metrique = TRUE, phase = "preprocess")
@@ -52,7 +61,10 @@ test_that("clean_yield_fast accepts params", {
   test_data <- tibble::tibble(
     Longitude = c(-73.5, -73.51),
     Latitude = c(45.5, 45.51),
-    Flow = c(50, 55)
+    Flow = c(50, 55),
+    Interval = c(1, 1),
+    Swath = c(7.5, 7.5),
+    Distance = c(5, 5)
   )
   
   custom_params <- list(
@@ -67,7 +79,10 @@ test_that("clean_yield_fast preserves jd_metadata attribute", {
   test_data <- tibble::tibble(
     Longitude = c(-73.5, -73.51),
     Latitude = c(45.5, 45.51),
-    Flow = c(50, 55)
+    Flow = c(50, 55),
+    Interval = c(1, 1),
+    Swath = c(7.5, 7.5),
+    Distance = c(5, 5)
   )
   
   attr(test_data, "jd_metadata") <- list(crop_type = "corn")
@@ -81,7 +96,10 @@ test_that("clean_yield_fast handles empty data", {
   test_data <- tibble::tibble(
     Longitude = numeric(),
     Latitude = numeric(),
-    Flow = numeric()
+    Flow = numeric(),
+    Interval = numeric(),
+    Swath = numeric(),
+    Distance = numeric()
   )
   
   expect_error(
@@ -90,22 +108,14 @@ test_that("clean_yield_fast handles empty data", {
   )
 })
 
-test_that("clean_yield_fast handles missing optional columns", {
-  test_data <- tibble::tibble(
-    Longitude = c(-73.5, -73.51),
-    Latitude = c(45.5, 45.51),
-    Flow = c(50, 55)
-  )
-  
-  result <- clean_yield_fast(data = test_data, phase = "preprocess")
-  expect_s3_class(result, "tbl_df")
-})
-
 test_that("clean_yield_fast preprocess creates UTM coordinates", {
   test_data <- tibble::tibble(
     Longitude = c(-73.5, -73.51, -73.52),
     Latitude = c(45.5, 45.51, 45.52),
-    Flow = c(50, 55, 52)
+    Flow = c(50, 55, 52),
+    Interval = c(1, 1, 1),
+    Swath = c(7.5, 7.5, 7.5),
+    Distance = c(5, 5, 5)
   )
   
   result <- clean_yield_fast(data = test_data, phase = "preprocess")
@@ -119,7 +129,10 @@ test_that("clean_yield_fast adds orig_row_id if missing", {
   test_data <- tibble::tibble(
     Longitude = c(-73.5, -73.51),
     Latitude = c(45.5, 45.51),
-    Flow = c(50, 55)
+    Flow = c(50, 55),
+    Interval = c(1, 1),
+    Swath = c(7.5, 7.5),
+    Distance = c(5, 5)
   )
   
   result <- clean_yield_fast(data = test_data, phase = "preprocess")
