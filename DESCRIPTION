@@ -33,20 +33,20 @@ Imports:
     zoo,
     jsonlite,
     dbscan,
-    waiter
-Suggests: 
-    covr,
+    waiter,
     pkgdown,
     knitr,
     rmarkdown,
-    readr,
-    gridExtra,
-    openssl,
     pagedown,
     fontawesome,
     ggbasemap,
     base64enc,
     ggspatial
+Suggests: 
+    covr,
+    readr,
+    gridExtra,
+    openssl
 VignetteBuilder: knitr
 Config/testthat/edition: 3
 URL: https://github.com/cedricbouffard/yieldcleanr, https://cedricbouffard.github.io/yieldcleanr
