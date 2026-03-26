@@ -1,7 +1,17 @@
-# yieldcleanr
+# yieldcleanr <img src="man/figures/logo.png" align="right" height="139" alt="yieldcleanr logo" />
 
-[![R-CI](https://github.com/cedricbouffard/yieldcleanr/actions/workflows/R-CI.yml/badge.svg)](https://github.com/cedricbouffard/yieldcleanr/actions)
+<!-- badges: start -->
+[![R-CMD-check](https://github.com/cedricbouffard/yieldcleanr/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/cedricbouffard/yieldcleanr/actions/workflows/R-CMD-check.yaml)
+[![test-coverage](https://github.com/cedricbouffard/yieldcleanr/actions/workflows/test-coverage.yaml/badge.svg)](https://github.com/cedricbouffard/yieldcleanr/actions/workflows/test-coverage.yaml)
 [![Codecov](https://codecov.io/gh/cedricbouffard/yieldcleanr/branch/main/graph/badge.svg)](https://codecov.io/gh/cedricbouffard/yieldcleanr)
+[![pkgdown](https://github.com/cedricbouffard/yieldcleanr/actions/workflows/pkgdown.yaml/badge.svg)](https://github.com/cedricbouffard/yieldcleanr/actions/workflows/pkgdown.yaml)
+[![lint](https://github.com/cedricbouffard/yieldcleanr/actions/workflows/lint.yaml/badge.svg)](https://github.com/cedricbouffard/yieldcleanr/actions/workflows/lint.yaml)
+[![CRAN status](https://www.r-pkg.org/badges/version/yieldcleanr)](https://CRAN.R-project.org/package=yieldcleanr)
+[![Lifecycle: experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+<!-- badges: end -->
+
+**yieldcleanr** est un package R pour nettoyer, filtrer et valider les données de rendement agricole collectées par les moissonneuses-batteuses.
 
 **yieldcleanr** is an R package for cleaning, filtering, and validating agricultural yield data collected by combine harvesters. It implements filtering methods documented in the USDA Yield Editor and provides an interactive Shiny application for visual data cleaning.
 
@@ -284,20 +294,35 @@ The raster export uses Thin Plate Spline (TPS) interpolation for smooth, continu
 
 ## Documentation
 
-- [Getting Started](vignettes/getting-started.html) - Introduction and basic usage
-- [Filtering Methods](vignettes/filtering-methods.html) - Detailed explanation of filters
-- [Shiny Application](vignettes/shiny-app.html) - Guide to the interactive app
-- [API Reference](reference/index.html) - Function documentation
+### Site Web
+
+- **Documentation complete** : [https://cedricbouffard.github.io/yieldcleanr](https://cedricbouffard.github.io/yieldcleanr)
+- **Reference des fonctions** : [https://cedricbouffard.github.io/yieldcleanr/reference](https://cedricbouffard.github.io/yieldcleanr/reference)
+- **Vignettes** : [https://cedricbouffard.github.io/yieldcleanr/articles](https://cedricbouffard.github.io/yieldcleanr/articles)
+
+### Vignettes disponibles
+
+- [Filtre de rendement](https://cedricbouffard.github.io/yieldcleanr/articles/filtre-rendement.html) - Filtrage des valeurs de rendement aberrantes
+- [Filtre d'humidite](https://cedricbouffard.github.io/yieldcleanr/articles/filtre-humidite.html) - Filtrage des valeurs d'humidite
+- [Filtre de vitesse](https://cedricbouffard.github.io/yieldcleanr/articles/filtre-vitesse.html) - Filtrage des vitesses anormales
+- [Filtre d'ecart-type local](https://cedricbouffard.github.io/yieldcleanr/articles/filtre-ecart-type-local.html) - Detection des points aberrants
+- [Filtre de chevauchement](https://cedricbouffard.github.io/yieldcleanr/articles/filtre-chevauchement.html) - Gestion des zones de chevauchement
+- [Ajustement des delais](https://cedricbouffard.github.io/yieldcleanr/articles/filtre-delai.html) - Correction des delais temporels
+- [Guide complet](https://cedricbouffard.github.io/yieldcleanr/articles/guide-complet-samples.html) - Exemples complets avec donnees reelles
+- [Meta-fonctions](https://cedricbouffard.github.io/yieldcleanr/articles/guide-meta-fonctions.html) - Guide des fonctions principales
+- [Securite des donnees](https://cedricbouffard.github.io/yieldcleanr/articles/securite-donnees.html) - Anonymisation et confidentialite
 
 ## Contributing
 
-Contributions are welcome! Please see [CONTRIBUTING.md](.github/CONTRIBUTING.md) for guidelines.
+Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/amazing-feature`)
 3. Commit your changes (`git commit -m 'Add amazing feature'`)
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
+
+Please note that this project is released with a [Contributor Code of Conduct](CODE_OF_CONDUCT.md). By participating in this project you agree to abide by its terms.
 
 ## Citation
 

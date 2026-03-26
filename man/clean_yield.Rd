@@ -15,26 +15,72 @@ clean_yield(
 )
 }
 \arguments{
-\item{file_path}{Chemin du fichier d'entree (txt/csv)}
+\item{file_path}{Chemin du fichier d'entree (txt/csv). Ignore si \code{data} est fourni.}
+
+\item{data}{Data frame ou tibble contenant les donnees de rendement. Alternative
+a \code{file_path}.}
 
 \item{metrique}{TRUE pour les unites metriques (kg/ha), FALSE pour l'imperial (bu/acre)}
 
 \item{polygon}{TRUE pour une sortie SF en polygones, FALSE pour une sortie tibble}
 
-\item{params}{Liste des parametres AYCE (voir details)}
+\item{params}{Liste des parametres AYCE (voir section "Parametres AYCE")}
 
 \item{output_file}{Chemin optionnel pour sauvegarder la sortie (CSV ou GeoJSON)}
 
-\item{log_file}{Chemin optionnel pour sauvegarder le journal}
+\item{log_file}{Chemin optionnel pour sauvegarder le journal de nettoyage}
 }
 \value{
-Donnees nettoyees (tibble ou objet SF selon les parametres)
+Un objet sf (si polygon = TRUE) ou un tibble (si polygon = FALSE)
+contenant les donnees nettoyees avec les colonnes :
+\itemize{
+\item Coordonnees X, Y (metres UTM ou lat/lon)
+\item Rendement (kg/ha ou bu/acre selon l'option metrique)
+\item Humidite (\%)
+\item Vitesse (m/s)
+\item Colonnes de statut indiquant les filtres appliques
+}
 }
 \description{
 Cette fonction execute le pipeline complet de nettoyage des donnees de rendement
 avec support pour les sorties en unites metriques ou imperiales, et avec ou sans
 geometries SF (polygones ou points).
 }
+\details{
+La fonction implemente un pipeline de nettoyage en plusieurs etapes :
+\enumerate{
+\item \strong{Lecture des donnees} : Import des fichiers TXT/CSV avec detection automatique
+du format et des colonnes
+\item \strong{Ajustement des delais} : Optimisation automatique des decalages temporels
+entre capteurs et GPS (delay adjustment)
+\item \strong{Filtrage par position} : Elimination des points hors limites du champ
+\item \strong{Filtrage de vitesse} : Suppression des points avec vitesse anormale
+\item \strong{Filtrage de rendement} : Suppression des valeurs de rendement aberrantes
+\item \strong{Filtrage de chevauchement} : Detection et elimination des zones de
+chevauchement entre passages
+\item \strong{Filtrage par ecart-type local} : Suppression des points statistiquement
+aberrants dans leur voisinage
+\item \strong{Export} : Generation de la sortie au format demande (tibble ou sf)
+}
+}
+\section{Parametres AYCE}{
+
+La liste \code{params} permet de personnaliser le comportement du moteur AYCE :
+
+\describe{
+\item{delay_range}{Vecteur de valeurs de delai a tester (en secondes, defaut: -25:25)}
+\item{n_iterations}{Nombre d'iterations pour l'optimisation (defaut: 10)}
+\item{noise_level}{Niveau de bruit pour le lissage (defaut: 0.03)}
+\item{yllim, yulim}{Quantiles pour les limites de rendement (defaut: 0.10, 0.90)}
+\item{yscale}{Multiplicateur IQR pour le rendement (defaut: 1.1)}
+\item{v_lim, v_ulim}{Quantiles pour les limites de vitesse (defaut: 0.05, 0.95)}
+\item{cellsize_overlap}{Taille des cellules pour le filtre de chevauchement (defaut: 0.3m)}
+\item{overlap_threshold}{Seuil de chevauchement maximum (defaut: 0.4)}
+\item{n_swaths}{Nombre de largeurs de passage pour l'ecart-type local (defaut: 5)}
+\item{lsd_limit}{Multiplicateur pour l'ecart-type local (defaut: 2.4)}
+}
+}
+
 \examples{
 \dontrun{
 # Sortie metrique avec polygones (objet SF)
@@ -47,6 +93,10 @@ data_result <- clean_yield("data.txt", metrique = FALSE, polygon = FALSE)
 # Sortie metrique en tibble (sans geometrie)
 data_metric <- clean_yield("data.txt", metrique = TRUE, polygon = FALSE)
 
+# Utilisation avec un data frame deja charge
+data <- read_yield_data("data.txt")
+result <- clean_yield(data = data, metrique = TRUE, polygon = TRUE)
+
 # Avec parametres personnalises
 result <- clean_yield("data.txt",
   metrique = TRUE,
@@ -57,5 +107,19 @@ result <- clean_yield("data.txt",
     lsd_limit = 2.5
   )
 )
+
+# Avec export automatique
+clean_yield("data.txt", 
+  metrique = TRUE, 
+  polygon = TRUE,
+  output_file = "output/cleaned.geojson",
+  log_file = "output/cleaning_log.txt"
+)
 }
+}
+\seealso{
+\code{\link{clean_yield_fast}} pour une version optimisee pour de grands jeux de donnees,
+\code{\link{clean_yield_with_tracking}} pour conserver l'historique des points filtres,
+\code{\link{read_yield_data}} pour seulement importer les donnees,
+\code{\link{launch_shiny_app}} pour une interface graphique interactive.
 }

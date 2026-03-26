@@ -1,0 +1,19 @@
+# Fichiers et dossiers a exclure du coverage
+
+# Application Shiny - difficile a tester automatiquement
+R/shiny_app.R
+R/shiny_diagnostics.R
+inst/shinyapp/*
+
+# Fonctions internes non exportees (optionnel)
+R/utils.R
+
+# Scripts de rapport (optionnel, selon la strategie de test)
+# inst/rapport/*
+
+# Donnees de test
+inst/extdata/*
+
+# Fichiers de vignettes compilees
+vignettes/*.html
+vignettes/*.R

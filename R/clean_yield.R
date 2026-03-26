@@ -1,17 +1,67 @@
 #' Fonction unifiee de nettoyage des donnees de rendement
 #'
+#' @description
 #' Cette fonction execute le pipeline complet de nettoyage des donnees de rendement
 #' avec support pour les sorties en unites metriques ou imperiales, et avec ou sans
 #' geometries SF (polygones ou points).
 #'
-#' @param file_path Chemin du fichier d'entree (txt/csv)
+#' @details
+#' La fonction implemente un pipeline de nettoyage en plusieurs etapes :
+#'
+#' 1. **Lecture des donnees** : Import des fichiers TXT/CSV avec detection automatique
+#'    du format et des colonnes
+#' 2. **Ajustement des delais** : Optimisation automatique des decalages temporels
+#'    entre capteurs et GPS (delay adjustment)
+#' 3. **Filtrage par position** : Elimination des points hors limites du champ
+#' 4. **Filtrage de vitesse** : Suppression des points avec vitesse anormale
+#' 5. **Filtrage de rendement** : Suppression des valeurs de rendement aberrantes
+#' 6. **Filtrage de chevauchement** : Detection et elimination des zones de
+#'    chevauchement entre passages
+#' 7. **Filtrage par ecart-type local** : Suppression des points statistiquement
+#'    aberrants dans leur voisinage
+#' 8. **Export** : Generation de la sortie au format demande (tibble ou sf)
+#'
+#' @section Parametres AYCE:
+#' La liste `params` permet de personnaliser le comportement du moteur AYCE :
+#'
+#' \describe{
+#'   \item{delay_range}{Vecteur de valeurs de delai a tester (en secondes, defaut: -25:25)}
+#'   \item{n_iterations}{Nombre d'iterations pour l'optimisation (defaut: 10)}
+#'   \item{noise_level}{Niveau de bruit pour le lissage (defaut: 0.03)}
+#'   \item{yllim, yulim}{Quantiles pour les limites de rendement (defaut: 0.10, 0.90)}
+#'   \item{yscale}{Multiplicateur IQR pour le rendement (defaut: 1.1)}
+#'   \item{v_lim, v_ulim}{Quantiles pour les limites de vitesse (defaut: 0.05, 0.95)}
+#'   \item{cellsize_overlap}{Taille des cellules pour le filtre de chevauchement (defaut: 0.3m)}
+#'   \item{overlap_threshold}{Seuil de chevauchement maximum (defaut: 0.4)}
+#'   \item{n_swaths}{Nombre de largeurs de passage pour l'ecart-type local (defaut: 5)}
+#'   \item{lsd_limit}{Multiplicateur pour l'ecart-type local (defaut: 2.4)}
+#' }
+#'
+#' @param file_path Chemin du fichier d'entree (txt/csv). Ignore si `data` est fourni.
+#' @param data Data frame ou tibble contenant les donnees de rendement. Alternative
+#'   a `file_path`.
 #' @param metrique TRUE pour les unites metriques (kg/ha), FALSE pour l'imperial (bu/acre)
 #' @param polygon TRUE pour une sortie SF en polygones, FALSE pour une sortie tibble
-#' @param params Liste des parametres AYCE (voir details)
+#' @param params Liste des parametres AYCE (voir section "Parametres AYCE")
 #' @param output_file Chemin optionnel pour sauvegarder la sortie (CSV ou GeoJSON)
-#' @param log_file Chemin optionnel pour sauvegarder le journal
-#' @return Donnees nettoyees (tibble ou objet SF selon les parametres)
+#' @param log_file Chemin optionnel pour sauvegarder le journal de nettoyage
+#' @return Un objet sf (si polygon = TRUE) ou un tibble (si polygon = FALSE)
+#'   contenant les donnees nettoyees avec les colonnes :
+#'   \itemize{
+#'     \item Coordonnees X, Y (metres UTM ou lat/lon)
+#'     \item Rendement (kg/ha ou bu/acre selon l'option metrique)
+#'     \item Humidite (%)
+#'     \item Vitesse (m/s)
+#'     \item Colonnes de statut indiquant les filtres appliques
+#'   }
 #' @export
+#' 
+#' @seealso 
+#' \code{\link{clean_yield_fast}} pour une version optimisee pour de grands jeux de donnees, 
+#' \code{\link{clean_yield_with_tracking}} pour conserver l'historique des points filtres,
+#' \code{\link{read_yield_data}} pour seulement importer les donnees,
+#' \code{\link{launch_shiny_app}} pour une interface graphique interactive.
+#'
 #' @examples
 #' \dontrun{
 #' # Sortie metrique avec polygones (objet SF)
@@ -24,6 +74,10 @@
 #' # Sortie metrique en tibble (sans geometrie)
 #' data_metric <- clean_yield("data.txt", metrique = TRUE, polygon = FALSE)
 #'
+#' # Utilisation avec un data frame deja charge
+#' data <- read_yield_data("data.txt")
+#' result <- clean_yield(data = data, metrique = TRUE, polygon = TRUE)
+#'
 #' # Avec parametres personnalises
 #' result <- clean_yield("data.txt",
 #'   metrique = TRUE,
@@ -33,6 +87,14 @@
 #'     n_swaths = 5,
 #'     lsd_limit = 2.5
 #'   )
+#' )
+#'
+#' # Avec export automatique
+#' clean_yield("data.txt", 
+#'   metrique = TRUE, 
+#'   polygon = TRUE,
+#'   output_file = "output/cleaned.geojson",
+#'   log_file = "output/cleaning_log.txt"
 #' )
 #' }
  clean_yield <- function(file_path = NULL, data = NULL, metrique = TRUE, polygon = TRUE,

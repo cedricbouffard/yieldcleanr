@@ -4,11 +4,28 @@ template:
   package: pkgdown
   bootstrap: 5
   default_assets: false
+  bslib:
+    primary: "#2C5282"
+    secondary: "#48BB78"
+    base_font: {google: "Roboto"}
+    heading_font: {google: "Roboto Condensed"}
+    code_font: {google: "JetBrains Mono"}
   includes:
     in_header: |
-      <meta name="description" content="Outils pour nettoyer les données de rendement agricole / Tools for cleaning agricultural yield data">
+      <meta name="description" content="yieldcleanr - Outils R pour nettoyer, filtrer et valider les données de rendement agricole collectées par les moissonneuses-batteuses. Bases sur les standards USDA Yield Editor.">
+      <meta name="keywords" content="R, yield data, agriculture, precision agriculture, combine harvester, yield cleaning, USDA, yield editor, nettoyage données rendement, moissonneuse-batteuse">
+      <meta name="author" content="Cedric Bouffard">
+      <meta property="og:title" content="yieldcleanr - Nettoyage des Données de Rendement Agricole">
+      <meta property="og:description" content="Outils R pour nettoyer, filtrer et valider les données de rendement agricole collectées par les moissonneuses-batteuses">
+      <meta property="og:type" content="website">
+      <meta property="og:url" content="https://cedricbouffard.github.io/yieldcleanr">
       <style>
       .lang-toggle { cursor: pointer; padding: 8px 12px; }
+      .navbar { box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+      .reference-topic { margin-bottom: 2rem; }
+      .template-article .page-header { background: linear-gradient(135deg, #2C5282 0%, #48BB78 100%); color: white; padding: 2rem 0; margin-bottom: 2rem; }
+      .btn-primary { background-color: #2C5282; border-color: #2C5282; }
+      .btn-primary:hover { background-color: #1a365d; border-color: #1a365d; }
       </style>
       <script>
       document.addEventListener('DOMContentLoaded', function() {
@@ -89,8 +106,12 @@ home:
     </p>
 
 reference:
-  - title: "Fonctions Principales"
-    desc: "Fonctions principales pour nettoyer les données de rendement"
+  - title: "🚀 Fonctions Principales"
+    desc: |
+      Fonctions principales pour nettoyer les données de rendement. Ces fonctions constituent 
+      le point d'entrée principal pour le nettoyage des données de moissonneuses-batteuses.
+      Elles supportent différents formats de sortie (métrique/imperial, polygones/tibble) 
+      et incluent une interface Shiny interactive.
     contents:
       - clean_yield
       - clean_yield_fast
@@ -98,41 +119,65 @@ reference:
       - read_yield_data
       - launch_shiny_app
 
-  - title: "AYCE - Auto Yield Cleaning Engine"
-    desc: "Fonctions du moteur de nettoyage automatique AYCE"
+  - title: "⚙️ AYCE - Auto Yield Cleaning Engine"
+    desc: |
+      Fonctions du moteur de nettoyage automatique AYCE. Ces fonctions implémentent 
+      les algorithmes de nettoyage automatisé basés sur les standards USDA Yield Editor.
     contents:
       - ayce_clean
       - ayce_sf
 
-  - title: "Filtres et Anomalies"
-    desc: "Fonctions pour appliquer les filtres et détecter les anomalies"
+  - title: "🔍 Filtres et Détection d'Anomalies"
+    desc: |
+      Fonctions pour appliquer les filtres et détecter les anomalies dans les données 
+      de rendement. Ces filtres suivent les recommandations USDA pour identifier et 
+      éliminer les valeurs aberrantes.
     contents:
       - filter_data
       - detect_anomalies
-      - apply_delay_adjustment
-      - optimize_delays
-      - calculate_thresholds
-      - calculate_auto_thresholds
-      - apply_moisture_delay
       - calculate_filter_counts
 
-  - title: "Conversion et Import/Export"
-    desc: "Fonctions de conversion et manipulation des données"
+  - title: "⏱️ Ajustement des Délais (Delay Adjustment)"
+    desc: |
+      Fonctions pour optimiser l'ajustement des délais temporels entre la récolte et 
+      l'enregistrement des données GPS. Cet ajustement est crucial pour la précision 
+      des données de rendement.
+    contents:
+      - apply_delay_adjustment
+      - optimize_delays
+      - apply_moisture_delay
+
+  - title: "📊 Calcul des Seuils"
+    desc: |
+      Fonctions pour calculer les seuils de filtrage automatiquement ou manuellement. 
+      Ces seuils déterminent quelles données sont considérées comme aberrantes.
+    contents:
+      - calculate_thresholds
+      - calculate_auto_thresholds
+
+  - title: "🔄 Conversion et Transformation"
+    desc: |
+      Fonctions de conversion entre différents formats et unités. Conversion des coordonnées, 
+      des unités de rendement, et transformation des données brutes en rendement calculé.
     contents:
       - convert_flow_to_yield
       - convert_coordinates
       - convert_yield_units
       - latlon_to_utm
-      - export_data
 
-  - title: "Lecture de Fichiers"
-    desc: "Fonctions pour lire les données depuis différentes sources"
+  - title: "💾 Import et Export de Données"
+    desc: |
+      Fonctions pour importer et exporter les données depuis/vers différents formats 
+      (CSV, TXT, GeoJSON, Shapefiles ZIP).
     contents:
+      - export_data
       - read_yield_from_zip
       - list_fields_from_zip
 
-  - title: "Anonymisation"
-    desc: "Fonctions pour anonymiser les données sensibles"
+  - title: "🔒 Anonymisation et Sécurité"
+    desc: |
+      Fonctions pour anonymiser les données sensibles (coordonnées géographiques, 
+      identifiants) tout en préservant l'utilité des données pour l'analyse.
     contents:
       - anonymize_coordinates
       - anonymize_data
@@ -140,15 +185,17 @@ reference:
       - remove_sensitive_attributes
       - restore_coordinates
 
-  - title: "Rapports et Visualisations"
-    desc: "Fonctions pour générer des rapports et visualisations"
+  - title: "📈 Rapports et Visualisations"
+    desc: |
+      Fonctions pour générer des rapports PDF/HTML professionnels et créer des 
+      visualisations des données de rendement sous forme de cartes interactives.
     contents:
       - generate_batch_report
       - generate_batch_report_html
       - render_pdf_report
       - geom_yield_map_polygon
 
-  - title: "Utilitaires Internes"
-    desc: "Fonctions utilitaires internes"
+  - title: "🛠️ Fonctions Internes"
+    desc: "Fonctions utilitaires internes utilisées par les autres fonctions du package."
     contents:
       - .translate_crop_to_french

@@ -14,7 +14,7 @@ clean_yield_with_tracking(
 )
 }
 \arguments{
-\item{file_path}{Chemin du fichier d'entree (txt/csv)}
+\item{file_path}{Chemin du fichier d'entree (txt/csv). Ignore si \code{data} est fourni.}
 
 \item{data}{Donnees brutes a nettoyer (tibble). Alternative a file_path.
 Si fourni, file_path est ignore.}
@@ -23,7 +23,7 @@ Si fourni, file_path est ignore.}
 
 \item{polygon}{TRUE pour une sortie SF en polygones, FALSE pour une sortie tibble}
 
-\item{params}{Liste des parametres AYCE (voir details)}
+\item{params}{Liste des parametres AYCE (voir section "Parametres AYCE")}
 }
 \value{
 A list containing:
