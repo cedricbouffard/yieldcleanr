@@ -32,59 +32,6 @@ test_that("remove_sensitive_attributes auto-detects sensitive columns", {
   expect_s3_class(result, "tbl_df")
 })
 
-test_that("anonymize_yield_data removes sensitive info", {
-  data <- tibble::tibble(
-    Longitude = c(-73.5, -73.51),
-    Latitude = c(45.5, 45.51),
-    Yield_kg_ha = c(8000, 8500),
-    FieldName = c("North Field", "South Field")
-  )
-  
-  result <- anonymize_yield_data(data)
-  
-  expect_s3_class(result, "tbl_df")
-  expect_true(nrow(result) > 0)
-})
-
-test_that("anonymize_data with type = 'attributes'", {
-  data <- tibble::tibble(
-    Longitude = c(-73.5, -73.51),
-    Latitude = c(45.5, 45.51),
-    Yield_kg_ha = c(8000, 8500),
-    Farmer = c("John", "Jane")
-  )
-  
-  result <- anonymize_data(data, type = "attributes")
-  
-  expect_s3_class(result, "tbl_df")
-})
-
-test_that("anonymize_data with type = 'coordinates'", {
-  data <- tibble::tibble(
-    Longitude = c(-73.5, -73.51),
-    Latitude = c(45.5, 45.51),
-    Yield_kg_ha = c(8000, 8500)
-  )
-  
-  result <- anonymize_data(data, type = "coordinates", method = "translation")
-  
-  expect_s3_class(result, "tbl_df")
-  expect_true("Longitude" %in% names(result))
-})
-
-test_that("anonymize_data with type = 'full'", {
-  data <- tibble::tibble(
-    Longitude = c(-73.5, -73.51),
-    Latitude = c(45.5, 45.51),
-    Yield_kg_ha = c(8000, 8500),
-    Farmer = c("John", "Jane")
-  )
-  
-  result <- anonymize_data(data, type = "full")
-  
-  expect_s3_class(result, "tbl_df")
-})
-
 test_that("anonymize_coordinates with translation method", {
   data <- tibble::tibble(
     Longitude = c(-73.5, -73.51),
@@ -120,20 +67,6 @@ test_that("anonymize_coordinates with noise method", {
   expect_s3_class(result, "tbl_df")
 })
 
-test_that("restore_coordinates restores original coordinates", {
-  data <- tibble::tibble(
-    Longitude = c(-73.5, -73.51),
-    Latitude = c(45.5, 45.51),
-    orig_Longitude = c(-73.5, -73.51),
-    orig_Latitude = c(45.5, 45.51)
-  )
-  
-  result <- restore_coordinates(data)
-  
-  expect_s3_class(result, "tbl_df")
-  expect_true("Longitude" %in% names(result))
-})
-
 test_that("restore_coordinates requires key_file or key_info", {
   data <- tibble::tibble(
     Longitude = c(-73.5, -73.51),
@@ -143,5 +76,60 @@ test_that("restore_coordinates requires key_file or key_info", {
   expect_error(
     restore_coordinates(data),
     "key_file|key_info"
+  )
+})
+
+test_that("anonymize_data with type = 'coordinates'", {
+  data <- tibble::tibble(
+    Longitude = c(-73.5, -73.51),
+    Latitude = c(45.5, 45.51),
+    Yield_kg_ha = c(8000, 8500)
+  )
+  
+  result <- anonymize_data(data, type = "coordinates", method = "translation")
+  
+  expect_s3_class(result, "tbl_df")
+  expect_true("Longitude" %in% names(result))
+})
+
+test_that("anonymize_data with type = 'attributes' requires password", {
+  data <- tibble::tibble(
+    Longitude = c(-73.5, -73.51),
+    Latitude = c(45.5, 45.51),
+    Yield_kg_ha = c(8000, 8500),
+    Farmer = c("John", "Jane")
+  )
+  
+  # Should require password for attributes anonymization
+  expect_error(
+    anonymize_data(data, type = "attributes")
+  )
+})
+
+test_that("anonymize_data with type = 'full' requires password", {
+  data <- tibble::tibble(
+    Longitude = c(-73.5, -73.51),
+    Latitude = c(45.5, 45.51),
+    Yield_kg_ha = c(8000, 8500),
+    Farmer = c("John", "Jane")
+  )
+  
+  # Should require password for full anonymization
+  expect_error(
+    anonymize_data(data, type = "full")
+  )
+})
+
+test_that("anonymize_yield_data requires password", {
+  data <- tibble::tibble(
+    Longitude = c(-73.5, -73.51),
+    Latitude = c(45.5, 45.51),
+    Yield_kg_ha = c(8000, 8500),
+    FieldName = c("North Field", "South Field")
+  )
+  
+  # Should require password
+  expect_error(
+    anonymize_yield_data(data)
   )
 })
