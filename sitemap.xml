@@ -1,5 +1,8 @@
 <urlset xmlns = 'http://www.sitemaps.org/schemas/sitemap/0.9'>
 <url><loc>https://cedricbouffard.github.io/yieldcleanr/404.html</loc></url>
+<url><loc>https://cedricbouffard.github.io/yieldcleanr/CODE_OF_CONDUCT.html</loc></url>
+<url><loc>https://cedricbouffard.github.io/yieldcleanr/CONTRIBUTING.html</loc></url>
+<url><loc>https://cedricbouffard.github.io/yieldcleanr/GITHUB_ACTIONS.html</loc></url>
 <url><loc>https://cedricbouffard.github.io/yieldcleanr/LICENSE-text.html</loc></url>
 <url><loc>https://cedricbouffard.github.io/yieldcleanr/articles/filtre-chevauchement.html</loc></url>
 <url><loc>https://cedricbouffard.github.io/yieldcleanr/articles/filtre-delai.html</loc></url>
@@ -13,6 +16,7 @@
 <url><loc>https://cedricbouffard.github.io/yieldcleanr/articles/securite-donnees.html</loc></url>
 <url><loc>https://cedricbouffard.github.io/yieldcleanr/authors.html</loc></url>
 <url><loc>https://cedricbouffard.github.io/yieldcleanr/index.html</loc></url>
+<url><loc>https://cedricbouffard.github.io/yieldcleanr/news/index.html</loc></url>
 <url><loc>https://cedricbouffard.github.io/yieldcleanr/reference/anonymize_coordinates.html</loc></url>
 <url><loc>https://cedricbouffard.github.io/yieldcleanr/reference/anonymize_data.html</loc></url>
 <url><loc>https://cedricbouffard.github.io/yieldcleanr/reference/anonymize_yield_data.html</loc></url>

@@ -1,7 +1,8 @@
-# yieldcleanr
+# yieldcleanr ![yieldcleanr logo](reference/figures/logo.png)
 
-[![R-CI](https://github.com/cedricbouffard/yieldcleanr/actions/workflows/R-CI.yml/badge.svg)](https://github.com/cedricbouffard/yieldcleanr/actions)
-[![Codecov](https://codecov.io/gh/cedricbouffard/yieldcleanr/branch/main/graph/badge.svg)](https://codecov.io/gh/cedricbouffard/yieldcleanr)
+**yieldcleanr** est un package R pour nettoyer, filtrer et valider les
+données de rendement agricole collectées par les
+moissonneuses-batteuses.
 
 **yieldcleanr** is an R package for cleaning, filtering, and validating
 agricultural yield data collected by combine harvesters. It implements
@@ -297,18 +298,43 @@ continuous surfaces.
 
 ## Documentation
 
-- [Getting
-  Started](https://cedricbouffard.github.io/yieldcleanr/vignettes/getting-started.md) -
-  Introduction and basic usage
-- [Filtering
-  Methods](https://cedricbouffard.github.io/yieldcleanr/vignettes/filtering-methods.md) -
-  Detailed explanation of filters
-- [Shiny
-  Application](https://cedricbouffard.github.io/yieldcleanr/vignettes/shiny-app.md) -
-  Guide to the interactive app
-- [API
-  Reference](https://cedricbouffard.github.io/yieldcleanr/reference/index.md) -
-  Function documentation
+### Site Web
+
+- **Documentation complete** :
+  <https://cedricbouffard.github.io/yieldcleanr>
+- **Reference des fonctions** :
+  <https://cedricbouffard.github.io/yieldcleanr/reference>
+- **Vignettes** :
+  <https://cedricbouffard.github.io/yieldcleanr/articles>
+
+### Vignettes disponibles
+
+- [Filtre de
+  rendement](https://cedricbouffard.github.io/yieldcleanr/articles/filtre-rendement.html) -
+  Filtrage des valeurs de rendement aberrantes
+- [Filtre
+  d’humidite](https://cedricbouffard.github.io/yieldcleanr/articles/filtre-humidite.html) -
+  Filtrage des valeurs d’humidite
+- [Filtre de
+  vitesse](https://cedricbouffard.github.io/yieldcleanr/articles/filtre-vitesse.html) -
+  Filtrage des vitesses anormales
+- [Filtre d’ecart-type
+  local](https://cedricbouffard.github.io/yieldcleanr/articles/filtre-ecart-type-local.html) -
+  Detection des points aberrants
+- [Filtre de
+  chevauchement](https://cedricbouffard.github.io/yieldcleanr/articles/filtre-chevauchement.html) -
+  Gestion des zones de chevauchement
+- [Ajustement des
+  delais](https://cedricbouffard.github.io/yieldcleanr/articles/filtre-delai.html) -
+  Correction des delais temporels
+- [Guide
+  complet](https://cedricbouffard.github.io/yieldcleanr/articles/guide-complet-samples.html) -
+  Exemples complets avec donnees reelles
+- [Meta-fonctions](https://cedricbouffard.github.io/yieldcleanr/articles/guide-meta-fonctions.html) -
+  Guide des fonctions principales
+- [Securite des
+  donnees](https://cedricbouffard.github.io/yieldcleanr/articles/securite-donnees.html) -
+  Anonymisation et confidentialite
 
 ## Contributing
 
@@ -321,6 +347,10 @@ for guidelines.
 3.  Commit your changes (`git commit -m 'Add amazing feature'`)
 4.  Push to the branch (`git push origin feature/amazing-feature`)
 5.  Open a Pull Request
+
+Please note that this project is released with a [Contributor Code of
+Conduct](https://cedricbouffard.github.io/yieldcleanr/CODE_OF_CONDUCT.md).
+By participating in this project you agree to abide by its terms.
 
 ## Citation
 

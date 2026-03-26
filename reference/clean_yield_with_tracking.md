@@ -20,7 +20,7 @@ clean_yield_with_tracking(
 
 - file_path:
 
-  Chemin du fichier d'entree (txt/csv)
+  Chemin du fichier d'entree (txt/csv). Ignore si `data` est fourni.
 
 - data:
 
@@ -38,7 +38,7 @@ clean_yield_with_tracking(
 
 - params:
 
-  Liste des parametres AYCE (voir details)
+  Liste des parametres AYCE (voir section "Parametres AYCE")
 
 ## Value
 
