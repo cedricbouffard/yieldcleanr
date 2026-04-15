@@ -704,15 +704,21 @@ ui <- fluidPage(
          downloadButton("download_data", "Telecharger les donnees", class = "btn-success btn-block"),
          
           div(class = "section-title", "7. Export image et rapport"),
-          downloadButton("download_map_image", "Telecharger la carte (PNG)", class = "btn-info btn-block"),
-          downloadButton("download_report", "Telecharger le rapport (HTML)", class = "btn-warning btn-block"),
-          
-          # Rapport multi-champs (visible quand plusieurs champs)
-          conditionalPanel(
-            condition = "output.has_multiple_fields == true",
-            downloadButton("download_batch_report", "Rapport multi-champs (PDF)", 
-                          class = "btn-primary btn-block", icon = icon("file-pdf"))
-          ),
+           downloadButton("download_map_image", "Telecharger la carte (PNG)", class = "btn-info btn-block"),
+           
+           # Style du rapport
+           selectInput("report_style", "Style du rapport :",
+                      choices = c("IRDA" = "irda", "Cedric Bouffard" = "ced"),
+                      selected = "irda"),
+           
+           downloadButton("download_report", "Telecharger le rapport (HTML)", class = "btn-warning btn-block"),
+           
+           # Rapport multi-champs (visible quand plusieurs champs)
+           conditionalPanel(
+             condition = "output.has_multiple_fields == true",
+             downloadButton("download_batch_report", "Rapport multi-champs (PDF)", 
+                           class = "btn-primary btn-block", icon = icon("file-pdf"))
+           ),
           
           # Metric Cards - Statistiques
           div(class = "section-title", "8. Statistiques"),
@@ -1732,8 +1738,39 @@ server <- function(input, output, session) {
                           if (avg_edge_45 <= 10) {
                             bin_size <- 4500
                           } else {
-                            # Utiliser 5t
-                            bin_size <- 5000
+                            # Tester avec des bins plus larges pour rendements eleves (cultures maraicheres)
+                            result_6 <- calc_edge_percentages(6000, valid_yield, med, yield_min, yield_max)
+                            if (result_6$avg_edge <= 10) {
+                              bin_size <- 6000
+                            } else {
+                              result_8 <- calc_edge_percentages(8000, valid_yield, med, yield_min, yield_max)
+                              if (result_8$avg_edge <= 10) {
+                                bin_size <- 8000
+                              } else {
+                                result_10 <- calc_edge_percentages(10000, valid_yield, med, yield_min, yield_max)
+                                if (result_10$avg_edge <= 10) {
+                                  bin_size <- 10000
+                                } else {
+                                  result_12 <- calc_edge_percentages(12000, valid_yield, med, yield_min, yield_max)
+                                  if (result_12$avg_edge <= 10) {
+                                    bin_size <- 12000
+                                  } else {
+                                    result_15 <- calc_edge_percentages(15000, valid_yield, med, yield_min, yield_max)
+                                    if (result_15$avg_edge <= 10) {
+                                      bin_size <- 15000
+                                    } else {
+                                      result_20 <- calc_edge_percentages(20000, valid_yield, med, yield_min, yield_max)
+                                      if (result_20$avg_edge <= 10) {
+                                        bin_size <- 20000
+                                      } else {
+                                        # Par defaut utiliser 25000 (25 t/ha)
+                                        bin_size <- 25000
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            }
                           }
                         }
                       }
@@ -1779,7 +1816,7 @@ server <- function(input, output, session) {
             val1 <- breaks_custom[i] / 1000
             val2 <- breaks_custom[i+1] / 1000
             # Nombre de décimales selon la taille des bins
-            decimals <- ifelse(bin_size == 250, 2, ifelse(bin_size == 500, 1, 0))
+            decimals <- ifelse(bin_size <= 500, 2, ifelse(bin_size <= 1000, 1, 0))
             val1_rounded <- round(val1, decimals)
             val2_rounded <- round(val2, decimals)
             
@@ -3085,10 +3122,33 @@ server <- function(input, output, session) {
           report_file <- file.path(temp_dir, "report.Rmd")
           file.copy(template_path, report_file, overwrite = TRUE)
           
-          # Copier les fichiers CSS et HTML (sans les images lourdes)
+          # Determiner le repertoire du style selectionne
+          selected_style <- input$report_style
           template_dir <- dirname(template_path)
-          css_files <- list.files(template_dir, pattern = "\\.css$", full.names = TRUE)
-          html_files <- list.files(template_dir, pattern = "\\.html$", full.names = TRUE)
+          
+          if (selected_style == "ced") {
+            style_dir <- system.file("rapport", "ced", package = "yieldcleanr")
+            if (style_dir == "" || !dir.exists(style_dir)) {
+              style_dir <- file.path(dirname(template_path), "ced")
+            }
+            if (!dir.exists(style_dir)) {
+              showNotification("Style 'Cedric Bouffard' non trouve, utilisation du style IRDA", type = "warning")
+              style_dir <- template_dir
+              selected_style <- "irda"
+            }
+          } else {
+            style_dir <- template_dir
+          }
+          
+          message("DEBUG - Style selectionne: ", selected_style)
+          message("DEBUG - Style directory: ", style_dir)
+          
+          # Nom de l'organisation selon le style
+          org_name <- if (selected_style == "ced") "Cedric Bouffard" else "IRDA"
+          
+          # Copier les fichiers CSS et HTML depuis le repertoire du style
+          css_files <- list.files(style_dir, pattern = "\\.css$", full.names = TRUE)
+          html_files <- list.files(style_dir, pattern = "\\.html$", full.names = TRUE)
           
           for (f in c(css_files, html_files)) {
             if (file.exists(f)) {
@@ -3111,30 +3171,47 @@ server <- function(input, output, session) {
             paste0("data:", mime_type, ";base64,", base64_data)
           }
           
-          # Copier et modifier le CSS pour intégrer l'image du bandeau en base64
-          css_source <- file.path(template_dir, "brochure.css")
+          # Copier et modifier le CSS pour intégrer les images en base64 selon le style
+          css_source <- file.path(style_dir, "brochure.css")
           css_dest <- file.path(temp_dir, "brochure.css")
           if (file.exists(css_source)) {
             css_content <- readLines(css_source, warn = FALSE)
-            bandeau_path <- file.path(template_dir, "bandeaugauche.png")
-            if (file.exists(bandeau_path)) {
-              bandeau_base64 <- image_to_base64(bandeau_path)
-              if (!is.null(bandeau_base64)) {
-                css_content <- gsub("url\\('bandeaugauche.png'\\)", paste0("url('", bandeau_base64, "')"), css_content)
-                message("DEBUG - Embedded bandeaugauche.png as base64 in CSS")
+            
+            # Pour le style IRDA, integrer bandeaugauche.png
+            if (selected_style == "irda") {
+              bandeau_path <- file.path(style_dir, "bandeaugauche.png")
+              if (file.exists(bandeau_path)) {
+                bandeau_base64 <- image_to_base64(bandeau_path)
+                if (!is.null(bandeau_base64)) {
+                  css_content <- gsub("url\\('bandeaugauche.png'\\)", paste0("url('", bandeau_base64, "')"), css_content)
+                  message("DEBUG - Embedded bandeaugauche.png as base64 in CSS")
+                }
               }
             }
+            
+            # Pour le style CED, integrer background.png
+            if (selected_style == "ced") {
+              background_path <- file.path(style_dir, "background.png")
+              if (file.exists(background_path)) {
+                background_base64 <- image_to_base64(background_path)
+                if (!is.null(background_base64)) {
+                  css_content <- gsub("url\\('background.png'\\)", paste0("url('", background_base64, "')"), css_content)
+                  message("DEBUG - Embedded background.png as base64 in CSS")
+                }
+              }
+            }
+            
             writeLines(css_content, css_dest)
           }
           
           # Copier et modifier le HTML pour intégrer les images en base64
-          html_source <- file.path(template_dir, "header_overrides.html")
+          html_source <- file.path(style_dir, "header_overrides.html")
           html_dest <- file.path(temp_dir, "header_overrides.html")
           if (file.exists(html_source)) {
             html_content <- readLines(html_source, warn = FALSE)
             
-            # Intégrer logo.png - ligne par ligne pour plus de précision
-            logo_path <- file.path(template_dir, "logo.png")
+            # Intégrer logo.png depuis le repertoire du style
+            logo_path <- file.path(style_dir, "logo.png")
             if (file.exists(logo_path)) {
               logo_base64 <- image_to_base64(logo_path)
               if (!is.null(logo_base64)) {
@@ -3143,13 +3220,25 @@ server <- function(input, output, session) {
               }
             }
             
-            # Intégrer image_couverture.png
-            couverture_path <- file.path(template_dir, "image_couverture.png")
-            if (file.exists(couverture_path)) {
-              couverture_base64 <- image_to_base64(couverture_path)
-              if (!is.null(couverture_base64)) {
-                html_content <- gsub("imgCouverture\\.src = 'image_couverture\\.png'", paste0("imgCouverture.src = '", couverture_base64, "'"), html_content)
-                message("DEBUG - Embedded image_couverture.png as base64")
+            # Intégrer image de couverture selon le style
+            if (selected_style == "irda") {
+              couverture_path <- file.path(style_dir, "image_couverture.png")
+              if (file.exists(couverture_path)) {
+                couverture_base64 <- image_to_base64(couverture_path)
+                if (!is.null(couverture_base64)) {
+                  html_content <- gsub("imgCouverture\\.src = 'image_couverture\\.png'", paste0("imgCouverture.src = '", couverture_base64, "'"), html_content)
+                  message("DEBUG - Embedded image_couverture.png as base64")
+                }
+              }
+            } else {
+              # Pour le style CED, utiliser background.png comme image de couverture
+              background_path <- file.path(style_dir, "background.png")
+              if (file.exists(background_path)) {
+                background_base64 <- image_to_base64(background_path)
+                if (!is.null(background_base64)) {
+                  html_content <- gsub("imgCouverture\\.src = 'image_couverture\\.png'", paste0("imgCouverture.src = '", background_base64, "'"), html_content)
+                  message("DEBUG - Embedded background.png as base64 for cover")
+                }
               }
             }
             
@@ -3750,11 +3839,15 @@ server <- function(input, output, session) {
           
           # Generate batch report using the package function
           # This uses the same template as single-field reports
+          # Get the selected style from the UI
+          selected_style <- input$report_style
+          
           result_file <- yieldcleanr::generate_batch_report(
             file_paths = temp_files,
             output_file = file,
             title = "Rapport multi-champs",
-            output_format = "html"
+            output_format = "html",
+            style = selected_style
           )
           
           # Update to complete

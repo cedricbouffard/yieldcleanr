@@ -4,7 +4,12 @@
 \alias{generate_batch_report_html}
 \title{Generate a multi-field HTML report}
 \usage{
-generate_batch_report_html(file_paths, output_file = NULL, title = NULL)
+generate_batch_report_html(
+  file_paths,
+  output_file = NULL,
+  title = NULL,
+  style = c("irda", "ced")
+)
 }
 \arguments{
 \item{file_paths}{Vector of file paths (GeoJSON)}
@@ -12,6 +17,8 @@ generate_batch_report_html(file_paths, output_file = NULL, title = NULL)
 \item{output_file}{Output HTML file path}
 
 \item{title}{Report title}
+
+\item{style}{Style visuel du rapport: "irda" (défaut) ou "ced" (Cedric Bouffard)}
 }
 \value{
 Path to generated HTML file

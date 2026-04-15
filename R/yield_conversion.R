@@ -40,23 +40,21 @@
                                     inches_per_foot = 12,
                                     force_recalculate = FALSE) {
 
-   # Auto-detecter lbs_per_bushel via GrainType si absent
-   if (is.null(lbs_per_bushel)) {
-     lbs_per_bushel <- get_lbs_per_bushel(data)
-   }
-   
     # Si Yield_kg_ha existe deja et on ne force pas le recalcul
+    # Verifier en premier pour eviter les messages inutiles
     if ("Yield_kg_ha" %in% names(data) && !all(is.na(data$Yield_kg_ha)) && !force_recalculate) {
       return(data)
     }
 
    # Detection: Flow contient-il deja des valeurs de rendement (kg/ha) ?
    # Les fichiers John Deere ont deja le rendement dans Flow (typiquement 1000-15000 kg/ha)
+   # Les cultures maraicheres peuvent avoir des rendements eleves (60000-100000 kg/ha)
    # Alors que les fichiers AgLeader ont le flux brut (typiquement 2-20 lbs/s)
    mean_flow_check <- mean(data$Flow, na.rm = TRUE)
    
-   if (mean_flow_check > 100 && mean_flow_check < 50000) {
+   if (mean_flow_check > 100 && mean_flow_check < 150000) {
      # Flow contient probablement deja le rendement en kg/ha
+     # Limite superieure 150000 kg/ha pour inclure cultures maraicheres a tres haut rendement
      rlang::inform(paste("  Flow detecte comme rendement deja en kg/ha (valeur:", round(mean_flow_check, 1), ")"))
       data <- data |>
         dplyr::mutate(
@@ -65,6 +63,12 @@
       
       rlang::inform(paste("Yield utilise directement:", round(mean_flow_check, 1), "kg/ha"))
      return(data)
+   }
+   
+   # Auto-detecter lbs_per_bushel via GrainType si absent
+   # (seulement si on va calculer le rendement a partir du flux)
+   if (is.null(lbs_per_bushel)) {
+     lbs_per_bushel <- get_lbs_per_bushel(data)
    }
    
    # Sinon, calculer a partir du flux (methode originale pour donnees imperiales)
@@ -151,18 +155,30 @@ get_lbs_per_bushel <- function(data) {
   if (!is.null(grain_col)) {
     grain <- tolower(unique(data[[grain_col]]))
 
+    # Detecter le mais
+    if (any(grepl("mais|corn|maize", grain))) {
+      return(56)
+    }
+
     # Detecter le soja
     if (any(grepl("soja|soy", grain))) {
       return(60)
     }
 
     # Detecter ble/cereales
-    if (any(grepl("ble|wheat|wheat|cereal|avoine|barley|orge", grain))) {
+    if (any(grepl("ble|wheat|cereal|avoine|barley|orge", grain))) {
       return(60)
     }
 
+    # Detecter les cultures maraicheres (pas de conversion bushel applicable)
+    # Ces cultures utilisent le rendement direct en kg/ha, pas de conversion lbs/bushel
+    if (any(grepl("onion|oignon|shallot|echalote|potato|patate|pomme.de.terre|carrot|carotte|betterave|beet|legume|vegetable|celeri|celery|navet|turnip|radis|radish|chou|cabbage|laitue|lettuce", grain))) {
+      rlang::inform(paste("Culture maraichere detectee (", paste(grain, collapse = ", "), ") - pas de conversion bushel"))
+      return(NA)  # NA indique qu'il ne faut pas utiliser cette conversion
+    }
+
     # Defaut : mais (56 lbs/bu)
-    rlang::inform(paste("GrainType non reconnu, utilisation 56 lbs/boisseau (mais par defaut)"))
+    rlang::inform(paste("GrainType non reconnu ('", paste(grain, collapse = ", "), "'), utilisation 56 lbs/boisseau (mais par defaut)"))
     return(56)
   }
 

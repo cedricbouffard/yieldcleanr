@@ -386,11 +386,11 @@ read_yield_from_zip <- function(zip_path, field_name) {
   # Nettoyer le repertoire temporaire maintenant que les donnees sont en memoire
   unlink(temp_dir, recursive = TRUE)
   
+  # Convertir les unites selon le JSON metadata (avant standardisation)
+  data <- convert_units_from_json(data, metadata)
+
   # Standardiser les colonnes John Deere (avec metadonnees si disponibles)
   data <- standardize_jd_columns(data, metadata = metadata)
-  
-  # Convertir les unites John Deere vers le format yieldcleanr (avec metadonnees)
-  data <- convert_jd_metric_to_yieldcleanr(data, metadata = metadata)
 
   # Convertir en data.frame (les coordonnees sont dans Longitude/Latitude)
   # Le pipeline de nettoyage travaille avec des data.frames, pas des sf
@@ -601,8 +601,16 @@ convert_jd_metric_to_yieldcleanr <- function(data, metadata = NULL) {
   units <- if (!is.null(metadata)) metadata$units else list()
   has_metadata_units <- length(units) > 0
   if (has_metadata_units) {
-    message(paste("Unites lues depuis les metadonnees JSON:",
-                  paste(names(units), "=", unlist(units), collapse = ", ")))
+    # Filtrer les unites non-NA pour un affichage clair
+    units_with_values <- units[!is.na(units)]
+    if (length(units_with_values) > 0) {
+      message("Unites lues depuis les metadonnees JSON:")
+      for (unit_name in names(units_with_values)) {
+        message(paste("  -", unit_name, ":", units_with_values[[unit_name]]))
+      }
+    }
+  } else {
+    message("Aucune metadonnee d'unite trouvee - utilisation de la detection heuristique")
   }
 
   # ====================================================================
@@ -690,6 +698,61 @@ convert_jd_metric_to_yieldcleanr <- function(data, metadata = NULL) {
     if (!"Yield_kg_ha_wet" %in% names(data) || all(is.na(data$Yield_kg_ha_wet))) {
       data$Yield_kg_ha_wet <- data$Flow_Wet
       message(paste("Yield_kg_ha_wet cree a partir de Flow_Wet:", sum(!is.na(data$Yield_kg_ha_wet)), "valeurs"))
+    }
+  }
+
+  # ====================================================================
+  # CONVERSION FLOW_GROSS (rendement brut par acre)
+  # ====================================================================
+  if ("Flow_Gross" %in% names(data) && !all(is.na(data$Flow_Gross))) {
+    gross_yield_unit <- units[["GrossYldA"]] %||% NA_character_
+    mean_gross <- mean(data$Flow_Gross[!is.na(data$Flow_Gross)], na.rm = TRUE)
+
+    if (!is.na(gross_yield_unit) && grepl("ton1ac-1|ton/ac|ton\\.ac", gross_yield_unit, ignore.case = TRUE)) {
+      message(paste("Flow_Gross en ton/acre (metadata:", gross_yield_unit, ") -> conversion en kg/ha"))
+      data$Flow_Gross <- data$Flow_Gross * 2241.7
+    } else if (!is.na(gross_yield_unit) && grepl("t1ha-1|t/ha|tonne/ha", gross_yield_unit, ignore.case = TRUE)) {
+      message("Flow_Gross en tonnes/ha -> conversion en kg/ha")
+      data$Flow_Gross <- data$Flow_Gross * 1000
+    } else if (mean_gross < 100 && mean_gross > 0) {
+      # Heuristique: probablement en tonnes
+      message("Flow_Gross heuristique: conversion tonnes -> kg/ha")
+      data$Flow_Gross <- data$Flow_Gross * 1000
+    }
+  }
+
+  # ====================================================================
+  # CONVERSION NETYLD_TOTAL ET GROSSYLD_TOTAL (totaux par point, en tons)
+  # ====================================================================
+  if ("NetYld_total" %in% names(data) && !all(is.na(data$NetYld_total))) {
+    netyld_unit <- units[["NetYld"]] %||% NA_character_
+    if (!is.na(netyld_unit) && grepl("^ton$|^tons$", netyld_unit, ignore.case = TRUE)) {
+      # US short ton = 907.185 kg
+      message(paste("NetYld_total en tons imperiales (metadata:", netyld_unit, ") -> conversion en kg"))
+      data$NetYld_total <- data$NetYld_total * 907.185
+    } else if (!is.na(netyld_unit) && grepl("^t$|tonne|^kg$", netyld_unit, ignore.case = TRUE)) {
+      if (grepl("^kg$", netyld_unit, ignore.case = TRUE)) {
+        message("NetYld_total deja en kg")
+      } else {
+        message("NetYld_total en tonnes metriques -> conversion en kg")
+        data$NetYld_total <- data$NetYld_total * 1000
+      }
+    }
+  }
+
+  if ("GrossYld_total" %in% names(data) && !all(is.na(data$GrossYld_total))) {
+    grossyld_unit <- units[["GrossYld"]] %||% NA_character_
+    if (!is.na(grossyld_unit) && grepl("^ton$|^tons$", grossyld_unit, ignore.case = TRUE)) {
+      # US short ton = 907.185 kg
+      message(paste("GrossYld_total en tons imperiales (metadata:", grossyld_unit, ") -> conversion en kg"))
+      data$GrossYld_total <- data$GrossYld_total * 907.185
+    } else if (!is.na(grossyld_unit) && grepl("^t$|tonne|^kg$", grossyld_unit, ignore.case = TRUE)) {
+      if (grepl("^kg$", grossyld_unit, ignore.case = TRUE)) {
+        message("GrossYld_total deja en kg")
+      } else {
+        message("GrossYld_total en tonnes metriques -> conversion en kg")
+        data$GrossYld_total <- data$GrossYld_total * 1000
+      }
     }
   }
 
@@ -1062,3 +1125,351 @@ get_standard_moisture <- function(data) {
   message("Pas de colonne GrainType, utilisation 15.5% (mais par defaut)")
   return(15.5)
 }
+
+
+#' Creer des polygones rectangulaires a partir de donnees ponctuelles
+#'
+#' Convertit un data.frame avec coordonnees, heading, swath et distance
+#' en polygones rectangulaires en UTM.
+#'
+#' @param data Data.frame avec colonnes Longitude, Latitude, et soit
+#'   (Swath_m, Distance_m) soit (Swath, Distance) en metres
+#' @param heading_col Nom de la colonne heading (defaut: "Heading" ou "heading")
+#' @return Objet SF avec polygones en UTM
+#' @export
+create_polygons_from_data <- function(data, heading_col = NULL) {
+  if (!requireNamespace("sf", quietly = TRUE)) {
+    rlang::abort("Le package 'sf' est requis")
+  }
+
+ # Determiner la colonne heading
+ if (is.null(heading_col)) {
+   if ("heading" %in% names(data)) {
+     heading_col <- "heading"
+   } else if ("Heading" %in% names(data)) {
+     heading_col <- "Heading"
+   } else {
+     # Calculer le heading a partir des coordonnees
+     message("Calcul du heading a partir des coordonnees...")
+     data <- data |>
+       dplyr::mutate(
+         heading = atan2(
+           dplyr::lead(Longitude, default = Longitude[dplyr::n()]) - Longitude,
+           dplyr::lead(Latitude, default = Latitude[dplyr::n()]) - Latitude
+         ) * 180 / pi
+       )
+     data$heading[is.na(data$heading)] <- 0
+     heading_col <- "heading"
+   }
+ }
+
+ # Determiner les colonnes swath et distance
+ swath_col <- if ("Swath_m" %in% names(data)) "Swath_m" else if ("Swath" %in% names(data)) "Swath" else NULL
+ dist_col <- if ("Distance_m" %in% names(data)) "Distance_m" else if ("Distance" %in% names(data)) "Distance" else NULL
+
+ if (is.null(swath_col) || is.null(dist_col)) {
+   rlang::abort("Colonnes Swath(_m) et Distance(_m) requises")
+ }
+
+ # S'assurer que Swath_m et Distance_m existent
+ if (!"Swath_m" %in% names(data)) data$Swath_m <- data[[swath_col]]
+ if (!"Distance_m" %in% names(data)) data$Distance_m <- data[[dist_col]]
+
+ # Verifier les colonnes requises
+ required_cols <- c("Longitude", "Latitude", heading_col, "Swath_m", "Distance_m")
+ missing_cols <- setdiff(required_cols, names(data))
+ if (length(missing_cols) > 0) {
+   rlang::abort(paste("Colonnes manquantes:", paste(missing_cols, collapse = ", ")))
+ }
+
+ # Filtrer les lignes valides
+ valid_rows <- complete.cases(data[, required_cols, drop = FALSE])
+ if (sum(valid_rows) == 0) {
+   rlang::abort("Aucune ligne valide pour creer des polygones")
+ }
+ data <- data[valid_rows, ]
+
+ message(paste("Creation de", nrow(data), "polygones..."))
+
+ # Determiner la zone UTM
+ zone <- floor((mean(data$Longitude) + 180) / 6) + 1
+ hemisphere <- if (mean(data$Latitude) >= 0) 326 else 327
+ utm_crs <- sf::st_crs(paste0("EPSG:", hemisphere, sprintf("%02d", zone)))
+
+ # Convertir en UTM
+ pts_wgs84 <- sf::st_as_sf(data, coords = c("Longitude", "Latitude"), crs = 4326)
+ pts_utm <- sf::st_transform(pts_wgs84, utm_crs)
+ coords_utm <- sf::st_coordinates(pts_utm)
+
+ # Extraire les valeurs
+ x_utm <- coords_utm[, 1]
+ y_utm <- coords_utm[, 2]
+ heading_rad <- data[[heading_col]] * pi / 180
+ half_width <- pmax(data$Swath_m, 0.1) / 2
+ half_length <- pmax(data$Distance_m, 0.1) / 2
+
+ # Calculer les offsets
+ dx_forward <- sin(heading_rad) * half_length
+ dy_forward <- cos(heading_rad) * half_length
+ dx_perp <- cos(heading_rad) * half_width
+ dy_perp <- -sin(heading_rad) * half_width
+
+ # Creer les polygones
+ create_polygon <- function(i) {
+   x <- x_utm[i]
+   y <- y_utm[i]
+   dxf <- dx_forward[i]
+   dyf <- dy_forward[i]
+   dxp <- dx_perp[i]
+   dyp <- dy_perp[i]
+
+   coords <- matrix(c(
+     x + dxf + dxp, y + dyf + dyp,
+     x + dxf - dxp, y + dyf - dyp,
+     x - dxf - dxp, y - dyf - dyp,
+     x - dxf + dxp, y - dyf + dyp,
+     x + dxf + dxp, y + dyf + dyp
+   ), ncol = 2, byrow = TRUE)
+
+   sf::st_polygon(list(coords))
+ }
+
+ polygons_list <- lapply(seq_len(nrow(data)), create_polygon)
+ polys_utm <- sf::st_sfc(polygons_list, crs = utm_crs)
+
+ # Garder les colonnes de donnees
+ data_cols <- names(data)[!names(data) %in% c("Longitude", "Latitude", "geometry")]
+ data_valid <- data[, data_cols, drop = FALSE]
+
+ # Creer le sf
+ sf_data <- sf::st_sf(data_valid, geometry = polys_utm)
+
+ message(paste("Polygones crees en UTM zone", zone))
+ return(sf_data)
+}
+
+
+#' Lire des donnees John Deere et convertir en polygones metriques
+#'
+#' Lit un fichier ZIP John Deere (rendement, semis, vitesse, etc.) et cree des polygones.
+#' Utilise les unites du JSON pour convertir en metrique.
+#'
+#' @param zip_path Chemin vers le fichier ZIP
+#' @param field_name Nom du champ dans le fichier ZIP
+#' @return Objet SF avec polygones et toutes les colonnes preservees
+#' @export
+read_jd_to_polygons <- function(zip_path, field_name) {
+  if (!file.exists(zip_path)) {
+    rlang::abort(paste("Le fichier ZIP n'existe pas:", zip_path))
+  }
+
+  if (!requireNamespace("sf", quietly = TRUE)) {
+    rlang::abort("Le package 'sf' est requis")
+  }
+
+  temp_dir <- tempfile(pattern = "jd_zip_")
+  dir.create(temp_dir, showWarnings = FALSE, recursive = TRUE)
+
+  fields <- list_fields_from_zip(zip_path)
+
+  if (!field_name %in% fields$field_name) {
+    rlang::abort(paste("Champ", field_name, "non trouve dans le ZIP"))
+  }
+
+  shp_file <- fields$Name[fields$field_name == field_name]
+  base_name <- tools::file_path_sans_ext(shp_file)
+
+  zip_contents <- utils::unzip(zip_path, list = TRUE)
+  related_files <- zip_contents$Name[grepl(paste0("^", base_name, "\\."), zip_contents$Name, ignore.case = TRUE)]
+
+  json_files <- zip_contents$Name[grepl(paste0("^", base_name, ".*-Deere-Metadata\\.json$"),
+                                        zip_contents$Name, ignore.case = TRUE)]
+  all_files <- unique(c(related_files, json_files))
+
+  utils::unzip(zip_path, files = all_files, exdir = temp_dir)
+
+  metadata <- NULL
+  if (length(json_files) > 0) {
+    json_path <- file.path(temp_dir, json_files[1])
+    if (!file.exists(json_path)) {
+      json_path <- file.path(temp_dir, basename(json_files[1]))
+    }
+    metadata <- parse_jd_metadata(json_path)
+  }
+
+  shp_path <- file.path(temp_dir, shp_file)
+  if (!file.exists(shp_path)) {
+    shp_path <- file.path(temp_dir, basename(shp_file))
+  }
+
+  data <- sf::st_read(shp_path, quiet = TRUE)
+  data <- sf::st_sf(sf::st_drop_geometry(data), geometry = sf::st_geometry(data))
+
+  unlink(temp_dir, recursive = TRUE)
+
+  data <- convert_units_from_json(data, metadata)
+
+  if (inherits(data, "sf")) {
+    coords <- sf::st_coordinates(data)
+    if (ncol(coords) >= 2) {
+      data$Longitude <- coords[, 1]
+      data$Latitude <- coords[, 2]
+    }
+    metadata_attrs <- attributes(data)[!names(attributes(data)) %in%
+      c("names", "class", "row.names", "sf_column", "agr")]
+    data <- sf::st_drop_geometry(data)
+    for (attr_name in names(metadata_attrs)) {
+      attr(data, attr_name) <- metadata_attrs[[attr_name]]
+    }
+  }
+
+  data <- standardize_jd_columns(data, metadata = metadata)
+
+  # Renommer les colonnes _m generees par convert_units_from_json
+  col_m_mapping <- c(
+    "SWATHWIDTH_m" = "Swath_m",
+    "DISTANCE_m" = "Distance_m",
+    "ELEVATION_m" = "Altitude_m",
+    "VELOCITY_m" = "Velocity_m"
+  )
+  for (old_name in names(col_m_mapping)) {
+    if (old_name %in% names(data)) {
+      data[[col_m_mapping[[old_name]]]] <- data[[old_name]]
+      data[[old_name]] <- NULL
+    }
+  }
+
+  # S'assurer que Swath_m et Distance_m existent
+  if (!"Swath_m" %in% names(data) && "Swath" %in% names(data)) {
+    data$Swath_m <- data$Swath
+  }
+  if (!"Distance_m" %in% names(data) && "Distance" %in% names(data)) {
+    data$Distance_m <- data$Distance
+  }
+
+  # Creer les polygones avec la fonction utilitaire
+  sf_data <- create_polygons_from_data(data)
+
+  return(sf_data)
+}
+
+
+#' Convertir les unites selon le JSON metadata
+#'
+#' Parcourt toutes les colonnes et applique la conversion si l'unite est dans le JSON.
+#' Gere les unites imperiales -> metrique.
+#'
+#' @param data Data frame avec les donnees
+#' @param metadata Metadonnees JSON (optionnel)
+#' @return Data frame avec unites converties et colonnes _m creees
+#' @noRd
+convert_units_from_json <- function(data, metadata = NULL) {
+  message("Conversion des unites selon le JSON...")
+
+  if (is.null(metadata)) {
+    metadata <- attr(data, "jd_metadata")
+  }
+
+  units <- if (!is.null(metadata)) metadata$units else list()
+
+  if (length(units) > 0) {
+    message("Unites trouvees dans le JSON:")
+    for (u in names(units)) {
+      if (!is.na(units[[u]])) message(paste("  -", u, ":", units[[u]]))
+    }
+  }
+
+  unit_conversions <- list(
+    "ft" = list(to = "m", factor = 0.3048),
+    "feet" = list(to = "m", factor = 0.3048),
+    "foot" = list(to = "m", factor = 0.3048),
+    "in" = list(to = "m", factor = 0.0254),
+    "inch" = list(to = "m", factor = 0.0254),
+    "mi1hr-1" = list(to = "m/s", factor = 0.44704),
+    "mph" = list(to = "m/s", factor = 0.44704),
+    "mi/hr" = list(to = "m/s", factor = 0.44704),
+    "km1hr-1" = list(to = "m/s", factor = 1/3.6),
+    "km/h" = list(to = "m/s", factor = 1/3.6),
+    "ton1ac-1" = list(to = "kg/ha", factor = 2241.7),
+    "ton/ac" = list(to = "kg/ha", factor = 2241.7),
+    "t1ha-1" = list(to = "kg/ha", factor = 1000),
+    "t/ha" = list(to = "kg/ha", factor = 1000),
+    "bu1ac-1" = list(to = "kg/ha", factor = NA),
+    "kg1ha-1" = list(to = "kg/ha", factor = 1),
+    "kg/ha" = list(to = "kg/ha", factor = 1),
+    "ton" = list(to = "kg", factor = 907.185),
+    "tons" = list(to = "kg", factor = 907.185),
+    "tonne" = list(to = "kg", factor = 1000),
+    "kg" = list(to = "kg", factor = 1),
+    "lb1ac-1" = list(to = "kg/ha", factor = 1.12085),
+    "lb/ac" = list(to = "kg/ha", factor = 1.12085),
+    "seeds1ac-1" = list(to = "seeds/ha", factor = 2.47105),
+    "seeds/ac" = list(to = "seeds/ha", factor = 2.47105),
+    "gal" = list(to = "L", factor = 3.78541),
+    "gallon" = list(to = "L", factor = 3.78541),
+    "l" = list(to = "L", factor = 1),
+    "psi" = list(to = "kPa", factor = 6.89476),
+    "bar" = list(to = "kPa", factor = 100),
+    "prcnt" = list(to = "%", factor = 1)
+  )
+
+  col_mapping <- c(
+    "DISTANCE" = "DISTANCE",
+    "SWATH" = "SWATHWIDTH",
+    "SWATHWIDTH" = "SWATHWIDTH",
+    "VELOCITY" = "VEHICLSPEED",
+    "VEHICLSPEED" = "VEHICLSPEED",
+    "ELEVATION" = "Elevation",
+    "ALTITUDE" = "ELEVATION",
+    "APPLIEDRATE" = "AppliedRate",
+    "CONTROLRATE" = "ControlRate",
+    "TARGETRATE" = "TargetRate",
+    "FUEL" = "FUEL",
+    "NETYLDA" = "NetYldA",
+    "GROSSYLDA" = "GrossYldA",
+    "NETYLD" = "NetYld",
+    "GROSSYLD" = "GrossYld",
+    "TRASH" = "Trash"
+  )
+
+  for (col in names(data)) {
+    col_upper <- toupper(col)
+    lookup_key <- if (col_upper %in% names(units)) {
+      col_upper
+    } else if (col_upper %in% names(col_mapping) && col_mapping[[col_upper]] %in% names(units)) {
+      col_mapping[[col_upper]]
+    } else {
+      NA_character_
+    }
+
+    if (is.na(lookup_key)) next
+
+    unit <- units[[lookup_key]]
+    if (is.na(unit)) {
+      message(paste("  SKIP:", col, "(unit=NA)"))
+      next
+    }
+
+    unit_lower <- tolower(unit)
+
+    if (unit_lower %in% names(unit_conversions)) {
+      conv <- unit_conversions[[unit_lower]]
+      if (!is.na(conv$factor)) {
+        data[[col]] <- data[[col]] * conv$factor
+        message(paste(" ", col, ":", unit, "->", conv$to, "(x", round(conv$factor, 4), ")"))
+
+        if (conv$to == "m" && toupper(col) %in% c("DISTANCE", "SWATH", "SWATHWIDTH", "ELEVATION", "ALTITUDE")) {
+          data[[paste0(col, "_m")]] <- data[[col]]
+        }
+      }
+    } else {
+      message(paste("  Unite non reconnue pour", col, ":", unit))
+    }
+  }
+
+  message("Conversion terminee")
+  return(data)
+}
+
+
+

@@ -24,6 +24,8 @@
 \item{template_path}{Path to the R Markdown template (default: auto-detected)}
 
 \item{verbose}{Print progress messages (default: TRUE)}
+
+\item{style}{Style theme for the report. Options: "irda" (default) or "ced" (Cedric Bouffard style)}
 }
 \value{
 Path to the generated PDF file

@@ -193,7 +193,7 @@ yield_median <- safe_val(yield_median)
 
 
 ## `r field_label`
-`r if (crop_label != "") { crop_lower <- tolower(crop_label); crop_color <- if (crop_lower %in% c("maïs", "corn", "maize")) "#F1C40F" else if (crop_lower %in% c("soya", "soybean", "soy")) "#27AE60" else if (crop_lower %in% c("blé", "orge", "avoine", "wheat", "barley", "oats")) "#F9E79F" else "#9B59B6"; paste0('<span style="background-color:', crop_color, '; color: black; padding: 3px 8px; border-radius: 4px; font-weight: bold;">', crop_label, '</span>') }`
+`r if (crop_label != "") { paste0('<span class="badge ', tolower(crop_label), '">', crop_label, '</span>') }`
 `r if (exists("date_label") && date_label != "") paste0('<span class="badge primary">', date_label, '</span>') else if (year_label != "") paste0('<span class="badge primary">', year_label, '</span>')`
 ```{r calculate-bins, include=FALSE}
 # Calculer les bins centrés sur la médiane avec le bin médian en jaune
@@ -315,8 +315,39 @@ if (exists("gdf") && !is.null(gdf) && inherits(gdf, "sf") && nrow(gdf) > 0) {
                         if (avg_edge_45 <= 10) {
                           bin_size <- 4500
                         } else {
-                          # Utiliser 5t
-                          bin_size <- 5000
+                          # Tester avec des bins plus larges pour rendements eleves (cultures maraicheres)
+                          result_6 <- calc_edge_percentages(6000, valid_yield, med, yield_min, yield_max)
+                          if (result_6$avg_edge <= 10) {
+                            bin_size <- 6000
+                          } else {
+                            result_8 <- calc_edge_percentages(8000, valid_yield, med, yield_min, yield_max)
+                            if (result_8$avg_edge <= 10) {
+                              bin_size <- 8000
+                            } else {
+                              result_10 <- calc_edge_percentages(10000, valid_yield, med, yield_min, yield_max)
+                              if (result_10$avg_edge <= 10) {
+                                bin_size <- 10000
+                              } else {
+                                result_12 <- calc_edge_percentages(12000, valid_yield, med, yield_min, yield_max)
+                                if (result_12$avg_edge <= 10) {
+                                  bin_size <- 12000
+                                } else {
+                                  result_15 <- calc_edge_percentages(15000, valid_yield, med, yield_min, yield_max)
+                                  if (result_15$avg_edge <= 10) {
+                                    bin_size <- 15000
+                                  } else {
+                                    result_20 <- calc_edge_percentages(20000, valid_yield, med, yield_min, yield_max)
+                                    if (result_20$avg_edge <= 10) {
+                                      bin_size <- 20000
+                                    } else {
+                                      # Par defaut utiliser 25000 (25 t/ha)
+                                      bin_size <- 25000
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
                         }
                       }
                     }
@@ -365,7 +396,7 @@ if (exists("gdf") && !is.null(gdf) && inherits(gdf, "sf") && nrow(gdf) > 0) {
         val1 <- breaks_custom[i] / 1000
         val2 <- breaks_custom[i+1] / 1000
         # Nombre de décimales selon la taille des bins
-        decimals <- ifelse(bin_size == 250, 2, ifelse(bin_size == 500, 1, 0))
+        decimals <- ifelse(bin_size <= 500, 2, ifelse(bin_size <= 1000, 1, 0))
         val1_rounded <- round(val1, decimals)
         val2_rounded <- round(val2, decimals)
         

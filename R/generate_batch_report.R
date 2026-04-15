@@ -10,6 +10,7 @@
 #'   Par défaut, le rapport est créé dans le même répertoire que le premier fichier.
 #' @param title Titre du rapport (optionnel)
 #' @param output_format format de sortie: "pdf" (défaut) ou "html"
+#' @param style Style visuel du rapport: "irda" (défaut) ou "ced" (Cedric Bouffard)
 #' @return Chemin du fichier généré (invisible)
 #' @export
 #' @examples
@@ -17,14 +18,15 @@
 #' # Un seul ZIP vers PDF
 #' generate_batch_report("RDT2025.zip")
 #'
-#' # Vers HTML
-#' generate_batch_report("RDT2025.zip", output_format = "html")
+#' # Vers HTML avec style Cedric Bouffard
+#' generate_batch_report("RDT2025.zip", output_format = "html", style = "ced")
 #'
 #' # Plusieurs fichiers vers HTML
 #' generate_batch_report(c("field1.geojson", "field2.geojson"), output_format = "html")
 #' }
-generate_batch_report <- function(file_paths, output_file = NULL, title = NULL, output_format = c("pdf", "html")) {
+generate_batch_report <- function(file_paths, output_file = NULL, title = NULL, output_format = c("pdf", "html"), style = c("irda", "ced")) {
   output_format <- match.arg(output_format)
+  style <- match.arg(style)
   
   # S'assurer que file_paths est un vecteur
   file_paths <- as.character(file_paths)
@@ -130,7 +132,7 @@ generate_batch_report <- function(file_paths, output_file = NULL, title = NULL, 
   rlang::inform(paste("========================================"))
 
   # Générer le rapport
-  result <- .generate_multi_field_report(all_fields_data, output_file, title, work_dir, output_format)
+  result <- .generate_multi_field_report(all_fields_data, output_file, title, work_dir, output_format, style)
 
   invisible(result)
 }
@@ -692,17 +694,28 @@ calc_bins_local <- function(gdf) {
   }
 
   result_05 <- calc_edge_pct(500, valid_yield, med, yield_min_val, yield_max_val)
+  message(paste("DEBUG result_05 avg_edge:", result_05$avg_edge))
   if (result_05$avg_edge < 2) {
     bin_size <- 250
   } else if (result_05$avg_edge <= 10) {
     bin_size <- 500
   } else {
     bin_size <- 5000
-    for (bs in c(1000, 1500, 2000, 2500, 3000, 3500, 4000, 4500, 5000)) {
+    message("DEBUG Trying larger bins...")
+    for (bs in c(1000, 1500, 2000, 2500, 3000, 3500, 4000, 4500, 5000, 6000, 8000, 10000, 12000, 15000, 20000)) {
       res <- calc_edge_pct(bs, valid_yield, med, yield_min_val, yield_max_val)
-      if (res$avg_edge <= 10) { bin_size <- bs; break }
+      message(paste("DEBUG testing", bs, "-> avg_edge:", res$avg_edge))
+      if (res$avg_edge <= 10) { 
+        bin_size <- bs
+        message(paste("DEBUG FOUND bin_size:", bin_size))
+        break 
+      }
+    }
+    if (bin_size == 5000) {
+      message("DEBUG Still using 5000 - no bin size worked")
     }
   }
+  message(paste("FINAL bin_size:", bin_size))
 
   med_rounded <- floor(med / bin_size) * bin_size
   breaks_custom <- c()
@@ -718,7 +731,7 @@ calc_bins_local <- function(gdf) {
   for (i in 1:n_bins) {
     val1 <- breaks_custom[i] / 1000
     val2 <- breaks_custom[i+1] / 1000
-    decimals <- ifelse(bin_size == 250, 2, ifelse(bin_size == 500, 1, 0))
+    decimals <- ifelse(bin_size <= 500, 2, ifelse(bin_size <= 1000, 1, 0))
     if (i == 1) labels <- c(labels, paste0("< ", round(val2, decimals), " t/ha"))
     else if (i == n_bins) labels <- c(labels, paste0("> ", round(val1, decimals), " t/ha"))
     else labels <- c(labels, paste0(round(val1, decimals), " - ", round(val2, decimals), " t/ha"))
@@ -893,9 +906,10 @@ if (!is.null(yield_bins) && nrow(yield_bins) > 0) {
 
 #' Générer le rapport complet multi-champs
 #' @noRd
-.generate_multi_field_report <- function(fields_data, output_file, title, work_dir, output_format = "pdf") {
+.generate_multi_field_report <- function(fields_data, output_file, title, work_dir, output_format = "pdf", style = "irda") {
   rlang::inform("\n=== Generation du rapport multi-champs ===")
   rlang::inform(paste("Format de sortie:", output_format))
+  rlang::inform(paste("Style:", style))
 
   if (length(fields_data) == 0) {
     rlang::abort("Aucun champ a inclure dans le rapport")
@@ -909,7 +923,31 @@ if (!is.null(yield_bins) && nrow(yield_bins) > 0) {
   temp_dir <- file.path(work_dir, "report_build")
   dir.create(temp_dir, recursive = TRUE, showWarnings = FALSE)
 
+  # Determiner le repertoire de base et le repertoire du style
   template_dir <- system.file("rapport", package = "yieldcleanr")
+  if (template_dir == "") {
+    template_dir <- file.path(getwd(), "inst", "rapport")
+  }
+  
+  # Repertoire du style selectionne
+  if (style == "ced") {
+    style_dir <- system.file("rapport", "ced", package = "yieldcleanr")
+    if (style_dir == "") {
+      style_dir <- file.path(getwd(), "inst", "rapport", "ced")
+    }
+    if (!dir.exists(style_dir)) {
+      rlang::warn("Style 'ced' directory not found, falling back to 'irda' style")
+      style_dir <- template_dir
+      style <- "irda"
+    }
+  } else {
+    style_dir <- template_dir
+  }
+  
+  rlang::inform(paste("Style directory:", style_dir))
+  
+  # Nom de l'organisation selon le style
+  org_name <- if (style == "ced") "Cedric Bouffard" else "IRDA"
 
   # Fonction pour convertir une image en base64
   image_to_base64 <- function(image_path) {
@@ -926,29 +964,42 @@ if (!is.null(yield_bins) && nrow(yield_bins) > 0) {
   }
 
   # Copier et modifier le CSS pour integrer les images en base64
-  css_source <- file.path(template_dir, "brochure.css")
+  css_source <- file.path(style_dir, "brochure.css")
   css_dest <- file.path(temp_dir, "brochure.css")
   if (file.exists(css_source)) {
     css_content <- readLines(css_source, warn = FALSE)
-    bandeau_path <- file.path(template_dir, "bandeaugauche.png")
-    if (file.exists(bandeau_path)) {
-      bandeau_base64 <- image_to_base64(bandeau_path)
-      if (!is.null(bandeau_base64)) {
-        css_content <- gsub("url\\('bandeaugauche.png'\\)", paste0("url('", bandeau_base64, "')"), css_content)
+    # Pour le style IRDA, integrer bandeaugauche.png
+    if (style == "irda") {
+      bandeau_path <- file.path(style_dir, "bandeaugauche.png")
+      if (file.exists(bandeau_path)) {
+        bandeau_base64 <- image_to_base64(bandeau_path)
+        if (!is.null(bandeau_base64)) {
+          css_content <- gsub("url\\('bandeaugauche.png'\\)", paste0("url('", bandeau_base64, "')"), css_content)
+        }
+      }
+    }
+    # Pour le style CED, integrer background.png
+    if (style == "ced") {
+      background_path <- file.path(style_dir, "background.png")
+      if (file.exists(background_path)) {
+        background_base64 <- image_to_base64(background_path)
+        if (!is.null(background_base64)) {
+          css_content <- gsub("url\\('background.png'\\)", paste0("url('", background_base64, "')"), css_content)
+        }
       }
     }
     writeLines(css_content, css_dest)
   }
 
   # Copier et modifier le HTML pour integrer les images en base64
-  html_source <- file.path(template_dir, "header_overrides.html")
+  html_source <- file.path(style_dir, "header_overrides.html")
   html_dest <- file.path(temp_dir, "header_overrides.html")
   if (file.exists(html_source)) {
     html_content <- readLines(html_source, warn = FALSE)
     html_content_str <- paste(html_content, collapse = "\n")
     
     # Integrer logo.png - remplacer logo.src = 'logo.png'
-    logo_path <- file.path(template_dir, "logo.png")
+    logo_path <- file.path(style_dir, "logo.png")
     if (file.exists(logo_path)) {
       logo_base64 <- image_to_base64(logo_path)
       if (!is.null(logo_base64)) {
@@ -958,14 +1009,31 @@ if (!is.null(yield_bins) && nrow(yield_bins) > 0) {
       }
     }
     
-    # Integrer image_couverture.png - remplacer imgCouverture.src = 'image_couverture.png'
-    couverture_path <- file.path(template_dir, "image_couverture.png")
-    if (file.exists(couverture_path)) {
-      couverture_base64 <- image_to_base64(couverture_path)
-      if (!is.null(couverture_base64)) {
-        html_content_str <- gsub("imgCouverture\\.src = 'image_couverture\\.png'", 
-                                  paste0("imgCouverture.src = '", couverture_base64, "'"), 
-                                  html_content_str, fixed = FALSE)
+    # Integrer image de couverture selon le style
+    if (style == "irda") {
+      couverture_path <- file.path(style_dir, "image_couverture.png")
+      if (file.exists(couverture_path)) {
+        couverture_base64 <- image_to_base64(couverture_path)
+        if (!is.null(couverture_base64)) {
+          html_content_str <- gsub("imgCouverture\\.src = 'image_couverture\\.png'", 
+                                    paste0("imgCouverture.src = '", couverture_base64, "'"), 
+                                    html_content_str, fixed = FALSE)
+        }
+      }
+    } else {
+      # Pour le style CED, utiliser background.png
+      background_path <- file.path(style_dir, "background.png")
+      if (file.exists(background_path)) {
+        background_base64 <- image_to_base64(background_path)
+        if (!is.null(background_base64)) {
+          html_content_str <- gsub("imgCouverture\\.src = 'image_couverture\\.png'", 
+                                    paste0("imgCouverture.src = '", background_base64, "'"), 
+                                    html_content_str, fixed = FALSE)
+          # Aussi remplacer background.png si present dans le HTML
+          html_content_str <- gsub("url\\('background\\.png'\\)", 
+                                    paste0("url('", background_base64, "')"), 
+                                    html_content_str, fixed = FALSE)
+        }
       }
     }
     
@@ -976,15 +1044,20 @@ if (!is.null(yield_bins) && nrow(yield_bins) > 0) {
   logo_base64_for_rmd <- ""
   couverture_base64_for_rmd <- ""
   
-  logo_path <- file.path(template_dir, "logo.png")
+  logo_path <- file.path(style_dir, "logo.png")
   if (file.exists(logo_path)) {
     file.copy(logo_path, file.path(temp_dir, "logo.png"), overwrite = TRUE)
     logo_base64_for_rmd <- image_to_base64(logo_path)
   }
   
-  couverture_path <- file.path(template_dir, "image_couverture.png")
+  # Image de couverture selon le style
+  if (style == "irda") {
+    couverture_path <- file.path(style_dir, "image_couverture.png")
+  } else {
+    couverture_path <- file.path(style_dir, "background.png")
+  }
   if (file.exists(couverture_path)) {
-    file.copy(couverture_path, file.path(temp_dir, "image_couverture.png"), overwrite = TRUE)
+    file.copy(couverture_path, file.path(temp_dir, basename(couverture_path)), overwrite = TRUE)
     couverture_base64_for_rmd <- image_to_base64(couverture_path)
   }
 
@@ -996,7 +1069,7 @@ subtitle: "Analyse des donnees de rendement"
 author: "YieldCleanr"
 date: "', current_date, '"
 header-left: "', title, '"
-header-right: "IRDA"
+header-right: "', org_name, '"
 footer-right: "', current_date, '"
 page-number-position: "alternate"
 output:
@@ -1034,7 +1107,7 @@ library(ggbasemap)
 ```{r meta-tags, echo=FALSE, results="asis"}
 # Insert meta tags for header/footer configuration
 cat(\'<meta name="header-left" content="', title, '">\')
-cat(\'<meta name="header-right" content="IRDA">\')
+cat(\'<meta name="header-right" content="', org_name, '">\')
 cat(\'<meta name="footer-right" content="', current_date, '">\')
 cat(\'<meta name="page-number-position" content="alternate">\')
 ```
@@ -1151,10 +1224,12 @@ cat(\'<meta name="page-number-position" content="alternate">\')
 #' @param file_paths Vector of file paths (GeoJSON)
 #' @param output_file Output HTML file path
 #' @param title Report title
+#' @param style Style visuel du rapport: "irda" (défaut) ou "ced" (Cedric Bouffard)
 #' @return Path to generated HTML file
 #' @export
-generate_batch_report_html <- function(file_paths, output_file = NULL, title = NULL) {
+generate_batch_report_html <- function(file_paths, output_file = NULL, title = NULL, style = c("irda", "ced")) {
   file_paths <- as.character(file_paths)
+  style <- match.arg(style)
   
   if (is.null(output_file)) {
     output_file <- gsub("\\.pdf$", ".html", tempfile(fileext = ".html"))
@@ -1165,6 +1240,7 @@ generate_batch_report_html <- function(file_paths, output_file = NULL, title = N
   }
   
   rlang::inform(paste("Generation du rapport HTML:", title))
+  rlang::inform(paste("Style:", style))
   
   # Process each GeoJSON file
   fields_data <- list()
@@ -1191,7 +1267,7 @@ generate_batch_report_html <- function(file_paths, output_file = NULL, title = N
   rlang::inform(paste("Total:", length(fields_sorted), "champs"))
   
   # Generate HTML directly
-  html_content <- .generate_html_report(fields_sorted, title)
+  html_content <- .generate_html_report(fields_sorted, title, style)
   
   writeLines(html_content, output_file, useBytes = TRUE)
   rlang::inform(paste("Rapport HTML genere:", output_file))
@@ -1202,9 +1278,28 @@ generate_batch_report_html <- function(file_paths, output_file = NULL, title = N
 
 #' Generate HTML content for multi-field report
 #' @noRd
-.generate_html_report <- function(fields_data, title) {
+.generate_html_report <- function(fields_data, title, style = "irda") {
   
   current_date <- format(Sys.Date(), "%B %Y")
+  
+  # Couleurs selon le style
+  if (style == "ced") {
+    # Style Cedric Bouffard - Teal/Gold moderne
+    primary_color <- "#2E3944"
+    secondary_color <- "#4A9C8B"
+    accent_color <- "#EAC22E"
+    gradient_start <- "#2E3944"
+    gradient_end <- "#3E4E5C"
+    org_name <- "Cedric Bouffard"
+  } else {
+    # Style IRDA - Bleu/Vert lime
+    primary_color <- "#002752"
+    secondary_color <- "#AED136"
+    accent_color <- "#D5785A"
+    gradient_start <- "#002752"
+    gradient_end <- "#004080"
+    org_name <- "IRDA"
+  }
   
   html_head <- paste0('<!DOCTYPE html>
 <html lang="fr">
@@ -1223,7 +1318,7 @@ generate_batch_report_html <- function(file_paths, output_file = NULL, title = N
     }
     .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
     .header {
-      background: linear-gradient(135deg, #002752 0%, #004080 100%);
+      background: linear-gradient(135deg, ', gradient_start, ' 0%, ', gradient_end, ' 100%);
       color: white;
       padding: 40px 20px;
       text-align: center;
@@ -1233,8 +1328,8 @@ generate_batch_report_html <- function(file_paths, output_file = NULL, title = N
     .header .subtitle { font-size: 1.2em; opacity: 0.9; }
     .year-section { margin-bottom: 40px; }
     .year-header {
-      background: #AED136;
-      color: #002752;
+      background: ', secondary_color, ';
+      color: ', primary_color, ';
       padding: 15px 25px;
       font-size: 1.8em;
       font-weight: bold;
@@ -1249,15 +1344,15 @@ generate_batch_report_html <- function(file_paths, output_file = NULL, title = N
       overflow: hidden;
     }
     .field-header {
-      background: #002752;
+      background: ', primary_color, ';
       color: white;
       padding: 20px;
     }
     .field-header h2 { font-size: 1.5em; margin-bottom: 5px; }
     .field-header .crop-badge {
       display: inline-block;
-      background: #AED136;
-      color: #002752;
+      background: ', secondary_color, ';
+      color: ', primary_color, ';
       padding: 3px 12px;
       border-radius: 15px;
       font-size: 0.9em;
@@ -1276,7 +1371,7 @@ generate_batch_report_html <- function(file_paths, output_file = NULL, title = N
       border-radius: 8px;
       text-align: center;
     }
-    .stat-box .value { font-size: 1.8em; font-weight: bold; color: #002752; }
+    .stat-box .value { font-size: 1.8em; font-weight: bold; color: ', primary_color, '; }
     .stat-box .label { font-size: 0.9em; color: #666; }
     .map-container {
       background: #eee;
@@ -1306,7 +1401,7 @@ generate_batch_report_html <- function(file_paths, output_file = NULL, title = N
 <body>
   <div class="header">
     <h1>', title, '</h1>
-    <div class="subtitle">', current_date, '</div>
+    <div class="subtitle">', current_date, ' | ', org_name, '</div>
   </div>
   <div class="container">
 ')

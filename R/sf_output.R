@@ -189,14 +189,14 @@ data_to_sf <- function(data, crs = 4326) {
      }
    }
 
-      # Creer Yield_kg_ha si n'existe pas
-     if (!"Yield_kg_ha" %in% names(data)) {
-       if ("Flow" %in% names(data) && mean(data$Flow, na.rm = TRUE) > 100) {
-         # Flow existe avec valeurs > 100, utiliser comme rendement humide (kg/ha)
-         data$Yield_kg_ha <- data$Flow
-         rlang::inform(paste("Yield_kg_ha cree a partir de Flow (moyenne:", round(mean(data$Yield_kg_ha, na.rm = TRUE), 0), "kg/ha)"))
-       }
-     }
+# Creer Yield_kg_ha si n'existe pas
+      if (!"Yield_kg_ha" %in% names(data)) {
+        if ("Flow" %in% names(data) && !all(is.na(data$Flow)) && mean(data$Flow, na.rm = TRUE) > 100) {
+          # Flow existe avec valeurs > 100, utiliser comme rendement humide (kg/ha)
+          data$Yield_kg_ha <- data$Flow
+          rlang::inform(paste("Yield_kg_ha cree a partir de Flow (moyenne:", round(mean(data$Yield_kg_ha, na.rm = TRUE), 0), "kg/ha)"))
+        }
+      }
      # Creer Yield_kg_ha_wet si n'existe pas
      if (!"Yield_kg_ha_wet" %in% names(data) && "Yield_kg_ha" %in% names(data)) {
        data$Yield_kg_ha_wet <- data$Yield_kg_ha

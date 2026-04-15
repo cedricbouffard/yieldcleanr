@@ -12,6 +12,7 @@
 #' @param author Author name (default: from DESCRIPTION or "YieldCleanr")
 #' @param template_path Path to the R Markdown template (default: auto-detected)
 #' @param verbose Print progress messages (default: TRUE)
+#' @param style Style theme for the report. Options: "irda" (default) or "ced" (Cedric Bouffard style)
 #' @return Path to the generated PDF file
 #' @export
 
@@ -92,9 +93,11 @@ generate_yield_report <- function(data_clean,
                                    author = NULL,
                                    template_path = NULL,
                                    verbose = TRUE,
-                                   metadata = NULL) {
+                                   metadata = NULL,
+                                   style = c("irda", "ced")) {
   
-  if (verbose) cat("Generating yield report...\n")
+  style <- match.arg(style)
+  if (verbose) cat("Generating yield report with style:", style, "...\n")
   
   # Check required packages
   required_packages <- c("rmarkdown", "pagedown", "ggplot2", "sf", "dplyr")
@@ -248,14 +251,41 @@ generate_yield_report <- function(data_clean,
   report_template <- file.path(report_dir, "report.Rmd")
   file.copy(template_path, report_template, overwrite = TRUE)
   
-  # Copy CSS and images
+  # Determine style directory based on selected style
   template_dir <- dirname(template_path)
-  css_files <- list.files(template_dir, pattern = "\\.css$", full.names = TRUE)
-  html_files <- list.files(template_dir, pattern = "\\.html$", full.names = TRUE)
-  img_files <- list.files(template_dir, pattern = "\\.(png|jpg|jpeg)$", full.names = TRUE)
+  if (style == "ced") {
+    style_dir <- system.file("rapport", "ced", package = "yieldcleanr")
+    if (style_dir == "") {
+      style_dir <- file.path(getwd(), "inst", "rapport", "ced")
+    }
+    if (!dir.exists(style_dir)) {
+      warning("Style 'ced' directory not found, falling back to 'irda' style")
+      style_dir <- template_dir
+      style <- "irda"
+    }
+  } else {
+    style_dir <- template_dir
+  }
+  
+  if (verbose) cat("Using style directory:", style_dir, "\n")
+  
+  # Copy CSS and images from style directory
+  css_files <- list.files(style_dir, pattern = "\\.css$", full.names = TRUE)
+  html_files <- list.files(style_dir, pattern = "\\.html$", full.names = TRUE)
+  img_files <- list.files(style_dir, pattern = "\\.(png|jpg|jpeg)$", full.names = TRUE)
   
   for (f in c(css_files, html_files, img_files)) {
     file.copy(f, file.path(report_dir, basename(f)), overwrite = TRUE)
+  }
+  
+  # For IRDA style, also copy files from template_dir if different from style_dir
+  if (style == "irda" && style_dir != template_dir) {
+    css_files_tpl <- list.files(template_dir, pattern = "\\.css$", full.names = TRUE)
+    html_files_tpl <- list.files(template_dir, pattern = "\\.html$", full.names = TRUE)
+    img_files_tpl <- list.files(template_dir, pattern = "\\.(png|jpg|jpeg)$", full.names = TRUE)
+    for (f in c(css_files_tpl, html_files_tpl, img_files_tpl)) {
+      file.copy(f, file.path(report_dir, basename(f)), overwrite = TRUE)
+    }
   }
   
   # Fonction pour convertir une image en base64
@@ -270,15 +300,28 @@ generate_yield_report <- function(data_clean,
     paste0("data:", mime_type, ";base64,", base64_data)
   }
   
-  # Convertir les images en base64 pour le CSS
+  # Convertir les images en base64 pour le CSS (style-specific)
   css_file <- file.path(report_dir, "brochure.css")
   if (file.exists(css_file)) {
     css_content <- readLines(css_file, warn = FALSE)
-    bandeau_path <- file.path(template_dir, "bandeaugauche.png")
-    if (file.exists(bandeau_path)) {
-      bandeau_base64 <- image_to_base64(bandeau_path)
-      if (!is.null(bandeau_base64)) {
-        css_content <- gsub("url\\('bandeaugauche.png'\\)", paste0("url('", bandeau_base64, "')"), css_content)
+    # Pour le style IRDA, integrer bandeaugauche.png
+    if (style == "irda") {
+      bandeau_path <- file.path(style_dir, "bandeaugauche.png")
+      if (file.exists(bandeau_path)) {
+        bandeau_base64 <- image_to_base64(bandeau_path)
+        if (!is.null(bandeau_base64)) {
+          css_content <- gsub("url\\('bandeaugauche.png'\\)", paste0("url('", bandeau_base64, "')"), css_content)
+        }
+      }
+    }
+    # Pour le style CED, integrer background.png
+    if (style == "ced") {
+      background_path <- file.path(style_dir, "background.png")
+      if (file.exists(background_path)) {
+        background_base64 <- image_to_base64(background_path)
+        if (!is.null(background_base64)) {
+          css_content <- gsub("url\\('background.png'\\)", paste0("url('", background_base64, "')"), css_content)
+        }
       }
     }
     writeLines(css_content, css_file)
@@ -287,11 +330,16 @@ generate_yield_report <- function(data_clean,
   # Preparer les images base64 pour la page de couverture
   logo_base64 <- ""
   couverture_base64 <- ""
-  logo_path <- file.path(template_dir, "logo.png")
+  logo_path <- file.path(style_dir, "logo.png")
   if (file.exists(logo_path)) {
     logo_base64 <- image_to_base64(logo_path)
   }
-  couverture_path <- file.path(template_dir, "image_couverture.png")
+  # Pour IRDA: image_couverture.png, pour CED: background.png
+  if (style == "irda") {
+    couverture_path <- file.path(style_dir, "image_couverture.png")
+  } else {
+    couverture_path <- file.path(style_dir, "background.png")
+  }
   if (file.exists(couverture_path)) {
     couverture_base64 <- image_to_base64(couverture_path)
   }
@@ -309,14 +357,18 @@ generate_yield_report <- function(data_clean,
   }
   subtitle <- paste(subtitle_parts, collapse = " | ")
 
+  # Nom de l'organisation selon le style
+
+  org_name <- if (style == "ced") "Cedric Bouffard" else "IRDA"
+  
   yaml_updates <- c(
     paste0("title: \"", title, "\""),
     paste0("subtitle: \"", subtitle, "\""),
     paste0("author: \"", author, "\""),
     paste0("date: \"Date: ", current_date, "\""),
     paste0("header-left: \"", ifelse(!is.na(farm_name), farm_name, "Rapport agricole"), "\""),
-    "header-right: \"YieldCleanr\"",
-    "footer-right: \"", current_date, "\"",
+    paste0("header-right: \"", org_name, "\""),
+    paste0("footer-right: \"", current_date, "\""),
     "page-number-position: \"alternate\"",
     "output:",
     "  pagedown::html_paged:",
