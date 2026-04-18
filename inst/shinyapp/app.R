@@ -8,8 +8,8 @@ library(yieldcleanr)
 library(waiter)
 library(shinyjs)
 
-# Augmenter la taille maximale de fichier uploadé à 100MB
-options(shiny.maxRequestSize = 100 * 1024^2)
+# Augmenter la taille maximale de fichier uploadé à 500MB
+options(shiny.maxRequestSize = 500 * 1024^2)
 
 ui <- fluidPage(
   useShinyjs(),
@@ -592,9 +592,10 @@ ui <- fluidPage(
          ),
          div(class = "section-title", "1. Importation"),
         
-        # Import fichier unique (détection automatique du type)
-        fileInput("file_input", "Choisir un fichier",
-                 accept = c(".txt", ".csv", ".zip")),
+        # Import fichier(s) (détection automatique du type)
+        fileInput("file_input", "Choisir un ou plusieurs fichiers",
+                 accept = c(".txt", ".csv", ".zip"),
+                 multiple = TRUE),
         
         # Selection des champs (visible uniquement pour ZIP)
         conditionalPanel(
@@ -1007,50 +1008,76 @@ server <- function(input, output, session) {
   observeEvent(input$file_input, {
     req(input$file_input)
     
-    file_path <- input$file_input$datapath
-    file_name <- input$file_input$name
-    file_ext <- tolower(tools::file_ext(file_name))
+    # Supporter plusieurs fichiers
+    file_paths <- input$file_input$datapath
+    file_names <- input$file_input$name
+    n_files <- length(file_paths)
     
     tryCatch({
-      if (file_ext == "zip") {
-        # C'est un fichier ZIP - lister les champs disponibles
-        fields <- yieldcleanr::list_fields_from_zip(file_path)
-        rv$zip_fields <- fields
-        rv$zip_data <- file_path
-        rv$selected_fields <- NULL
-        rv$raw_data <- NULL  # Réinitialiser les données brutes
+      # Determiner les types de fichiers
+      file_exts <- tolower(tools::file_ext(file_names))
+      has_zip <- any(file_exts == "zip")
+      has_txt <- any(file_exts %in% c("txt", "csv"))
+      
+      if (has_zip) {
+        # Traiter tous les fichiers ZIP et combiner les champs
+        zip_indices <- which(file_exts == "zip")
+        all_fields <- NULL
+        zip_paths <- list()
         
-        showNotification(paste(nrow(fields), "champs trouves dans le ZIP"), type = "message")
-      } else {
-        # C'est un fichier texte (txt/csv) - importer directement
-        rv$zip_fields <- NULL  # Réinitialiser les champs ZIP
+        for (i in zip_indices) {
+          fields <- yieldcleanr::list_fields_from_zip(file_paths[i])
+          fields$zip_file <- file_names[i]
+          fields$zip_path <- file_paths[i]
+          all_fields <- rbind(all_fields, fields)
+          zip_paths[[file_names[i]]] <- file_paths[i]
+        }
+        
+        rv$zip_fields <- all_fields
+        rv$zip_data <- zip_paths  # Liste de chemins par nom de fichier
+        rv$selected_fields <- NULL
+        rv$raw_data <- NULL
+        
+        showNotification(
+          paste(nrow(all_fields), "champs trouves dans", length(zip_indices), "fichier(s) ZIP"), 
+          type = "message"
+        )
+      } else if (has_txt) {
+        # Traiter les fichiers texte (txt/csv)
+        rv$zip_fields <- NULL
         rv$zip_data <- NULL
         rv$selected_fields <- NULL
         
-        # Importer le fichier texte
-        data <- yieldcleanr::read_yield_data(file_path)
-        
-        # Calculer le rendement en kg/ha pour l'affichage des donnees brutes
-        # Les donnees brutes ont Flow en lbs/sec, il faut convertir en kg/ha
-        if (all(c("Flow", "Interval", "Swath", "Distance") %in% names(data))) {
-          message("Conversion du flux en rendement (kg/ha) pour l'affichage...")
-          data <- yieldcleanr::convert_flow_to_yield(data)
-          message(paste("Rendement calcule:", round(mean(data$Yield_kg_ha, na.rm = TRUE), 1), "kg/ha"))
+        # Si plusieurs fichiers texte, les combiner
+        all_data <- NULL
+        for (i in seq_along(file_paths)) {
+          if (file_exts[i] %in% c("txt", "csv")) {
+            data <- yieldcleanr::read_yield_data(file_paths[i])
+            data$source_file <- file_names[i]
+            all_data <- rbind(all_data, data)
+          }
         }
         
-        rv$raw_data <- data
+        # Calculer le rendement en kg/ha pour l'affichage des donnees brutes
+        if (all(c("Flow", "Interval", "Swath", "Distance") %in% names(all_data))) {
+          message("Conversion du flux en rendement (kg/ha) pour l'affichage...")
+          all_data <- yieldcleanr::convert_flow_to_yield(all_data)
+          message(paste("Rendement calcule:", round(mean(all_data$Yield_kg_ha, na.rm = TRUE), 1), "kg/ha"))
+        }
+        
+        rv$raw_data <- all_data
          
-         # Garder la vue nettoyee si les donnees nettoyees existent deja
-         if (is.null(rv$result) || is.null(rv$result$data_clean)) {
-           rv$view_mode <- "raw"
-         }
+        # Garder la vue nettoyee si les donnees nettoyees existent deja
+        if (is.null(rv$result) || is.null(rv$result$data_clean)) {
+          rv$view_mode <- "raw"
+        }
          
-         # Reinitialiser les etiquettes des checkboxes
-         resetCheckboxLabels()
+        # Reinitialiser les etiquettes des checkboxes
+        resetCheckboxLabels()
          
-         # Afficher sur la carte
-        if (nrow(data) > 0) {
-          raw_sf <- data %>%
+        # Afficher sur la carte
+        if (nrow(all_data) > 0) {
+          raw_sf <- all_data %>%
             dplyr::select(Longitude, Latitude) %>%
             sf::st_as_sf(coords = c("Longitude", "Latitude"), crs = 4326)
           
@@ -1069,10 +1096,14 @@ server <- function(input, output, session) {
             setView(lng = center_lng, lat = center_lat, zoom = 15)
         }
         
-        showNotification(paste("Fichier importe:", file_name), type = "message")
+        showNotification(paste(n_files, "fichier(s) importe(s):", paste(file_names, collapse = ", ")), type = "message")
         
-        # Set current field name (use filename without extension)
-        field_name_from_file <- tools::file_path_sans_ext(file_name)
+        # Set current field name
+        field_name_from_file <- if (n_files == 1) {
+          tools::file_path_sans_ext(file_names[1])
+        } else {
+          paste(n_files, "fichiers")
+        }
         rv$current_field <- field_name_from_file
         
         # Lancer le nettoyage automatiquement
@@ -1097,6 +1128,8 @@ server <- function(input, output, session) {
     req(rv$zip_fields)
     
     fields <- rv$zip_fields$field_name
+    has_multiple_zips <- "zip_file" %in% names(rv$zip_fields) && 
+                         length(unique(rv$zip_fields$zip_file)) > 1
     
     tags$div(
       class = "field-list",
@@ -1104,11 +1137,17 @@ server <- function(input, output, session) {
         field_name <- fields[i]
         is_selected <- !is.null(rv$selected_fields) && field_name %in% rv$selected_fields
         
+        # Afficher le fichier source si plusieurs ZIPs
+        meta_text <- paste("Taille:", round(rv$zip_fields$size_bytes[i] / 1024, 1), "KB")
+        if (has_multiple_zips && "zip_file" %in% names(rv$zip_fields)) {
+          meta_text <- paste(meta_text, "-", rv$zip_fields$zip_file[i])
+        }
+        
         tags$div(
           class = paste("field-item", ifelse(is_selected, "selected", "")),
           onclick = sprintf("Shiny.setInputValue('toggle_field_%d', %d, {priority: 'event'})", i, i),
           tags$div(class = "field-name", field_name),
-          tags$div(class = "field-meta", paste("Taille:", round(rv$zip_fields$size_bytes[i] / 1024, 1), "KB"))
+          tags$div(class = "field-meta", meta_text)
         )
       })
     )
@@ -1266,7 +1305,23 @@ server <- function(input, output, session) {
       rv$preprocessed_data <- NULL
       rv$preprocess_params <- NULL
       
-      data <- yieldcleanr::read_yield_from_zip(rv$zip_data, field_name = field_name)
+      # Trouver le chemin ZIP pour ce champ
+      zip_path <- NULL
+      if (is.list(rv$zip_data)) {
+        # Plusieurs fichiers ZIP - trouver le bon
+        field_row <- rv$zip_fields[rv$zip_fields$field_name == field_name, ]
+        if (nrow(field_row) > 0 && "zip_path" %in% names(field_row)) {
+          zip_path <- field_row$zip_path[1]
+        } else {
+          # Fallback: premier ZIP
+          zip_path <- rv$zip_data[[1]]
+        }
+      } else {
+        # Un seul fichier ZIP (ancien format)
+        zip_path <- rv$zip_data
+      }
+      
+      data <- yieldcleanr::read_yield_from_zip(zip_path, field_name = field_name)
       
       message(paste("import_single_field: Read", nrow(data), "rows for field", field_name))
       message(paste("import_single_field: data object id =", format(object.size(data), units = "auto")))
