@@ -33,6 +33,7 @@
 <url><loc>https://cedricbouffard.github.io/yieldcleanr/reference/convert_coordinates.html</loc></url>
 <url><loc>https://cedricbouffard.github.io/yieldcleanr/reference/convert_flow_to_yield.html</loc></url>
 <url><loc>https://cedricbouffard.github.io/yieldcleanr/reference/convert_yield_units.html</loc></url>
+<url><loc>https://cedricbouffard.github.io/yieldcleanr/reference/create_polygons_from_data.html</loc></url>
 <url><loc>https://cedricbouffard.github.io/yieldcleanr/reference/detect_anomalies.html</loc></url>
 <url><loc>https://cedricbouffard.github.io/yieldcleanr/reference/dot-translate_crop_to_french.html</loc></url>
 <url><loc>https://cedricbouffard.github.io/yieldcleanr/reference/export_data.html</loc></url>
@@ -45,7 +46,9 @@
 <url><loc>https://cedricbouffard.github.io/yieldcleanr/reference/launch_shiny_app.html</loc></url>
 <url><loc>https://cedricbouffard.github.io/yieldcleanr/reference/list_fields_from_zip.html</loc></url>
 <url><loc>https://cedricbouffard.github.io/yieldcleanr/reference/optimize_delays.html</loc></url>
+<url><loc>https://cedricbouffard.github.io/yieldcleanr/reference/read_jd_to_polygons.html</loc></url>
 <url><loc>https://cedricbouffard.github.io/yieldcleanr/reference/read_yield_data.html</loc></url>
+<url><loc>https://cedricbouffard.github.io/yieldcleanr/reference/read_yield_from_vector.html</loc></url>
 <url><loc>https://cedricbouffard.github.io/yieldcleanr/reference/read_yield_from_zip.html</loc></url>
 <url><loc>https://cedricbouffard.github.io/yieldcleanr/reference/remove_sensitive_attributes.html</loc></url>
 <url><loc>https://cedricbouffard.github.io/yieldcleanr/reference/render_pdf_report.html</loc></url>

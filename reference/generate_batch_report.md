@@ -12,7 +12,8 @@ generate_batch_report(
   file_paths,
   output_file = NULL,
   title = NULL,
-  output_format = c("pdf", "html")
+  output_format = c("pdf", "html"),
+  style = c("irda", "ced")
 )
 ```
 
@@ -36,6 +37,10 @@ generate_batch_report(
 
   format de sortie: "pdf" (défaut) ou "html"
 
+- style:
+
+  Style visuel du rapport: "irda" (défaut) ou "ced" (Cedric Bouffard)
+
 ## Value
 
 Chemin du fichier généré (invisible)
@@ -47,8 +52,8 @@ if (FALSE) { # \dontrun{
 # Un seul ZIP vers PDF
 generate_batch_report("RDT2025.zip")
 
-# Vers HTML
-generate_batch_report("RDT2025.zip", output_format = "html")
+# Vers HTML avec style Cedric Bouffard
+generate_batch_report("RDT2025.zip", output_format = "html", style = "ced")
 
 # Plusieurs fichiers vers HTML
 generate_batch_report(c("field1.geojson", "field2.geojson"), output_format = "html")

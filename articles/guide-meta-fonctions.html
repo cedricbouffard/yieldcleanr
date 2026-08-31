@@ -7,8 +7,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <title>Guide des Méta-fonctions • yieldcleanr</title>
 <script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
-<script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/Roboto-0.4.10/font.css" rel="stylesheet">
+<link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
+<script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/Roboto-0.4.10/font.css" rel="stylesheet">
 <link href="../deps/JetBrains_Mono-0.4.10/font.css" rel="stylesheet">
 <link href="../deps/Roboto_Condensed-0.4.10/font.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
@@ -354,18 +354,18 @@ pour l’optimisation du delay adjustment.</p>
 <span><span class="co"># Optimiser seulement le délai de flux</span></span>
 <span><span class="va">result</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/optimize_delays.html">optimize_delays</a></span><span class="op">(</span><span class="va">data</span>, type <span class="op">=</span> <span class="st">"flow"</span>, delay_range <span class="op">=</span> <span class="op">-</span><span class="fl">3</span><span class="op">:</span><span class="fl">3</span>, n_iterations <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Délai optimal flux:"</span>, <span class="va">result</span><span class="op">$</span><span class="va">delays</span><span class="op">$</span><span class="va">flow</span>, <span class="st">"secondes\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Délai optimal flux:  secondes</span></span>
+<span><span class="co">#&gt; Délai optimal flux: 0 secondes</span></span>
 <span></span>
 <span><span class="co"># Optimiser seulement le délai d'humidité</span></span>
 <span><span class="va">result</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/optimize_delays.html">optimize_delays</a></span><span class="op">(</span><span class="va">data</span>, type <span class="op">=</span> <span class="st">"moisture"</span>, delay_range <span class="op">=</span> <span class="op">-</span><span class="fl">3</span><span class="op">:</span><span class="fl">3</span>, n_iterations <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Délai optimal humidité:"</span>, <span class="va">result</span><span class="op">$</span><span class="va">delays</span><span class="op">$</span><span class="va">moisture</span>, <span class="st">"secondes\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Délai optimal humidité:  secondes</span></span>
+<span><span class="co">#&gt; Délai optimal humidité: 0 secondes</span></span>
 <span></span>
 <span><span class="co"># Optimiser les deux délais</span></span>
 <span><span class="va">result</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/optimize_delays.html">optimize_delays</a></span><span class="op">(</span><span class="va">data</span>, type <span class="op">=</span> <span class="st">"both"</span>, delay_range <span class="op">=</span> <span class="op">-</span><span class="fl">3</span><span class="op">:</span><span class="fl">3</span>, n_iterations <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Délais optimaux - Flux:"</span>, <span class="va">result</span><span class="op">$</span><span class="va">delays</span><span class="op">$</span><span class="va">flow</span>, </span>
 <span>    <span class="st">"Humidité:"</span>, <span class="va">result</span><span class="op">$</span><span class="va">delays</span><span class="op">$</span><span class="va">moisture</span>, <span class="st">"secondes\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Délais optimaux - Flux:  Humidité:  secondes</span></span>
+<span><span class="co">#&gt; Délais optimaux - Flux: 0 Humidité: 0 secondes</span></span>
 <span></span>
 <span><span class="co"># Optimiser et appliquer automatiquement les corrections</span></span>
 <span><span class="va">result</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/optimize_delays.html">optimize_delays</a></span><span class="op">(</span><span class="va">data</span>, type <span class="op">=</span> <span class="st">"flow"</span>, </span>
@@ -533,7 +533,7 @@ formats d’export.</p>
 <span><span class="va">temp_csv</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempfile</a></span><span class="op">(</span>fileext <span class="op">=</span> <span class="st">".csv"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/export_data.html">export_data</a></span><span class="op">(</span><span class="va">data</span>, <span class="va">temp_csv</span>, format <span class="op">=</span> <span class="st">"csv"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Export CSV:"</span>, <span class="va">temp_csv</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Export CSV: /tmp/Rtmp57oOSh/file2b452de5765f.csv</span></span>
+<span><span class="co">#&gt; Export CSV: /tmp/RtmpWFfPmD/file2b1767b23ebf.csv</span></span>
 <span></span>
 <span><span class="co"># Export GeoJSON (si sf est installé)</span></span>
 <span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"sf"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
@@ -542,11 +542,11 @@ formats d’export.</p>
 <span>  <span class="fu"><a href="../reference/export_data.html">export_data</a></span><span class="op">(</span><span class="va">data_sf</span>, <span class="va">temp_geojson</span><span class="op">)</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Export GeoJSON:"</span>, <span class="va">temp_geojson</span>, <span class="st">"\n"</span><span class="op">)</span></span>
 <span><span class="op">}</span></span>
-<span><span class="co">#&gt; Deleting source `/tmp/Rtmp57oOSh/file2b453bdb3b95.geojson' failed</span></span>
-<span><span class="co">#&gt; Writing layer `file2b453bdb3b95' to data source </span></span>
-<span><span class="co">#&gt;   `/tmp/Rtmp57oOSh/file2b453bdb3b95.geojson' using driver `GeoJSON'</span></span>
+<span><span class="co">#&gt; Deleting source `/tmp/RtmpWFfPmD/file2b177285c52e.geojson' failed</span></span>
+<span><span class="co">#&gt; Writing layer `file2b177285c52e' to data source </span></span>
+<span><span class="co">#&gt;   `/tmp/RtmpWFfPmD/file2b177285c52e.geojson' using driver `GeoJSON'</span></span>
 <span><span class="co">#&gt; Writing 2 features with 1 fields and geometry type Point.</span></span>
-<span><span class="co">#&gt; Export GeoJSON: /tmp/Rtmp57oOSh/file2b453bdb3b95.geojson</span></span>
+<span><span class="co">#&gt; Export GeoJSON: /tmp/RtmpWFfPmD/file2b177285c52e.geojson</span></span>
 <span></span>
 <span><span class="co"># Export avec détection automatique du format</span></span>
 <span><span class="va">temp_file</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempfile</a></span><span class="op">(</span>fileext <span class="op">=</span> <span class="st">".csv"</span><span class="op">)</span></span>
@@ -760,7 +760,7 @@ utilise les méta-fonctions présentées dans cette vignette.</p>
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
     </footer>

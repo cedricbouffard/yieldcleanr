@@ -28,6 +28,7 @@ Cette fonction remplace toutes les fonctions de filtrage individuelles
 #### Exemples d’utilisation
 
 ``` r
+
 library(yieldcleanr)
 library(dplyr)
 
@@ -63,6 +64,7 @@ cat("Après tous les filtres:", nrow(data_all), "points\n")
 #### Paramètres personnalisés
 
 ``` r
+
 # Filtre de rendement avec plage personnalisée
 data_yield <- filter_data(data, 
                           type = "yield",
@@ -92,6 +94,7 @@ Cette fonction remplace toutes les fonctions de détection d’anomalies
 #### Exemples d’utilisation
 
 ``` r
+
 # Créer des données avec anomalies
 data <- tibble::tibble(
   X = c(435000, 435001, 435002, 435003, 435100),
@@ -121,6 +124,7 @@ data_clean <- detect_anomalies(data, type = "all")
 #### Mode “detect” vs “filter”
 
 ``` r
+
 # Mode "filter" (défaut) : filtre les anomalies
 data_filtered <- detect_anomalies(data, type = "local_sd", action = "filter")
 
@@ -138,6 +142,7 @@ et offre plus de flexibilité.
 #### Exemples d’utilisation
 
 ``` r
+
 # Créer des données
 data <- tibble::tibble(
   Yield_kg_ha = c(6270, 7524, 8778, 10032, 11286, 6897, 8142, 9405),
@@ -230,6 +235,7 @@ adjustment.
 #### Exemples d’utilisation
 
 ``` r
+
 # Créer des données avec décalage temporel
 data <- tibble::tibble(
   Flow = c(10, 15, 12, 18, 14, 16, 13, 17, 11, 19),
@@ -243,18 +249,18 @@ data <- tibble::tibble(
 # Optimiser seulement le délai de flux
 result <- optimize_delays(data, type = "flow", delay_range = -3:3, n_iterations = 2)
 cat("Délai optimal flux:", result$delays$flow, "secondes\n")
-#> Délai optimal flux:  secondes
+#> Délai optimal flux: 0 secondes
 
 # Optimiser seulement le délai d'humidité
 result <- optimize_delays(data, type = "moisture", delay_range = -3:3, n_iterations = 2)
 cat("Délai optimal humidité:", result$delays$moisture, "secondes\n")
-#> Délai optimal humidité:  secondes
+#> Délai optimal humidité: 0 secondes
 
 # Optimiser les deux délais
 result <- optimize_delays(data, type = "both", delay_range = -3:3, n_iterations = 2)
 cat("Délais optimaux - Flux:", result$delays$flow, 
     "Humidité:", result$delays$moisture, "secondes\n")
-#> Délais optimaux - Flux:  Humidité:  secondes
+#> Délais optimaux - Flux: 0 Humidité: 0 secondes
 
 # Optimiser et appliquer automatiquement les corrections
 result <- optimize_delays(data, type = "flow", 
@@ -272,6 +278,7 @@ coordonnées.
 #### Exemples d’utilisation
 
 ``` r
+
 # Données en Lat/Lon
 data_latlon <- tibble::tibble(
   Longitude = c(-69.856661, -69.856681),
@@ -300,6 +307,7 @@ et offre plus d’options de conversion.
 #### Exemples d’utilisation
 
 ``` r
+
 # Données avec flux en lbs/s
 data <- tibble::tibble(
   Flow = c(50, 55, 52),
@@ -350,6 +358,7 @@ et
 #### Exemples d’utilisation
 
 ``` r
+
 # Créer des données avec informations sensibles
 data <- tibble::tibble(
   X = c(435000, 435010, 435020),
@@ -408,6 +417,7 @@ une interface unifiée pour tous les formats d’export.
 #### Exemples d’utilisation
 
 ``` r
+
 # Créer des données
 data <- tibble::tibble(
   Longitude = c(-69.856661, -69.856681),
@@ -419,7 +429,7 @@ data <- tibble::tibble(
 temp_csv <- tempfile(fileext = ".csv")
 export_data(data, temp_csv, format = "csv")
 cat("Export CSV:", temp_csv, "\n")
-#> Export CSV: /tmp/Rtmp57oOSh/file2b452de5765f.csv
+#> Export CSV: /tmp/RtmpWFfPmD/file2b1767b23ebf.csv
 
 # Export GeoJSON (si sf est installé)
 if (requireNamespace("sf", quietly = TRUE)) {
@@ -428,11 +438,11 @@ if (requireNamespace("sf", quietly = TRUE)) {
   export_data(data_sf, temp_geojson)
   cat("Export GeoJSON:", temp_geojson, "\n")
 }
-#> Deleting source `/tmp/Rtmp57oOSh/file2b453bdb3b95.geojson' failed
-#> Writing layer `file2b453bdb3b95' to data source 
-#>   `/tmp/Rtmp57oOSh/file2b453bdb3b95.geojson' using driver `GeoJSON'
+#> Deleting source `/tmp/RtmpWFfPmD/file2b177285c52e.geojson' failed
+#> Writing layer `file2b177285c52e' to data source 
+#>   `/tmp/RtmpWFfPmD/file2b177285c52e.geojson' using driver `GeoJSON'
 #> Writing 2 features with 1 fields and geometry type Point.
-#> Export GeoJSON: /tmp/Rtmp57oOSh/file2b453bdb3b95.geojson
+#> Export GeoJSON: /tmp/RtmpWFfPmD/file2b177285c52e.geojson
 
 # Export avec détection automatique du format
 temp_file <- tempfile(fileext = ".csv")
@@ -449,6 +459,7 @@ unlink(temp_file)
 Voici un exemple de pipeline complet utilisant les méta-fonctions :
 
 ``` r
+
 library(yieldcleanr)
 library(dplyr)
 
@@ -487,31 +498,31 @@ cat("Pipeline terminé! Points finaux:", nrow(data), "\n")
 
 ## Tableau récapitulatif
 
-| Ancienne fonction                                                                                                        | Nouvelle méta-fonction                                                                                     | Paramètre `type`           |
-|--------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------|----------------------------|
-| `filter_header_status()`                                                                                                 | [`filter_data()`](https://cedricbouffard.github.io/yieldcleanr/reference/filter_data.md)                   | `"header"`                 |
-| `filter_gps_status()`                                                                                                    | [`filter_data()`](https://cedricbouffard.github.io/yieldcleanr/reference/filter_data.md)                   | `"gps"`                    |
-| `filter_dop()`                                                                                                           | [`filter_data()`](https://cedricbouffard.github.io/yieldcleanr/reference/filter_data.md)                   | `"dop"`                    |
-| `filter_velocity()`                                                                                                      | [`filter_data()`](https://cedricbouffard.github.io/yieldcleanr/reference/filter_data.md)                   | `"velocity"`               |
-| `filter_yield_range()`                                                                                                   | [`filter_data()`](https://cedricbouffard.github.io/yieldcleanr/reference/filter_data.md)                   | `"yield"`                  |
-| `filter_moisture_range()`                                                                                                | [`filter_data()`](https://cedricbouffard.github.io/yieldcleanr/reference/filter_data.md)                   | `"moisture"`               |
-| `filter_bounds()`                                                                                                        | [`filter_data()`](https://cedricbouffard.github.io/yieldcleanr/reference/filter_data.md)                   | `"bounds"`                 |
-| `remove_overlap()`                                                                                                       | [`detect_anomalies()`](https://cedricbouffard.github.io/yieldcleanr/reference/detect_anomalies.md)         | `"overlap"`                |
-| `filter_local_std()`                                                                                                     | [`detect_anomalies()`](https://cedricbouffard.github.io/yieldcleanr/reference/detect_anomalies.md)         | `"local_sd"`               |
-| `filter_velocity_jumps()`                                                                                                | [`detect_anomalies()`](https://cedricbouffard.github.io/yieldcleanr/reference/detect_anomalies.md)         | `"velocity_jump"`          |
-| `filter_heading_anomalies()`                                                                                             | [`detect_anomalies()`](https://cedricbouffard.github.io/yieldcleanr/reference/detect_anomalies.md)         | `"heading"`                |
-| `filter_position_outliers()`                                                                                             | [`detect_anomalies()`](https://cedricbouffard.github.io/yieldcleanr/reference/detect_anomalies.md)         | `"position"`               |
-| `apply_overlap_filter()`                                                                                                 | [`detect_anomalies()`](https://cedricbouffard.github.io/yieldcleanr/reference/detect_anomalies.md)         | `"overlap"`                |
-| `apply_local_sd_filter()`                                                                                                | [`detect_anomalies()`](https://cedricbouffard.github.io/yieldcleanr/reference/detect_anomalies.md)         | `"local_sd"`               |
-| [`calculate_auto_thresholds()`](https://cedricbouffard.github.io/yieldcleanr/reference/calculate_auto_thresholds.md)     | [`calculate_thresholds()`](https://cedricbouffard.github.io/yieldcleanr/reference/calculate_thresholds.md) | `"all"` ou `"yield"`, etc. |
-| `apply_flow_delay()`                                                                                                     | [`optimize_delays()`](https://cedricbouffard.github.io/yieldcleanr/reference/optimize_delays.md)           | `"flow"`                   |
-| [`apply_moisture_delay()`](https://cedricbouffard.github.io/yieldcleanr/reference/apply_moisture_delay.md)               | [`optimize_delays()`](https://cedricbouffard.github.io/yieldcleanr/reference/optimize_delays.md)           | `"moisture"`               |
-| [`convert_flow_to_yield()`](https://cedricbouffard.github.io/yieldcleanr/reference/convert_flow_to_yield.md)             | [`convert_yield_units()`](https://cedricbouffard.github.io/yieldcleanr/reference/convert_yield_units.md)   | `"flow_lbs_s"` → `"kg_ha"` |
-| [`anonymize_coordinates()`](https://cedricbouffard.github.io/yieldcleanr/reference/anonymize_coordinates.md)             | [`anonymize_data()`](https://cedricbouffard.github.io/yieldcleanr/reference/anonymize_data.md)             | `"coordinates"`            |
-| [`remove_sensitive_attributes()`](https://cedricbouffard.github.io/yieldcleanr/reference/remove_sensitive_attributes.md) | [`anonymize_data()`](https://cedricbouffard.github.io/yieldcleanr/reference/anonymize_data.md)             | `"attributes"`             |
-| [`anonymize_yield_data()`](https://cedricbouffard.github.io/yieldcleanr/reference/anonymize_yield_data.md)               | [`anonymize_data()`](https://cedricbouffard.github.io/yieldcleanr/reference/anonymize_data.md)             | `"full"`                   |
-| `export_raster()`                                                                                                        | [`export_data()`](https://cedricbouffard.github.io/yieldcleanr/reference/export_data.md)                   | `"raster"`                 |
-| `save_raster()`                                                                                                          | [`export_data()`](https://cedricbouffard.github.io/yieldcleanr/reference/export_data.md)                   | `"raster"`                 |
+| Ancienne fonction | Nouvelle méta-fonction | Paramètre `type` |
+|----|----|----|
+| `filter_header_status()` | [`filter_data()`](https://cedricbouffard.github.io/yieldcleanr/reference/filter_data.md) | `"header"` |
+| `filter_gps_status()` | [`filter_data()`](https://cedricbouffard.github.io/yieldcleanr/reference/filter_data.md) | `"gps"` |
+| `filter_dop()` | [`filter_data()`](https://cedricbouffard.github.io/yieldcleanr/reference/filter_data.md) | `"dop"` |
+| `filter_velocity()` | [`filter_data()`](https://cedricbouffard.github.io/yieldcleanr/reference/filter_data.md) | `"velocity"` |
+| `filter_yield_range()` | [`filter_data()`](https://cedricbouffard.github.io/yieldcleanr/reference/filter_data.md) | `"yield"` |
+| `filter_moisture_range()` | [`filter_data()`](https://cedricbouffard.github.io/yieldcleanr/reference/filter_data.md) | `"moisture"` |
+| `filter_bounds()` | [`filter_data()`](https://cedricbouffard.github.io/yieldcleanr/reference/filter_data.md) | `"bounds"` |
+| `remove_overlap()` | [`detect_anomalies()`](https://cedricbouffard.github.io/yieldcleanr/reference/detect_anomalies.md) | `"overlap"` |
+| `filter_local_std()` | [`detect_anomalies()`](https://cedricbouffard.github.io/yieldcleanr/reference/detect_anomalies.md) | `"local_sd"` |
+| `filter_velocity_jumps()` | [`detect_anomalies()`](https://cedricbouffard.github.io/yieldcleanr/reference/detect_anomalies.md) | `"velocity_jump"` |
+| `filter_heading_anomalies()` | [`detect_anomalies()`](https://cedricbouffard.github.io/yieldcleanr/reference/detect_anomalies.md) | `"heading"` |
+| `filter_position_outliers()` | [`detect_anomalies()`](https://cedricbouffard.github.io/yieldcleanr/reference/detect_anomalies.md) | `"position"` |
+| `apply_overlap_filter()` | [`detect_anomalies()`](https://cedricbouffard.github.io/yieldcleanr/reference/detect_anomalies.md) | `"overlap"` |
+| `apply_local_sd_filter()` | [`detect_anomalies()`](https://cedricbouffard.github.io/yieldcleanr/reference/detect_anomalies.md) | `"local_sd"` |
+| [`calculate_auto_thresholds()`](https://cedricbouffard.github.io/yieldcleanr/reference/calculate_auto_thresholds.md) | [`calculate_thresholds()`](https://cedricbouffard.github.io/yieldcleanr/reference/calculate_thresholds.md) | `"all"` ou `"yield"`, etc. |
+| `apply_flow_delay()` | [`optimize_delays()`](https://cedricbouffard.github.io/yieldcleanr/reference/optimize_delays.md) | `"flow"` |
+| [`apply_moisture_delay()`](https://cedricbouffard.github.io/yieldcleanr/reference/apply_moisture_delay.md) | [`optimize_delays()`](https://cedricbouffard.github.io/yieldcleanr/reference/optimize_delays.md) | `"moisture"` |
+| [`convert_flow_to_yield()`](https://cedricbouffard.github.io/yieldcleanr/reference/convert_flow_to_yield.md) | [`convert_yield_units()`](https://cedricbouffard.github.io/yieldcleanr/reference/convert_yield_units.md) | `"flow_lbs_s"` → `"kg_ha"` |
+| [`anonymize_coordinates()`](https://cedricbouffard.github.io/yieldcleanr/reference/anonymize_coordinates.md) | [`anonymize_data()`](https://cedricbouffard.github.io/yieldcleanr/reference/anonymize_data.md) | `"coordinates"` |
+| [`remove_sensitive_attributes()`](https://cedricbouffard.github.io/yieldcleanr/reference/remove_sensitive_attributes.md) | [`anonymize_data()`](https://cedricbouffard.github.io/yieldcleanr/reference/anonymize_data.md) | `"attributes"` |
+| [`anonymize_yield_data()`](https://cedricbouffard.github.io/yieldcleanr/reference/anonymize_yield_data.md) | [`anonymize_data()`](https://cedricbouffard.github.io/yieldcleanr/reference/anonymize_data.md) | `"full"` |
+| `export_raster()` | [`export_data()`](https://cedricbouffard.github.io/yieldcleanr/reference/export_data.md) | `"raster"` |
+| `save_raster()` | [`export_data()`](https://cedricbouffard.github.io/yieldcleanr/reference/export_data.md) | `"raster"` |
 
 ## Conclusion
 

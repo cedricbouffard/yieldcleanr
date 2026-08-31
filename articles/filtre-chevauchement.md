@@ -31,40 +31,55 @@ statistiques de rendement.
 
 L’espace est discrétisé en une grille régulière de cellules carrées :
 
-$$C_{i,j} = \{(x,y):x_{min} + i \cdot cs \leq x < x_{min} + (i + 1) \cdot cs,$$$$y_{min} + j \cdot cs \leq y < y_{min} + (j + 1) \cdot cs\}$$
+``` math
+C_{i,j} = \{(x, y) : x_{min} + i \cdot cs \leq x < x_{min} + (i+1) \cdot cs,
+```
+``` math
+y_{min} + j \cdot cs \leq y < y_{min} + (j+1) \cdot cs\}
+```
 
-Où : - $C_{i,j}$ = cellule $(i,j)$ - $cs$ = taille de cellule (cell
-size) - $x_{min},y_{min}$ = coordonnées minimales du champ
+Où : - $`C_{i,j}`$ = cellule $`(i, j)`$ - $`cs`$ = taille de cellule
+(cell size) - $`x_{min}, y_{min}`$ = coordonnées minimales du champ
 
 ### 2. Comptage des passages
 
-Pour chaque cellule $C_{i,j}$, on compte le nombre de points qui tombent
-dans cette cellule, regroupés par passage (Pass) :
+Pour chaque cellule $`C_{i,j}`$, on compte le nombre de points qui
+tombent dans cette cellule, regroupés par passage (Pass) :
 
-$$N_{i,j} = \left| \{ p_{k}:\left( x_{k},y_{k} \right) \in C_{i,j}\} \right|$$
+``` math
+N_{i,j} = |\{p_k : (x_k, y_k) \in C_{i,j}\}|
+```
 
-$$N_{i,j}^{(pass)} = \left| \{ p_{k}:\left( x_{k},y_{k} \right) \in C_{i,j} \land pass_{k} = pass\} \right|$$
+``` math
+N_{i,j}^{(pass)} = |\{p_k : (x_k, y_k) \in C_{i,j} \wedge pass_k = pass\}|
+```
 
 ### 3. Ratio de chevauchement
 
 Le ratio de chevauchement mesure la densité relative d’une cellule par
 rapport à la moyenne :
 
-$$R_{i,j} = \frac{N_{i,j}}{\bar{N}}$$
+``` math
+R_{i,j} = \frac{N_{i,j}}{\bar{N}}
+```
 
-Où $\bar{N}$ est le nombre moyen de points par cellule.
+Où $`\bar{N}`$ est le nombre moyen de points par cellule.
 
 Une variante pondérée par passage :
 
-$$R_{i,j}^{(weighted)} = \frac{\sum\limits_{pass}\mathbb{1}\left( N_{i,j}^{(pass)} > 0 \right)}{N_{passages\_ total}}$$
+``` math
+R_{i,j}^{(weighted)} = \frac{\sum_{pass} \mathbb{1}(N_{i,j}^{(pass)} > 0)}{N_{passages\_total}}
+```
 
 ### 4. Seuil d’élimination
 
 Une cellule est marquée comme “overlap” si :
 
-$$R_{i,j} > R_{max}$$
+``` math
+R_{i,j} > R_{max}
+```
 
-Où $R_{max}$ est le seuil de chevauchement (défaut: 0.5).
+Où $`R_{max}`$ est le seuil de chevauchement (défaut: 0.5).
 
 Les points dans les cellules “overlap” sont éliminés selon une stratégie
 de sélection : - Garder uniquement le premier passage - Garder le
@@ -73,6 +88,7 @@ passage avec le meilleur rendement - Garder aléatoirement un seul point
 ## Implémentation
 
 ``` r
+
 library(yieldcleanr)
 library(ggplot2)
 library(dplyr)
@@ -100,6 +116,7 @@ cat("Nombre de passages uniques:", length(unique(data$Pass)), "\n")
 ### Paramètres de discrétisation
 
 ``` r
+
 # Paramètres de la grille
 cell_size <- 0.3  # 30 cm
 overlap_threshold <- 0.5
@@ -129,6 +146,7 @@ cat("\nDimensions de la grille:", nx, "x", ny, "=", nx * ny, "cellules\n")
 ### Visualisation de la grille
 
 ``` r
+
 # Créer une visualisation simplifiée de la grille
 set.seed(42)
 
@@ -161,6 +179,7 @@ p1
 ## Application du filtre
 
 ``` r
+
 cat("\n=== Application du filtre de chevauchement ===\n")
 #> 
 #> === Application du filtre de chevauchement ===
@@ -184,6 +203,7 @@ cat("Taux de rétention:", round(nrow(data_filtered)/nrow(data)*100, 1), "%\n")
 ### Identification des zones problématiques
 
 ``` r
+
 # Identifier les points éliminés
 removed <- anti_join(data, data_filtered, by = c("X", "Y", "GPS_Time"))
 
@@ -222,6 +242,7 @@ if (nrow(removed) > 0) {
 ### Simulation de chevauchement
 
 ``` r
+
 # Créer une simulation de passages avec chevauchement
 set.seed(42)
 
@@ -275,6 +296,7 @@ p2
 ### Calcul du ratio de chevauchement
 
 ``` r
+
 # Discrétiser en cellules de 5m
 cell_sim <- 5
 
@@ -323,12 +345,12 @@ print(cell_counts %>% filter(is_overlap))
 
 ### Choix de la taille de cellule
 
-| Taille de cellule | Application        | Avantage                           | Inconvénient                               |
-|-------------------|--------------------|------------------------------------|--------------------------------------------|
-| **0.1 m (10 cm)** | Très précis        | Détecte les micro-chevauchements   | Très sensible au bruit                     |
-| **0.3 m (30 cm)** | Standard USDA      | Bon compromis précision/robustesse | Peut manquer les chevauchements légers     |
-| **0.5 m (50 cm)** | Données bruitées   | Moins sensible au bruit GPS        | Moins précis                               |
-| **1.0 m (1 m)**   | Champs très larges | Robustesse maximale                | Détecte uniquement les gros chevauchements |
+| Taille de cellule | Application | Avantage | Inconvénient |
+|----|----|----|----|
+| **0.1 m (10 cm)** | Très précis | Détecte les micro-chevauchements | Très sensible au bruit |
+| **0.3 m (30 cm)** | Standard USDA | Bon compromis précision/robustesse | Peut manquer les chevauchements légers |
+| **0.5 m (50 cm)** | Données bruitées | Moins sensible au bruit GPS | Moins précis |
+| **1.0 m (1 m)** | Champs très larges | Robustesse maximale | Détecte uniquement les gros chevauchements |
 
 ### Choix du seuil
 
@@ -348,11 +370,12 @@ print(cell_counts %>% filter(is_overlap))
 | overlap_threshold | Seuil de ratio pour élimination          | 0.5       |
 | max_pass          | Nombre max de passages avant élimination | 50        |
 
-Paramètres du filtre de chevauchement
+Paramètres du filtre de chevauchement {.table}
 
 ## Impact sur les statistiques
 
 ``` r
+
 cat("\n=== Impact sur les statistiques ===\n")
 #> 
 #> === Impact sur les statistiques ===

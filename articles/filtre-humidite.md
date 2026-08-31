@@ -15,11 +15,13 @@ changements de variété
 Le rendement sec est calculé à partir du rendement humide et de
 l’humidité :
 
-$$Y_{sec} = Y_{humide} \times \frac{100 - H}{100 - H_{std}}$$
+``` math
+Y_{sec} = Y_{humide} \times \frac{100 - H}{100 - H_{std}}
+```
 
-Où : - $Y_{sec}$ = rendement à humidité standard (kg/ha) - $Y_{humide}$
-= rendement tel que mesuré (kg/ha) - $H$ = humidité mesurée (%) -
-$H_{std}$ = humidité standard de la culture (%)
+Où : - $`Y_{sec}`$ = rendement à humidité standard (kg/ha) -
+$`Y_{humide}`$ = rendement tel que mesuré (kg/ha) - $`H`$ = humidité
+mesurée (%) - $`H_{std}`$ = humidité standard de la culture (%)
 
 #### Humidités standards par culture
 
@@ -45,22 +47,30 @@ Basée sur les limites physiologiques et commerciales :
 
 Basée sur la distribution statistique de l’humidité dans le champ :
 
-$$H_{min} = \bar{H} - n_{std} \times \sigma_{H}$$$$H_{max} = \bar{H} + n_{std} \times \sigma_{H}$$
+``` math
+H_{min} = \bar{H} - n_{std} \times \sigma_H
+```
+``` math
+H_{max} = \bar{H} + n_{std} \times \sigma_H
+```
 
-Où : - $\bar{H}$ = humidité moyenne - $\sigma_{H}$ = écart-type de
-l’humidité - $n_{std}$ = nombre d’écarts-types (défaut: 3)
+Où : - $`\bar{H}`$ = humidité moyenne - $`\sigma_H`$ = écart-type de
+l’humidité - $`n_{std}`$ = nombre d’écarts-types (défaut: 3)
 
 ### Règle de décision
 
-Un point $i$ est conservé si :
+Un point $`i`$ est conservé si :
 
-$$H_{min} \leq H_{i} \leq H_{max}$$
+``` math
+H_{min} \leq H_i \leq H_{max}
+```
 
-Et si $H_{i} > 0$ (humidité valide).
+Et si $`H_i > 0`$ (humidité valide).
 
 ## Implémentation
 
 ``` r
+
 library(yieldcleanr)
 library(ggplot2)
 library(dplyr)
@@ -100,6 +110,7 @@ cat("  Écart-type:", round(sd(data$Moisture, na.rm = TRUE), 1), "\n")
 ### Méthode statistique
 
 ``` r
+
 # Calculer les seuils automatiques
 n_std <- 3
 mean_moisture <- mean(data$Moisture, na.rm = TRUE)
@@ -126,6 +137,7 @@ cat("  Maximum:", round(max_moisture_auto, 1), "%\n")
 ### Distribution de l’humidité
 
 ``` r
+
 # Distribution de l'humidité
 moistures <- data$Moisture[is.finite(data$Moisture)]
 
@@ -159,6 +171,7 @@ p1
 ### Filtrage automatique
 
 ``` r
+
 cat("\n=== Application du filtre automatique ===\n")
 #> 
 #> === Application du filtre automatique ===
@@ -177,6 +190,7 @@ cat("Taux de rétention:", round(nrow(data_filtered)/nrow(data)*100, 1), "%\n")
 ### Filtrage manuel
 
 ``` r
+
 cat("\n=== Filtrage avec seuils manuels ===\n")
 #> 
 #> === Filtrage avec seuils manuels ===
@@ -202,6 +216,7 @@ cat("Points retirés:", nrow(data) - nrow(data_manual), "\n")
 ## Visualisation des points éliminés
 
 ``` r
+
 # Identifier les points éliminés
 removed <- data %>%
   filter(Moisture < min_moisture_auto | 
@@ -233,6 +248,7 @@ if (nrow(removed) > 0) {
 ### Variation au cours de la récolte
 
 ``` r
+
 # Trier par temps et échantillonner pour la ligne de tendance (LOESS est lent avec beaucoup de points)
 data_time <- data %>%
   arrange(GPS_Time) %>%
@@ -271,6 +287,7 @@ p2
 ### Conversion humide → sec
 
 ``` r
+
 cat("\n=== Impact de l'humidité sur le rendement ===\n")
 #> 
 #> === Impact de l'humidité sur le rendement ===
@@ -333,13 +350,14 @@ cat("\nDifférence:", round(rendement_sec_filt - rendement_sec_brut, 1), "kg/ha\
 | n_std           | Nombre d’écarts-types pour calcul auto | 3          |
 | moisture_column | Nom de la colonne d’humidité           | ‘Moisture’ |
 
-Paramètres du filtre d’humidité
+Paramètres du filtre d’humidité {.table}
 
 ## Cas particuliers
 
 ### 1. Humidité nulle ou manquante
 
 ``` r
+
 # Points avec humidité nulle ou manquante
 zero_moist <- data %>%
   filter(Moisture <= 0 | is.na(Moisture))
@@ -355,6 +373,7 @@ cat("pour la conversion rendement humide → sec.\n")
 ### 2. Dérive d’humidité en fin de journée
 
 ``` r
+
 # Simuler une dérive d'humidité
 set.seed(42)
 temps <- 1:100

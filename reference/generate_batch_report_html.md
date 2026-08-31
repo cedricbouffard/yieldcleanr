@@ -5,7 +5,12 @@ Generate a multi-field HTML report
 ## Usage
 
 ``` r
-generate_batch_report_html(file_paths, output_file = NULL, title = NULL)
+generate_batch_report_html(
+  file_paths,
+  output_file = NULL,
+  title = NULL,
+  style = c("irda", "ced")
+)
 ```
 
 ## Arguments
@@ -21,6 +26,10 @@ generate_batch_report_html(file_paths, output_file = NULL, title = NULL)
 - title:
 
   Report title
+
+- style:
+
+  Style visuel du rapport: "irda" (défaut) ou "ced" (Cedric Bouffard)
 
 ## Value
 

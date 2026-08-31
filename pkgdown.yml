@@ -1,5 +1,5 @@
-pandoc: 3.1.11
-pkgdown: 2.2.0
+pandoc: 3.8.3
+pkgdown: 2.2.1
 pkgdown_sha: ~
 articles:
   filtre-chevauchement: filtre-chevauchement.html
@@ -11,7 +11,7 @@ articles:
   guide-complet-samples: guide-complet-samples.html
   guide-meta-fonctions: guide-meta-fonctions.html
   securite-donnees: securite-donnees.html
-last_built: 2026-03-26T19:07Z
+last_built: 2026-08-31T19:47Z
 urls:
   reference: https://cedricbouffard.github.io/yieldcleanr/reference
   article: https://cedricbouffard.github.io/yieldcleanr/articles

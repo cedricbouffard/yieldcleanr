@@ -11,48 +11,61 @@ pipeline AYCE, qui capture les anomalies résiduelles.
 
 ### 1. Définition du voisinage
 
-Pour chaque point $i$, on définit un voisinage $V_{i}$ basé sur : - **La
-distance spatiale** : Points dans un rayon $r$ - **Le nombre de swaths**
-: $n$ passages adjacents - **La fenêtre temporelle** : $k$ points
-successifs
+Pour chaque point $`i`$, on définit un voisinage $`V_i`$ basé sur : -
+**La distance spatiale** : Points dans un rayon $`r`$ - **Le nombre de
+swaths** : $`n`$ passages adjacents - **La fenêtre temporelle** : $`k`$
+points successifs
 
 Dans yieldcleanr, le voisinage est défini par le nombre de swaths
 (passages) adjacents :
 
-$$V_{i} = \{ p_{j}:\left| pass_{j} - pass_{i} \right| \leq n_{swaths}\}$$
+``` math
+V_i = \{p_j : |pass_j - pass_i| \leq n_{swaths}\}
+```
 
 ### 2. Statistiques locales
 
-Pour chaque voisinage $V_{i}$, on calcule :
+Pour chaque voisinage $`V_i`$, on calcule :
 
 **Moyenne locale :**
-$${\bar{y}}_{i} = \frac{1}{\left| V_{i} \right|}\sum\limits_{j \in V_{i}}y_{j}$$
+``` math
+\bar{y}_i = \frac{1}{|V_i|} \sum_{j \in V_i} y_j
+```
 
 **Écart-type local :**
-$$\sigma_{i} = \sqrt{\frac{1}{\left| V_{i} \right| - 1}\sum\limits_{j \in V_{i}}\left( y_{j} - {\bar{y}}_{i} \right)^{2}}$$
+``` math
+\sigma_i = \sqrt{\frac{1}{|V_i| - 1} \sum_{j \in V_i} (y_j - \bar{y}_i)^2}
+```
 
 ### 3. Score Z local
 
 Le score Z mesure l’écart d’un point par rapport à sa moyenne locale, en
 unités d’écart-type :
 
-$$Z_{i} = \frac{y_{i} - {\bar{y}}_{i}}{\sigma_{i}}$$
+``` math
+Z_i = \frac{y_i - \bar{y}_i}{\sigma_i}
+```
 
 ### 4. Règle de décision
 
-Un point $i$ est éliminé si :
+Un point $`i`$ est éliminé si :
 
-$$\left| Z_{i} \right| > Z_{lim}$$
+``` math
+|Z_i| > Z_{lim}
+```
 
-Où $Z_{lim}$ est le seuil d’écart-type (défaut: 3).
+Où $`Z_{lim}`$ est le seuil d’écart-type (défaut: 3).
 
 Cela équivaut à :
 
-$$y_{i} \notin \left\lbrack {\bar{y}}_{i} - Z_{lim} \cdot \sigma_{i},{\bar{y}}_{i} + Z_{lim} \cdot \sigma_{i} \right\rbrack$$
+``` math
+y_i \notin [\bar{y}_i - Z_{lim} \cdot \sigma_i, \bar{y}_i + Z_{lim} \cdot \sigma_i]
+```
 
 ## Implémentation
 
 ``` r
+
 library(yieldcleanr)
 library(ggplot2)
 library(dplyr)
@@ -85,6 +98,7 @@ cat("Écart-type global:", round(sd(data$Yield_kg_ha, na.rm = TRUE), 1), "kg/ha\
 ### Calcul des statistiques locales
 
 ``` r
+
 # Paramètres
 n_swaths <- 5
 lsd_limit <- 3
@@ -156,6 +170,7 @@ print(example_rows, row.names = FALSE)
 ### Distribution des scores Z
 
 ``` r
+
 # Distribution des scores Z
 z_scores <- data_with_stats$z_score[!is.na(data_with_stats$z_score)]
 
@@ -183,6 +198,7 @@ p1
 ## Application du filtre
 
 ``` r
+
 cat("\n=== Application du filtre LSD ===\n")
 #> 
 #> === Application du filtre LSD ===
@@ -211,6 +227,7 @@ cat("Taux de rétention:", round(n_after/n_before*100, 1), "%\n")
 ## Visualisation des outliers détectés
 
 ``` r
+
 # Identifier les points éliminés
 removed <- anti_join(data, data_filtered, by = c("X", "Y", "GPS_Time"))
 
@@ -269,6 +286,7 @@ if (nrow(removed) > 0) {
 ### Simulation d’outliers
 
 ``` r
+
 # Créer des données avec des outliers connus
 set.seed(42)
 
@@ -340,6 +358,7 @@ gridExtra::grid.arrange(p2, p3, ncol = 1)
 ### Détection des outliers
 
 ``` r
+
 cat("\n=== Détection des outliers simulés ===\n")
 #> 
 #> === Détection des outliers simulés ===
@@ -365,12 +384,12 @@ if (nrow(detected_outliers) > 0) {
 
 ### Choix du nombre de swaths
 
-| n_swaths | Taille du voisinage | Usage              | Avantage                   | Inconvénient                     |
-|----------|---------------------|--------------------|----------------------------|----------------------------------|
-| **3**    | 7 passages          | Champs petits      | Détecte les micro-outliers | Sensible au bruit                |
-| **5**    | 11 passages         | Standard           | Bon compromis              | \-                               |
-| **7**    | 15 passages         | Champs larges      | Plus robuste               | Peut manquer les outliers locaux |
-| **10**   | 21 passages         | Très grands champs | Très robuste               | Moins précis                     |
+| n_swaths | Taille du voisinage | Usage | Avantage | Inconvénient |
+|----|----|----|----|----|
+| **3** | 7 passages | Champs petits | Détecte les micro-outliers | Sensible au bruit |
+| **5** | 11 passages | Standard | Bon compromis | \- |
+| **7** | 15 passages | Champs larges | Plus robuste | Peut manquer les outliers locaux |
+| **10** | 21 passages | Très grands champs | Très robuste | Moins précis |
 
 ### Choix du seuil d’écart-type
 
@@ -390,11 +409,12 @@ if (nrow(detected_outliers) > 0) {
 | lsd_limit    | Seuil d’écart-type pour élimination  | 3             |
 | yield_column | Nom de la colonne de rendement       | ‘Yield_kg_ha’ |
 
-Paramètres du filtre d’écart-type local
+Paramètres du filtre d’écart-type local {.table}
 
 ## Impact sur les statistiques
 
 ``` r
+
 cat("\n=== Impact sur les statistiques ===\n")
 #> 
 #> === Impact sur les statistiques ===
@@ -446,6 +466,7 @@ cat("\n✓ Réduction du CV:",
 ### Local SD vs Filtre global
 
 ``` r
+
 # Filtre global (seuils absolus)
 threshold_global <- mean(data$Yield_kg_ha, na.rm = TRUE) + c(-3, 3) * sd(data$Yield_kg_ha, na.rm = TRUE)
 

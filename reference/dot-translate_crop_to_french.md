@@ -48,6 +48,11 @@ cleaned using clean_yield functions.
 
   Print progress messages (default: TRUE)
 
+- style:
+
+  Style theme for the report. Options: "irda" (default) or "ced" (Cedric
+  Bouffard style)
+
 ## Value
 
 Path to the generated PDF file

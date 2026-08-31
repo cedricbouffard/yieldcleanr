@@ -7,7 +7,7 @@ differents formats de fichiers (15-17 colonnes).
 ## Usage
 
 ``` r
-read_yield_data(file_path = NULL, data = NULL, col_names = TRUE)
+read_yield_data(file_path = NULL, data = NULL)
 ```
 
 ## Arguments
@@ -16,9 +16,9 @@ read_yield_data(file_path = NULL, data = NULL, col_names = TRUE)
 
   Chemin du fichier texte d'entree
 
-- col_names:
+- data:
 
-  Logique, si TRUE utilise les noms de colonnes standard
+  Data frame deja charge. Alternative a file_path.
 
 ## Value
 
@@ -35,7 +35,6 @@ writeLines(c(
 ), temp_file)
 
 data <- read_yield_data(temp_file)
-#> Warning: NAs introduced by coercion to integer range
 #> Distance detectee en pouces (moyenne: 82 ) - conversion en metres
 #> Swath detecte en pouces (moyenne: 240 ) - conversion en metres
 print(data)
@@ -44,7 +43,7 @@ print(data)
 #>       <dbl>    <dbl> <dbl>      <int>    <int>    <dbl> <dbl>    <dbl>
 #> 1     -69.9     47.5  1.53 1762958157        2     1.96  6.10     30.8
 #> 2     -69.9     47.5  3.7  1762958159        2     2.21  6.10     30.9
-#> # ℹ 10 more variables: HeaderStatus <int>, Pass <int>, Serial <int>,
+#> # ℹ 10 more variables: HeaderStatus <int>, Pass <int>, Serial <chr>,
 #> #   FieldID <chr>, LoadID <chr>, GrainType <chr>, GPSStatus <int>, DOP <dbl>,
 #> #   Altitude <dbl>, .row_id <int>
 ```

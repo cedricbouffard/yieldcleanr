@@ -11,6 +11,7 @@ pipeline AYCE (Auto Yield Cleaning Engine).
 ### Installation et chargement
 
 ``` r
+
 library(yieldcleanr)
 library(dplyr)
 library(ggplot2)
@@ -36,6 +37,7 @@ Le package inclut 4 fichiers de données d’exemple :
 #### Données brutes
 
 ``` r
+
 file_path <- system.file("extdata", "sample1.txt", package = "yieldcleanr")
 data_raw_s1 <- read_yield_data(file_path)
 
@@ -57,6 +59,7 @@ cat("  Min-Max:", round(min(data_raw_s1$Flow, na.rm = TRUE), 2), "-",
 #### Pipeline de nettoyage étape par étape
 
 ``` r
+
 # Étape 1: Conversion UTM (sans conversion en rendement)
 data_s1 <- latlon_to_utm(data_raw_s1)
 
@@ -135,6 +138,7 @@ cat("CV final:", round(sd(data_s1$Yield_kg_ha, na.rm = TRUE) / mean(data_s1$Yiel
 #### Visualisation avant/après
 
 ``` r
+
 # Créer les objets sf pour visualisation
 sf_raw <- sf::st_as_sf(data_raw_s1, coords = c("Longitude", "Latitude"), crs = 4326)
 sf_clean <- sf::st_as_sf(data_s1, coords = c("Longitude", "Latitude"), crs = 4326)
@@ -150,6 +154,7 @@ plot(sf_raw["Yield_kg_ha"], main = "AVANT - Sample 1 (Soja)",
 ![](guide-complet-samples_files/figure-html/sample1-viz-1.png)
 
 ``` r
+
 plot(sf_clean["Yield_kg_ha"], main = "APRÈS - Sample 1 (Soja)", 
      pch = 19, cex = 0.3, breaks = "jenks")
 ```
@@ -161,6 +166,7 @@ plot(sf_clean["Yield_kg_ha"], main = "APRÈS - Sample 1 (Soja)",
 #### Données brutes
 
 ``` r
+
 file_path <- system.file("extdata", "sample2.txt", package = "yieldcleanr")
 data_raw_s2 <- read_yield_data(file_path)
 
@@ -179,6 +185,7 @@ cat("  Écart-type:", round(sd(data_raw_s2$Flow, na.rm = TRUE), 2), "\n")
 #### Pipeline de nettoyage
 
 ``` r
+
 # Étape 1: Conversion UTM (sans conversion en rendement)
 data_s2 <- latlon_to_utm(data_raw_s2)
 
@@ -235,6 +242,7 @@ cat("Taux de rétention:", round(nrow(data_s2)/nrow(data_raw_s2)*100, 1), "%\n")
 #### Visualisation avant/après
 
 ``` r
+
 # Créer les objets sf pour visualisation
 sf_raw_s2 <- sf::st_as_sf(data_raw_s2, coords = c("Longitude", "Latitude"), crs = 4326)
 sf_clean_s2 <- sf::st_as_sf(data_s2, coords = c("Longitude", "Latitude"), crs = 4326)
@@ -250,6 +258,7 @@ plot(sf_raw_s2["Yield_kg_ha"], main = "AVANT - Sample 2 (Maïs)",
 ![](guide-complet-samples_files/figure-html/sample2-viz-1.png)
 
 ``` r
+
 plot(sf_clean_s2["Yield_kg_ha"], main = "APRÈS - Sample 2 (Maïs)", 
      pch = 19, cex = 0.3, breaks = "jenks")
 ```
@@ -259,6 +268,7 @@ plot(sf_clean_s2["Yield_kg_ha"], main = "APRÈS - Sample 2 (Maïs)",
 ### Sample 3 - Maïs
 
 ``` r
+
 file_path <- system.file("extdata", "sample3.txt", package = "yieldcleanr")
 data_raw_s3 <- read_yield_data(file_path)
 
@@ -300,6 +310,7 @@ cat("Taux de rétention:", round(nrow(data_s3)/nrow(data_raw_s3)*100, 1), "%\n")
 #### Visualisation avant/après
 
 ``` r
+
 # Créer les objets sf pour visualisation
 sf_raw_s3 <- sf::st_as_sf(data_raw_s3, coords = c("Longitude", "Latitude"), crs = 4326)
 sf_clean_s3 <- sf::st_as_sf(data_s3, coords = c("Longitude", "Latitude"), crs = 4326)
@@ -315,6 +326,7 @@ plot(sf_raw_s3["Yield_kg_ha"], main = "AVANT - Sample 3 (Maïs)",
 ![](guide-complet-samples_files/figure-html/sample3-viz-1.png)
 
 ``` r
+
 plot(sf_clean_s3["Yield_kg_ha"], main = "APRÈS - Sample 3 (Maïs)", 
      pch = 19, cex = 0.3, breaks = "jenks")
 ```
@@ -324,6 +336,7 @@ plot(sf_clean_s3["Yield_kg_ha"], main = "APRÈS - Sample 3 (Maïs)",
 ### Sample 4 - Maïs blanc
 
 ``` r
+
 file_path <- system.file("extdata", "sample4.txt", package = "yieldcleanr")
 data_raw_s4 <- read_yield_data(file_path)
 
@@ -365,6 +378,7 @@ cat("Taux de rétention:", round(nrow(data_s4)/nrow(data_raw_s4)*100, 1), "%\n")
 #### Visualisation avant/après
 
 ``` r
+
 # Créer les objets sf pour visualisation
 sf_raw_s4 <- sf::st_as_sf(data_raw_s4, coords = c("Longitude", "Latitude"), crs = 4326)
 sf_clean_s4 <- sf::st_as_sf(data_s4, coords = c("Longitude", "Latitude"), crs = 4326)
@@ -380,6 +394,7 @@ plot(sf_raw_s4["Yield_kg_ha"], main = "AVANT - Sample 4 (Maïs blanc)",
 ![](guide-complet-samples_files/figure-html/sample4-viz-1.png)
 
 ``` r
+
 plot(sf_clean_s4["Yield_kg_ha"], main = "APRÈS - Sample 4 (Maïs blanc)", 
      pch = 19, cex = 0.3, breaks = "jenks")
 ```
@@ -390,12 +405,12 @@ plot(sf_clean_s4["Yield_kg_ha"], main = "APRÈS - Sample 4 (Maïs blanc)",
 
 ### Points retirés par filtre
 
-| Sample                    | Delay Adjustment | Vitesse | Humidité | Chevauchement | Écart-type local | **Total** |
-|---------------------------|------------------|---------|----------|---------------|------------------|-----------|
-| **Sample 1 (Soja)**       | 12               | 29      | 303      | 1             | 561              | **906**   |
-| **Sample 2 (Maïs)**       | 3,265            | 366     | 153      | 0             | 13               | **3,797** |
-| **Sample 3 (Maïs)**       | 0                | 490     | 425      | 4             | 0                | **1,876** |
-| **Sample 4 (Maïs blanc)** | 0                | 539     | 210      | 8             | 0                | **768**   |
+| Sample | Delay Adjustment | Vitesse | Humidité | Chevauchement | Écart-type local | **Total** |
+|----|----|----|----|----|----|----|
+| **Sample 1 (Soja)** | 12 | 29 | 303 | 1 | 561 | **906** |
+| **Sample 2 (Maïs)** | 3,265 | 366 | 153 | 0 | 13 | **3,797** |
+| **Sample 3 (Maïs)** | 0 | 490 | 425 | 4 | 0 | **1,876** |
+| **Sample 4 (Maïs blanc)** | 0 | 539 | 210 | 8 | 0 | **768** |
 
 ### Comparaison des rendements
 
@@ -422,6 +437,7 @@ plot(sf_clean_s4["Yield_kg_ha"], main = "APRÈS - Sample 4 (Maïs blanc)",
 #### Vue d’ensemble - Tous les échantillons (AVANT nettoyage)
 
 ``` r
+
 # Créer une comparaison de tous les échantillons avant nettoyage
 par(mfrow = c(2, 2))
 
@@ -432,6 +448,7 @@ plot(sf_raw["Yield_kg_ha"], main = "Sample 1 - Soja (AVANT)",
 ![](guide-complet-samples_files/figure-html/all-samples-raw-map-1.png)
 
 ``` r
+
 plot(sf_raw_s2["Yield_kg_ha"], main = "Sample 2 - Maïs (AVANT)", 
      pch = 19, cex = 0.3, breaks = "jenks", key.pos = NULL)
 ```
@@ -439,6 +456,7 @@ plot(sf_raw_s2["Yield_kg_ha"], main = "Sample 2 - Maïs (AVANT)",
 ![](guide-complet-samples_files/figure-html/all-samples-raw-map-2.png)
 
 ``` r
+
 plot(sf_raw_s3["Yield_kg_ha"], main = "Sample 3 - Maïs (AVANT)", 
      pch = 19, cex = 0.3, breaks = "jenks", key.pos = NULL)
 ```
@@ -446,6 +464,7 @@ plot(sf_raw_s3["Yield_kg_ha"], main = "Sample 3 - Maïs (AVANT)",
 ![](guide-complet-samples_files/figure-html/all-samples-raw-map-3.png)
 
 ``` r
+
 plot(sf_raw_s4["Yield_kg_ha"], main = "Sample 4 - Maïs blanc (AVANT)", 
      pch = 19, cex = 0.3, breaks = "jenks", key.pos = NULL)
 ```
@@ -455,6 +474,7 @@ plot(sf_raw_s4["Yield_kg_ha"], main = "Sample 4 - Maïs blanc (AVANT)",
 #### Vue d’ensemble - Tous les échantillons (APRÈS nettoyage)
 
 ``` r
+
 # Créer une comparaison de tous les échantillons après nettoyage
 par(mfrow = c(2, 2))
 
@@ -465,6 +485,7 @@ plot(sf_clean["Yield_kg_ha"], main = "Sample 1 - Soja (APRÈS)",
 ![](guide-complet-samples_files/figure-html/all-samples-clean-map-1.png)
 
 ``` r
+
 plot(sf_clean_s2["Yield_kg_ha"], main = "Sample 2 - Maïs (APRÈS)", 
      pch = 19, cex = 0.3, breaks = "jenks", key.pos = NULL)
 ```
@@ -472,6 +493,7 @@ plot(sf_clean_s2["Yield_kg_ha"], main = "Sample 2 - Maïs (APRÈS)",
 ![](guide-complet-samples_files/figure-html/all-samples-clean-map-2.png)
 
 ``` r
+
 plot(sf_clean_s3["Yield_kg_ha"], main = "Sample 3 - Maïs (APRÈS)", 
      pch = 19, cex = 0.3, breaks = "jenks", key.pos = NULL)
 ```
@@ -479,6 +501,7 @@ plot(sf_clean_s3["Yield_kg_ha"], main = "Sample 3 - Maïs (APRÈS)",
 ![](guide-complet-samples_files/figure-html/all-samples-clean-map-3.png)
 
 ``` r
+
 plot(sf_clean_s4["Yield_kg_ha"], main = "Sample 4 - Maïs blanc (APRÈS)", 
      pch = 19, cex = 0.3, breaks = "jenks", key.pos = NULL)
 ```
@@ -488,6 +511,7 @@ plot(sf_clean_s4["Yield_kg_ha"], main = "Sample 4 - Maïs blanc (APRÈS)",
 #### Cartes de densité - Comparaison AVANT/APRÈS
 
 ``` r
+
 # Créer des cartes de densité pour visualiser la distribution spatiale
 par(mfrow = c(4, 2))
 
@@ -499,6 +523,7 @@ plot(sf_raw["Yield_kg_ha"], main = "Sample 1 - Soja (AVANT)",
 ![](guide-complet-samples_files/figure-html/density-maps-1.png)
 
 ``` r
+
 plot(sf_clean["Yield_kg_ha"], main = "Sample 1 - Soja (APRÈS)", 
      pch = 19, cex = 0.3, breaks = "jenks", key.pos = NULL)
 ```
@@ -506,6 +531,7 @@ plot(sf_clean["Yield_kg_ha"], main = "Sample 1 - Soja (APRÈS)",
 ![](guide-complet-samples_files/figure-html/density-maps-2.png)
 
 ``` r
+
 
 # Sample 2
 plot(sf_raw_s2["Yield_kg_ha"], main = "Sample 2 - Maïs (AVANT)", 
@@ -515,6 +541,7 @@ plot(sf_raw_s2["Yield_kg_ha"], main = "Sample 2 - Maïs (AVANT)",
 ![](guide-complet-samples_files/figure-html/density-maps-3.png)
 
 ``` r
+
 plot(sf_clean_s2["Yield_kg_ha"], main = "Sample 2 - Maïs (APRÈS)", 
      pch = 19, cex = 0.3, breaks = "jenks", key.pos = NULL)
 ```
@@ -522,6 +549,7 @@ plot(sf_clean_s2["Yield_kg_ha"], main = "Sample 2 - Maïs (APRÈS)",
 ![](guide-complet-samples_files/figure-html/density-maps-4.png)
 
 ``` r
+
 
 # Sample 3
 plot(sf_raw_s3["Yield_kg_ha"], main = "Sample 3 - Maïs (AVANT)", 
@@ -531,6 +559,7 @@ plot(sf_raw_s3["Yield_kg_ha"], main = "Sample 3 - Maïs (AVANT)",
 ![](guide-complet-samples_files/figure-html/density-maps-5.png)
 
 ``` r
+
 plot(sf_clean_s3["Yield_kg_ha"], main = "Sample 3 - Maïs (APRÈS)", 
      pch = 19, cex = 0.3, breaks = "jenks", key.pos = NULL)
 ```
@@ -538,6 +567,7 @@ plot(sf_clean_s3["Yield_kg_ha"], main = "Sample 3 - Maïs (APRÈS)",
 ![](guide-complet-samples_files/figure-html/density-maps-6.png)
 
 ``` r
+
 
 # Sample 4
 plot(sf_raw_s4["Yield_kg_ha"], main = "Sample 4 - Maïs blanc (AVANT)", 
@@ -547,6 +577,7 @@ plot(sf_raw_s4["Yield_kg_ha"], main = "Sample 4 - Maïs blanc (AVANT)",
 ![](guide-complet-samples_files/figure-html/density-maps-7.png)
 
 ``` r
+
 plot(sf_clean_s4["Yield_kg_ha"], main = "Sample 4 - Maïs blanc (APRÈS)", 
      pch = 19, cex = 0.3, breaks = "jenks", key.pos = NULL)
 ```
@@ -558,6 +589,7 @@ plot(sf_clean_s4["Yield_kg_ha"], main = "Sample 4 - Maïs blanc (APRÈS)",
 ### Distribution des rendements
 
 ``` r
+
 # Créer les données pour les histogrammes
 samples_data <- data.frame(
   Sample = rep(c("Sample 1 (Soja)", "Sample 2 (Maïs)", "Sample 3 (Maïs)", "Sample 4 (Maïs blanc)"), each = 2),
@@ -583,6 +615,7 @@ ggplot(samples_data, aes(x = Sample, y = Rendement, fill = Type)) +
 ### Coefficient de variation
 
 ``` r
+
 ggplot(samples_data, aes(x = Sample, y = CV, fill = Type)) +
   geom_bar(stat = "identity", position = "dodge") +
   scale_fill_manual(values = c("Brut" = "#e74c3c", "Nettoyé" = "#27ae60")) +
@@ -599,6 +632,7 @@ ggplot(samples_data, aes(x = Sample, y = CV, fill = Type)) +
 ### Taux de rétention
 
 ``` r
+
 retention_data <- data.frame(
   Sample = c("Sample 1\n(Soja)", "Sample 2\n(Maïs)", "Sample 3\n(Maïs)", "Sample 4\n(Maïs blanc)"),
   Retention = c(95.9, 89.7, 94.1, 96.1),

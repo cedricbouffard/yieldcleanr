@@ -26,7 +26,7 @@ implémentent les algorithmes de nettoyage automatisé basés sur les
 standards USDA Yield Editor.
 
 - [`ayce_clean()`](https://cedricbouffard.github.io/yieldcleanr/reference/ayce_clean.md)
-  : AYCE : Auto Yield Cleaning Engine (sortie imperiale)
+  : AYCE : Auto Yield Cleaning Engine (sortie tibble)
 - [`ayce_sf()`](https://cedricbouffard.github.io/yieldcleanr/reference/ayce_sf.md)
   : Pipeline AYCE complet avec sortie SF
 
@@ -85,12 +85,19 @@ brutes en rendement calculé.
 ## 💾 Import et Export de Données
 
 Fonctions pour importer et exporter les données depuis/vers différents
-formats (CSV, TXT, GeoJSON, Shapefiles ZIP).
+formats (CSV, TXT, GeoJSON, GeoPackage, Shapefile et ZIP).
 
 - [`export_data()`](https://cedricbouffard.github.io/yieldcleanr/reference/export_data.md)
   : Méta-fonction d'export des données
 - [`read_yield_from_zip()`](https://cedricbouffard.github.io/yieldcleanr/reference/read_yield_from_zip.md)
   : Lire les donnees de rendement depuis un fichier ZIP
+- [`read_yield_from_vector()`](https://cedricbouffard.github.io/yieldcleanr/reference/read_yield_from_vector.md)
+  : Lire des donnees depuis un fichier vectoriel (shapefile, GeoPackage,
+  GeoJSON)
+- [`read_jd_to_polygons()`](https://cedricbouffard.github.io/yieldcleanr/reference/read_jd_to_polygons.md)
+  : Lire des donnees John Deere et convertir en polygones metriques
+- [`create_polygons_from_data()`](https://cedricbouffard.github.io/yieldcleanr/reference/create_polygons_from_data.md)
+  : Creer des polygones rectangulaires a partir de donnees ponctuelles
 - [`list_fields_from_zip()`](https://cedricbouffard.github.io/yieldcleanr/reference/list_fields_from_zip.md)
   : Lister les champs disponibles dans un fichier ZIP
 

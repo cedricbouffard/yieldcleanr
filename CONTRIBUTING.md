@@ -55,6 +55,7 @@ le cas d’usage - Discutez des alternatives envisagees
 - Testez les cas limites et les erreurs
 
 ``` r
+
 # Executer les tests
 devtools::test()
 
@@ -65,6 +66,7 @@ covr::package_coverage()
 ### Documentation des fonctions
 
 ``` r
+
 #' Titre court de la fonction
 #'
 #' @description
@@ -129,6 +131,7 @@ GitHub chaque semaine.
 ### Configuration de l’environnement
 
 ``` r
+
 # Installer les dependances
 devtools::install_deps(dependencies = TRUE)
 
@@ -148,6 +151,7 @@ devtools::check()
 ### Construction du site de documentation
 
 ``` r
+
 # Generer le site pkgdown
 pkgdown::build_site()
 

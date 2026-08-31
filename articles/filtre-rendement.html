@@ -7,8 +7,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <title>Filtre de Plage de Rendement • yieldcleanr</title>
 <script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
-<script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/Roboto-0.4.10/font.css" rel="stylesheet">
+<link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
+<script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/Roboto-0.4.10/font.css" rel="stylesheet">
 <link href="../deps/JetBrains_Mono-0.4.10/font.css" rel="stylesheet">
 <link href="../deps/Roboto_Condensed-0.4.10/font.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
@@ -161,7 +161,7 @@ peuvent être définis de deux manières :</p>
 <h4 id="calcul-automatique-méthode-ayce">2. Calcul automatique (méthode AYCE)<a class="anchor" aria-label="anchor" href="#calcul-automatique-m%C3%A9thode-ayce"></a>
 </h4>
 <p>Basée sur les quantiles de la distribution :</p>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>y</mi><mrow><mi>m</mi><mi>i</mi><mi>n</mi></mrow></msub><mo>=</mo><msub><mi>Q</mi><mn>0.05</mn></msub><mrow><mo stretchy="true" form="prefix">(</mo><mi>Y</mi><mo stretchy="true" form="postfix">)</mo></mrow><mo>×</mo><msub><mi>y</mi><mrow><mi>s</mi><mi>c</mi><mi>a</mi><mi>l</mi><mi>e</mi><mi>_</mi><mi>l</mi><mi>o</mi><mi>w</mi></mrow></msub></mrow><annotation encoding="application/x-tex">y_{min} = Q_{0.05}(Y) \times y_{scale\_low}</annotation></semantics></math><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>y</mi><mrow><mi>m</mi><mi>a</mi><mi>x</mi></mrow></msub><mo>=</mo><msub><mi>Q</mi><mn>0.95</mn></msub><mrow><mo stretchy="true" form="prefix">(</mo><mi>Y</mi><mo stretchy="true" form="postfix">)</mo></mrow><mo>×</mo><msub><mi>y</mi><mrow><mi>s</mi><mi>c</mi><mi>a</mi><mi>l</mi><mi>e</mi><mi>_</mi><mi>h</mi><mi>i</mi><mi>g</mi><mi>h</mi></mrow></msub></mrow><annotation encoding="application/x-tex">y_{max} = Q_{0.95}(Y) \times y_{scale\_high}</annotation></semantics></math></p>
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>y</mi><mrow><mi>m</mi><mi>i</mi><mi>n</mi></mrow></msub><mo>=</mo><msub><mi>Q</mi><mn>0.05</mn></msub><mo stretchy="false" form="prefix">(</mo><mi>Y</mi><mo stretchy="false" form="postfix">)</mo><mo>×</mo><msub><mi>y</mi><mrow><mi>s</mi><mi>c</mi><mi>a</mi><mi>l</mi><mi>e</mi><mi>_</mi><mi>l</mi><mi>o</mi><mi>w</mi></mrow></msub></mrow><annotation encoding="application/x-tex">y_{min} = Q_{0.05}(Y) \times y_{scale\_low}</annotation></semantics></math><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>y</mi><mrow><mi>m</mi><mi>a</mi><mi>x</mi></mrow></msub><mo>=</mo><msub><mi>Q</mi><mn>0.95</mn></msub><mo stretchy="false" form="prefix">(</mo><mi>Y</mi><mo stretchy="false" form="postfix">)</mo><mo>×</mo><msub><mi>y</mi><mrow><mi>s</mi><mi>c</mi><mi>a</mi><mi>l</mi><mi>e</mi><mi>_</mi><mi>h</mi><mi>i</mi><mi>g</mi><mi>h</mi></mrow></msub></mrow><annotation encoding="application/x-tex">y_{max} = Q_{0.95}(Y) \times y_{scale\_high}</annotation></semantics></math></p>
 <p>Avec des minimums absolus pour éviter des seuils trop
 restrictifs.</p>
 </div>
@@ -172,9 +172,9 @@ restrictifs.</p>
 <p>Un point
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>i</mi><annotation encoding="application/x-tex">i</annotation></semantics></math>
 est conservé si et seulement si :</p>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>y</mi><mi>i</mi></msub><mo>∈</mo><mrow><mo stretchy="true" form="prefix">[</mo><msub><mi>y</mi><mrow><mi>m</mi><mi>i</mi><mi>n</mi></mrow></msub><mo>,</mo><msub><mi>y</mi><mrow><mi>m</mi><mi>a</mi><mi>x</mi></mrow></msub><mo stretchy="true" form="postfix">]</mo></mrow></mrow><annotation encoding="application/x-tex">y_i \in [y_{min}, y_{max}]</annotation></semantics></math></p>
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>y</mi><mi>i</mi></msub><mo>∈</mo><mo stretchy="false" form="prefix">[</mo><msub><mi>y</mi><mrow><mi>m</mi><mi>i</mi><mi>n</mi></mrow></msub><mo>,</mo><msub><mi>y</mi><mrow><mi>m</mi><mi>a</mi><mi>x</mi></mrow></msub><mo stretchy="false" form="postfix">]</mo></mrow><annotation encoding="application/x-tex">y_i \in [y_{min}, y_{max}]</annotation></semantics></math></p>
 <p>Et si la valeur est finie (pas d’Inf ou de NaN) :</p>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo>−</mo><mi>∞</mi><mo>&lt;</mo><msub><mi>y</mi><mi>i</mi></msub><mo>&lt;</mo><mo>+</mo><mi>∞</mi></mrow><annotation encoding="application/x-tex">-\infty &lt; y_i &lt; +\infty</annotation></semantics></math></p>
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>−</mi><mi>∞</mi><mo>&lt;</mo><msub><mi>y</mi><mi>i</mi></msub><mo>&lt;</mo><mi>+</mi><mi>∞</mi></mrow><annotation encoding="application/x-tex">-\infty &lt; y_i &lt; +\infty</annotation></semantics></math></p>
 </div>
 </div>
 <div class="section level2">
@@ -606,7 +606,7 @@ connaissance du terrain.</p>
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
     </footer>

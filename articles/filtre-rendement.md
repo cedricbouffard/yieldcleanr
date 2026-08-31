@@ -12,14 +12,16 @@ problèmes de synchronisation - Des valeurs manquantes ou nulles
 
 ### Définition de la plage acceptable
 
-Soit $Y = \{ y_{1},y_{2},...,y_{n}\}$ l’ensemble des valeurs de
-rendement observées.
+Soit $`Y = \{y_1, y_2, ..., y_n\}`$ l’ensemble des valeurs de rendement
+observées.
 
 La plage acceptable est définie par :
 
-$$y_{min} \leq y_{i} \leq y_{max}$$
+``` math
+y_{min} \leq y_i \leq y_{max}
+```
 
-Où $y_{min}$ et $y_{max}$ peuvent être définis de deux manières :
+Où $`y_{min}`$ et $`y_{max}`$ peuvent être définis de deux manières :
 
 #### 1. Valeurs fixes (manuelles)
 
@@ -35,23 +37,33 @@ Basées sur les limites physiologiques de la culture :
 
 Basée sur les quantiles de la distribution :
 
-$$y_{min} = Q_{0.05}(Y) \times y_{scale\_ low}$$$$y_{max} = Q_{0.95}(Y) \times y_{scale\_ high}$$
+``` math
+y_{min} = Q_{0.05}(Y) \times y_{scale\_low}
+```
+``` math
+y_{max} = Q_{0.95}(Y) \times y_{scale\_high}
+```
 
 Avec des minimums absolus pour éviter des seuils trop restrictifs.
 
 ### Règle de décision
 
-Un point $i$ est conservé si et seulement si :
+Un point $`i`$ est conservé si et seulement si :
 
-$$y_{i} \in \left\lbrack y_{min},y_{max} \right\rbrack$$
+``` math
+y_i \in [y_{min}, y_{max}]
+```
 
 Et si la valeur est finie (pas d’Inf ou de NaN) :
 
-$$- \infty < y_{i} < + \infty$$
+``` math
+-\infty < y_i < +\infty
+```
 
 ## Implémentation
 
 ``` r
+
 library(yieldcleanr)
 library(ggplot2)
 library(dplyr)
@@ -85,6 +97,7 @@ cat("  Écart-type:", round(sd(data$Yield_kg_ha, na.rm = TRUE), 1), "\n")
 ### Méthode des quantiles
 
 ``` r
+
 # Calculer les seuils automatiques
 thresholds <- calculate_thresholds(data, type = "yield")
 
@@ -105,6 +118,7 @@ cat("Seuil maximum:", round(thresholds$yield$max_yield, 1), "kg/ha\n")
 ### Distribution du rendement
 
 ``` r
+
 # Distribution du rendement
 yields <- data$Yield_kg_ha[is.finite(data$Yield_kg_ha)]
 
@@ -138,6 +152,7 @@ p1
 ### Filtrage manuel
 
 ``` r
+
 cat("\n=== Filtrage avec seuils manuels ===\n")
 #> 
 #> === Filtrage avec seuils manuels ===
@@ -164,6 +179,7 @@ cat("Points retirés:", nrow(data) - nrow(data_manual), "\n")
 ### Filtrage automatique
 
 ``` r
+
 cat("\n=== Filtrage avec seuils automatiques ===\n")
 #> 
 #> === Filtrage avec seuils automatiques ===
@@ -183,6 +199,7 @@ cat("Points retirés:", nrow(data) - nrow(data_auto), "\n")
 ## Visualisation des points éliminés
 
 ``` r
+
 # Identifier les points éliminés
 removed <- data %>%
   filter(Yield_kg_ha < thresholds$yield$min_yield | 
@@ -225,6 +242,7 @@ if (nrow(removed) > 0) {
 #### 1. Rendement nul ou très faible
 
 ``` r
+
 # Points avec rendement très faible
 low_yield <- data %>%
   filter(Yield_kg_ha < 1000)
@@ -258,6 +276,7 @@ if (nrow(low_yield) > 0) {
 #### 2. Rendement excessivement élevé
 
 ``` r
+
 # Points avec rendement très élevé
 high_yield <- data %>%
   filter(Yield_kg_ha > 20000)
@@ -313,13 +332,14 @@ if (nrow(high_yield) > 0) {
 | yulim        | Quantile haut pour calcul auto | 0.95           |
 | yscale       | Facteur d’échelle              | 1.5            |
 
-Paramètres du filtre de rendement
+Paramètres du filtre de rendement {.table}
 
 ## Impact sur les statistiques
 
 ### Comparaison avant/après
 
 ``` r
+
 cat("\n=== Impact sur les statistiques ===\n")
 #> 
 #> === Impact sur les statistiques ===

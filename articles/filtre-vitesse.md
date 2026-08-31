@@ -13,15 +13,18 @@ arrêts ou ralentissements (vitesse trop faible) - Des erreurs GPS
 
 La vitesse est calculée à partir des positions GPS successives :
 
-$$v_{i} = \frac{\sqrt{\left( x_{i} - x_{i - 1} \right)^{2} + \left( y_{i} - y_{i - 1} \right)^{2}}}{\Delta t}$$
+``` math
+v_i = \frac{\sqrt{(x_i - x_{i-1})^2 + (y_i - y_{i-1})^2}}{\Delta t}
+```
 
-Où : - $v_{i}$ = vitesse au point $i$ (m/s) - $x_{i}$, $y_{i}$ =
-coordonnées UTM au point $i$ (mètres) - $\Delta t$ = intervalle de temps
-entre les points (secondes)
+Où : - $`v_i`$ = vitesse au point $`i`$ (m/s) - $`x_i`$, $`y_i`$ =
+coordonnées UTM au point $`i`$ (mètres) - $`\Delta t`$ = intervalle de
+temps entre les points (secondes)
 
 ### Implémentation
 
 ``` r
+
 library(yieldcleanr)
 library(ggplot2)
 library(dplyr)
@@ -66,23 +69,31 @@ head(data_calc %>% select(X, Y, Interval, distance, velocity_manual), 5)
 Les seuils sont calculés automatiquement à partir des quantiles de la
 distribution des vitesses :
 
-$$v_{min} = Q_{p_{low}}(v) \times scale_{low}$$$$v_{max} = Q_{p_{high}}(v) \times scale_{high}$$
+``` math
+v_{min} = Q_{p_{low}}(v) \times scale_{low}
+```
+``` math
+v_{max} = Q_{p_{high}}(v) \times scale_{high}
+```
 
-Où : - $Q_{p}$ = quantile à la proportion $p$ - $p_{low}$ = proportion
-basse (défaut: 0.02) - $p_{high}$ = proportion haute (défaut: 0.98) -
-$scale_{low}$ = facteur d’échelle bas (défaut: 0.5) - $scale_{high}$ =
-facteur d’échelle haut (défaut: 1.5)
+Où : - $`Q_{p}`$ = quantile à la proportion $`p`$ - $`p_{low}`$ =
+proportion basse (défaut: 0.02) - $`p_{high}`$ = proportion haute
+(défaut: 0.98) - $`scale_{low}`$ = facteur d’échelle bas (défaut: 0.5) -
+$`scale_{high}`$ = facteur d’échelle haut (défaut: 1.5)
 
 ### Valeurs absolues minimum
 
 Pour éviter d’éliminer des points légitimes, des minimums absolus sont
 appliqués :
 
-$$v_{min} = \max\left( v_{min\_ calculé},v_{min\_ abs} \right)$$
+``` math
+v_{min} = \max(v_{min\_calculé}, v_{min\_abs})
+```
 
-Typiquement, $v_{min\_ abs} = 0.5$ m/s (environ 1.8 km/h).
+Typiquement, $`v_{min\_abs} = 0.5`$ m/s (environ 1.8 km/h).
 
 ``` r
+
 # Calculer les seuils automatiques
 thresholds <- calculate_thresholds(data_utm)
 
@@ -102,6 +113,7 @@ cat("Seuil maximum:", round(thresholds$velocity$max_velocity, 2), "m/s\n")
 ## Distribution des vitesses
 
 ``` r
+
 # Distribution des vitesses
 velocities <- data_calc$velocity_manual[!is.na(data_calc$velocity_manual)]
 
@@ -134,15 +146,18 @@ p1
 
 ### Règle de décision
 
-Un point $i$ est conservé si :
+Un point $`i`$ est conservé si :
 
-$$v_{min} \leq v_{i} \leq v_{max}$$
+``` math
+v_{min} \leq v_i \leq v_{max}
+```
 
 Sinon, il est éliminé.
 
 ### Exemple d’application
 
 ``` r
+
 cat("=== Application du filtre de vitesse ===\n")
 #> === Application du filtre de vitesse ===
 
@@ -174,6 +189,7 @@ cat("Points retirés:", n_before - n_after, "(",
 ## Visualisation avant/après
 
 ``` r
+
 # Calculer les vitesses pour visualisation
 data_viz_before <- data_utm %>%
   mutate(velocity = sqrt((X - lag(X))^2 + (Y - lag(Y))^2) / Interval)
@@ -195,6 +211,7 @@ plot(sf_before["velocity"], main = "AVANT - Toutes les vitesses",
 ![](filtre-vitesse_files/figure-html/velocity-viz-1.png)
 
 ``` r
+
 plot(sf_after["velocity"], main = "APRÈS - Vitesses filtrées", 
      pch = 19, cex = 0.3, breaks = "jenks", key.pos = NULL)
 ```
@@ -206,6 +223,7 @@ plot(sf_after["velocity"], main = "APRÈS - Vitesses filtrées",
 ### 1. Vitesse trop faible (arrêts)
 
 ``` r
+
 # Identifier les points à vitesse nulle ou très faible
 low_vel <- data_calc %>% 
   filter(velocity_manual < 0.5 | is.na(velocity_manual))
@@ -237,6 +255,7 @@ if (nrow(low_vel) > 0) {
 ### 2. Vitesse trop élevée (erreurs GPS)
 
 ``` r
+
 # Identifier les points à vitesse excessive
 high_vel <- data_calc %>% 
   filter(velocity_manual > 10)
@@ -288,13 +307,14 @@ if (nrow(high_vel) > 0) {
 | vscale    | Facteur d’échelle haut         | 1.5        |
 | minv_abs  | Minimum absolu (m/s)           | 0.5        |
 
-Paramètres du filtre de vitesse
+Paramètres du filtre de vitesse {.table}
 
 ## Exemples de cas réels
 
 ### Cas 1: Arrêt pour vidange
 
 ``` r
+
 # Simuler un arrêt
 set.seed(123)
 time <- 1:100
@@ -325,6 +345,7 @@ p_case1
 ### Cas 2: Saut GPS
 
 ``` r
+
 # Simuler un saut GPS
 time <- 1:100
 x <- c(seq(0, 50, length.out = 50), 

@@ -29,64 +29,80 @@ valeurs de rendement similaires.
 
 #### Formule de l’indice de Moran
 
-$$I = \frac{n}{W} \cdot \frac{\sum\limits_{i = 1}^{n}\sum\limits_{j = 1}^{n}w_{ij}\left( y_{i} - \bar{y} \right)\left( y_{j} - \bar{y} \right)}{\sum\limits_{i = 1}^{n}\left( y_{i} - \bar{y} \right)^{2}}$$
+``` math
+I = \frac{n}{W} \cdot \frac{\sum_{i=1}^{n} \sum_{j=1}^{n} w_{ij}(y_i - \bar{y})(y_j - \bar{y})}{\sum_{i=1}^{n}(y_i - \bar{y})^2}
+```
 
-Où : - $n$ = nombre d’observations - $y_{i}$, $y_{j}$ = valeurs de
-rendement aux positions $i$ et $j$ - $\bar{y}$ = moyenne des
-rendements - $w_{ij}$ = poids spatial entre les points $i$ et $j$ -
-$W = \sum_{i = 1}^{n}\sum_{j = 1}^{n}w_{ij}$ = somme de tous les poids
+Où : - $`n`$ = nombre d’observations - $`y_i`$, $`y_j`$ = valeurs de
+rendement aux positions $`i`$ et $`j`$ - $`\bar{y}`$ = moyenne des
+rendements - $`w_{ij}`$ = poids spatial entre les points $`i`$ et
+$`j`$ - $`W = \sum_{i=1}^{n} \sum_{j=1}^{n} w_{ij}`$ = somme de tous les
+poids
 
 #### Interprétation de l’indice de Moran
 
-| Valeur de I   | Interprétation                                   |
-|---------------|--------------------------------------------------|
-| $I \approx 1$ | Forte autocorrélation positive (zones homogènes) |
-| $I \approx 0$ | Pas d’autocorrélation (distribution aléatoire)   |
-| $I < 0$       | Autocorrélation négative (zones contrastées)     |
+| Valeur de I     | Interprétation                                   |
+|-----------------|--------------------------------------------------|
+| $`I \approx 1`$ | Forte autocorrélation positive (zones homogènes) |
+| $`I \approx 0`$ | Pas d’autocorrélation (distribution aléatoire)   |
+| $`I < 0`$       | Autocorrélation négative (zones contrastées)     |
 
 **Objectif du Delay Adjustment** : Maximiser l’indice de Moran en
 trouvant le délai optimal qui aligne le flux avec la position.
 
 ### 2. Matrice de poids spatiaux
 
-Les poids $w_{ij}$ sont définis par une fonction de distance :
+Les poids $`w_{ij}`$ sont définis par une fonction de distance :
 
-$$w_{ij} = \begin{cases}
-1 & {{\text{si}\mspace{6mu}}d_{ij} \leq d_{max}} \\
+``` math
+w_{ij} = \begin{cases} 
+1 & \text{si } d_{ij} \leq d_{max} \\
 0 & \text{sinon}
-\end{cases}$$
+\end{cases}
+```
 
-Où $d_{ij}$ est la distance euclidienne entre les points $i$ et $j$ :
+Où $`d_{ij}`$ est la distance euclidienne entre les points $`i`$ et
+$`j`$ :
 
-$$d_{ij} = \sqrt{\left( x_{i} - x_{j} \right)^{2} + \left( y_{i} - y_{j} \right)^{2}}$$
+``` math
+d_{ij} = \sqrt{(x_i - x_j)^2 + (y_i - y_j)^2}
+```
 
 #### Distance maximale typique
 
-Pour les données de rendement, $d_{max}$ est généralement fixé à **30
+Pour les données de rendement, $`d_{max}`$ est généralement fixé à **30
 mètres**, ce qui correspond à environ 3-4 passages de moissonneuse.
 
 ### 3. Décalage temporel (Time Shift)
 
-Pour chaque délai candidat $\delta$, on applique un décalage au flux :
+Pour chaque délai candidat $`\delta`$, on applique un décalage au flux :
 
-$$Flow_{\delta}(t) = Flow(t + \delta)$$
+``` math
+Flow_{\delta}(t) = Flow(t + \delta)
+```
 
 Le rendement corrigé devient :
 
-$$Yield_{\delta}(t) = \frac{Flow_{\delta}(t) \times Interval}{Swath \times Distance} \times 10000$$
+``` math
+Yield_{\delta}(t) = \frac{Flow_{\delta}(t) \times Interval}{Swath \times Distance} \times 10000
+```
 
 ### 4. Score de corrélation spatiale (RSC)
 
 Le RSC (Ratio of Spatial Correlation) est défini comme l’indice de Moran
 calculé sur les données décalées :
 
-$$RSC(\delta) = I\left( Yield_{\delta} \right)$$
+``` math
+RSC(\delta) = I(Yield_{\delta})
+```
 
 **Délai optimal** :
 
-$$\delta^{*} = \arg\max\limits_{\delta \in \Delta}RSC(\delta)$$
+``` math
+\delta^* = \arg\max_{\delta \in \Delta} RSC(\delta)
+```
 
-Où $\Delta$ est la plage de délais testés (typiquement -25 à +25
+Où $`\Delta`$ est la plage de délais testés (typiquement -25 à +25
 secondes).
 
 ## Algorithme Delay Adjustment
@@ -131,6 +147,7 @@ secondes).
 ### Implémentation dans yieldcleanr
 
 ``` r
+
 library(yieldcleanr)
 library(ggplot2)
 library(dplyr)
@@ -149,7 +166,8 @@ delay_result <- optimize_delays(data, type = "flow", delay_range = -25:25, n_ite
 
 cat("Délai optimal détecté:", delay_result$delays$flow, "secondes\n")
 #> Délai optimal détecté: 13 secondes
-optimal_rsc <- delay_result$delay_adjustment_results$flow$rsc_values$mean_score[delay_result$delay_adjustment_results$flow$rsc_values$delay == delay_result$delays$flow]
+da_flow <- delay_result$delay_adjustment_results$flow
+optimal_rsc <- da_flow$rsc_values$mean_score[da_flow$rsc_values$delay == delay_result$delays$flow]
 if (length(optimal_rsc) > 0 && !is.na(optimal_rsc[1])) {
   cat("Score Moran moyen au délai optimal:", round(optimal_rsc[1], 4), "\n")
 } else {
@@ -163,6 +181,7 @@ if (length(optimal_rsc) > 0 && !is.na(optimal_rsc[1])) {
 ### Comparaison avant/après correction
 
 ``` r
+
 # Données avant correction (converties en rendement pour visualisation)
 data_before <- convert_flow_to_yield(data)
 
@@ -183,6 +202,7 @@ plot(sf_before["Yield_kg_ha"], main = "AVANT correction Delay Adjustment",
 ![](filtre-delai_files/figure-html/delay_adjustment-comparison-1.png)
 
 ``` r
+
 plot(sf_after["Yield_kg_ha"], main = "APRÈS correction Delay Adjustment", 
      pch = 19, cex = 0.3, breaks = "jenks", key.pos = NULL)
 ```
@@ -196,6 +216,7 @@ plot(sf_after["Yield_kg_ha"], main = "APRÈS correction Delay Adjustment",
 Pour comprendre l’effet du délai, créons une simulation simple :
 
 ``` r
+
 # Créer des données simulées avec un délai connu
 set.seed(42)
 n_points <- 200
@@ -243,6 +264,7 @@ gridExtra::grid.arrange(p2, p3, ncol = 2)
 ### Effet du délai sur l’autocorrélation
 
 ``` r
+
 # Calculer Moran I pour différents délais simulés
 calculate_moran_simple <- function(yield, x, y, threshold = 10) {
   n <- length(yield)
@@ -327,13 +349,13 @@ faibles - Un besoin de plus d’itérations
 
 ### Paramètres principaux
 
-| Paramètre            | Description                         | Valeur par défaut | Plage recommandée         |
-|----------------------|-------------------------------------|-------------------|---------------------------|
-| `delay_range`        | Plage de délais testés              | `-25:25`          | `-30:30` selon équipement |
-| `n_iterations`       | Nombre d’itérations                 | `10`              | `5-20`                    |
-| `cell_size`          | Taille des cellules de grille       | `10m`             | `5-15m`                   |
-| `sample_fraction`    | Fraction de données échantillonnées | `0.3`             | `0.2-0.5`                 |
-| `distance_threshold` | Distance max pour Moran             | `30m`             | `20-50m`                  |
+| Paramètre | Description | Valeur par défaut | Plage recommandée |
+|----|----|----|----|
+| `delay_range` | Plage de délais testés | `-25:25` | `-30:30` selon équipement |
+| `n_iterations` | Nombre d’itérations | `10` | `5-20` |
+| `cell_size` | Taille des cellules de grille | `10m` | `5-15m` |
+| `sample_fraction` | Fraction de données échantillonnées | `0.3` | `0.2-0.5` |
+| `distance_threshold` | Distance max pour Moran | `30m` | `20-50m` |
 
 ### Recommandations par type de culture
 

@@ -32,6 +32,7 @@ interactive Shiny application for visual data cleaning.
 ## Installation
 
 ``` r
+
 # Install from GitHub
 devtools::install_github("cedricbouffard/yieldcleanr")
 ```
@@ -41,6 +42,7 @@ devtools::install_github("cedricbouffard/yieldcleanr")
 ### Command Line Usage
 
 ``` r
+
 library(yieldcleanr)
 
 # Clean yield data with default parameters
@@ -73,6 +75,7 @@ cleaned <- clean_yield_data(
 ### Interactive Shiny Application
 
 ``` r
+
 # Launch the interactive cleaning application
 yieldcleanr::launch_shiny_app()
 ```
@@ -105,6 +108,7 @@ filter functions:
 Apply one or multiple filters to your data:
 
 ``` r
+
 # Filter header status only
 filtered <- filter_data(data, type = "header")
 
@@ -123,6 +127,7 @@ filtered <- filter_data(data, type = "all")
 Detect and filter anomalies in your data:
 
 ``` r
+
 # Detect and filter all anomalies
 cleaned <- detect_anomalies(data, type = "all")
 
@@ -146,6 +151,7 @@ marked <- detect_anomalies(data, type = c("overlap", "local_sd"),
 Optimize GPS-sensor delays using delay adjustment method:
 
 ``` r
+
 # Optimize both flow and moisture delays
 result <- optimize_delays(data, type = "both")
 data_corrected <- result$data
@@ -163,6 +169,7 @@ print(delays$delays$flow)  # Optimal flow delay in seconds
 Automatically calculate thresholds for filtering:
 
 ``` r
+
 # Calculate all thresholds
 thresholds <- calculate_thresholds(data)
 
@@ -183,6 +190,7 @@ thresholds$velocity$max_velocity  # Maximum velocity threshold
 Convert between coordinate systems:
 
 ``` r
+
 # Convert Lat/Lon to UTM
 data_utm <- convert_coordinates(data, from = "latlon", to = "utm")
 
@@ -195,6 +203,7 @@ data_latlon <- convert_coordinates(data, from = "utm", to = "latlon")
 Convert yield between different units:
 
 ``` r
+
 # Convert flow (lbs/s) to yield (kg/ha)
 data_yield <- convert_yield_units(data, from = "flow_lbs_s", to = "kg_ha")
 
@@ -211,6 +220,7 @@ data_tonnes <- convert_yield_units(data, from = "kg_ha", to = "t_ha")
 Anonymize sensitive information:
 
 ``` r
+
 # Full anonymization (coordinates + attributes)
 data_anon <- anonymize_data(data, type = "full")
 
@@ -230,6 +240,7 @@ data_anon <- anonymize_data(data, type = "attributes")
 Export data to various formats:
 
 ``` r
+
 # Export to CSV
 export_data(data, "output.csv", format = "csv")
 
@@ -267,6 +278,7 @@ The cleaning process follows this order:
 Generate interpolated raster maps:
 
 ``` r
+
 # Export cleaned data to raster using the new API
 export_data(
   data = data_clean,
@@ -410,7 +422,7 @@ implémentent les algorithmes de nettoyage automatisé basés sur les
 standards USDA Yield Editor.
 
 - [`ayce_clean()`](https://cedricbouffard.github.io/yieldcleanr/reference/ayce_clean.md)
-  : AYCE : Auto Yield Cleaning Engine (sortie imperiale)
+  : AYCE : Auto Yield Cleaning Engine (sortie tibble)
 - [`ayce_sf()`](https://cedricbouffard.github.io/yieldcleanr/reference/ayce_sf.md)
   : Pipeline AYCE complet avec sortie SF
 
@@ -469,12 +481,19 @@ brutes en rendement calculé.
 ## 💾 Import et Export de Données
 
 Fonctions pour importer et exporter les données depuis/vers différents
-formats (CSV, TXT, GeoJSON, Shapefiles ZIP).
+formats (CSV, TXT, GeoJSON, GeoPackage, Shapefile et ZIP).
 
 - [`export_data()`](https://cedricbouffard.github.io/yieldcleanr/reference/export_data.md)
   : Méta-fonction d'export des données
 - [`read_yield_from_zip()`](https://cedricbouffard.github.io/yieldcleanr/reference/read_yield_from_zip.md)
   : Lire les donnees de rendement depuis un fichier ZIP
+- [`read_yield_from_vector()`](https://cedricbouffard.github.io/yieldcleanr/reference/read_yield_from_vector.md)
+  : Lire des donnees depuis un fichier vectoriel (shapefile, GeoPackage,
+  GeoJSON)
+- [`read_jd_to_polygons()`](https://cedricbouffard.github.io/yieldcleanr/reference/read_jd_to_polygons.md)
+  : Lire des donnees John Deere et convertir en polygones metriques
+- [`create_polygons_from_data()`](https://cedricbouffard.github.io/yieldcleanr/reference/create_polygons_from_data.md)
+  : Creer des polygones rectangulaires a partir de donnees ponctuelles
 - [`list_fields_from_zip()`](https://cedricbouffard.github.io/yieldcleanr/reference/list_fields_from_zip.md)
   : Lister les champs disponibles dans un fichier ZIP
 

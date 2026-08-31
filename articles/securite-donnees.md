@@ -44,6 +44,7 @@ Vérification que les données n’ont pas été altérées
 ### Niveau 1: Basique (Développement/Tests)
 
 ``` r
+
 # Anonymisation sans chiffrement (rapide mais peu sécurisé)
 result <- anonymize_data(data, type = "coordinates")
 ```
@@ -54,6 +55,7 @@ coordonnées.
 ### Niveau 2: Standard (Recherche)
 
 ``` r
+
 # Anonymisation avec chiffrement
 result <- anonymize_data(
   data,
@@ -70,6 +72,7 @@ séparément des données
 ### Niveau 3: Élevé (Production/Données Sensibles)
 
 ``` r
+
 # Anonymisation avec UTM et sécurité renforcée
 result <- anonymize_data(
   data,
@@ -98,6 +101,7 @@ gestionnaire de mots de passe d’entreprise
 Au lieu de conserver les points individuels, agréger en mailles:
 
 ``` r
+
 # Créer une grille et agréger
 library(sf)
 grid <- st_make_grid(data_sf, cellsize = 50)  # Mailles de 50m
@@ -112,6 +116,7 @@ aggregated <- aggregate(data_sf, grid, mean)
 Ajouter un bruit aléatoire aux coordonnées:
 
 ``` r
+
 # Ajouter du bruit (±10 mètres)
 noise_lat <- runif(nrow(data), -0.00009, 0.00009)  # ~±10m
 noise_lon <- runif(nrow(data), -0.00009, 0.00009)
@@ -127,6 +132,7 @@ patterns spatiaux.
 Retirer les colonnes identifiantes:
 
 ``` r
+
 # Supprimer les identifiants
 anonymized <- anonymize_data(data, type = "attributes")
 ```
@@ -137,6 +143,7 @@ S’assurer que chaque point est indiscernable d’au moins k-1 autres
 points:
 
 ``` r
+
 # Généraliser les coordonnées (arrondir à 3 décimales ~ 100m)
 data$Lat_rounded <- round(data$Latitude, 3)
 data$Lon_rounded <- round(data$Longitude, 3)
@@ -170,6 +177,7 @@ bibliothèques spécialisées.
 ### Vérifier l’Intégrité d’une Clé
 
 ``` r
+
 # Vérifier avant de restaurer
 if (verify_key_file("cle.enc", "mot_de_passe")) {
   restored <- restore_coordinates(data_anon, "cle.enc", "mot_de_passe")
@@ -181,6 +189,7 @@ if (verify_key_file("cle.enc", "mot_de_passe")) {
 ### Générer un Rapport de Sécurité
 
 ``` r
+
 result <- anonymize_data(data, type = "coordinates", output_key_file = "cle.enc", password = "pass")
 report <- security_report(result)
 print(report$summary)
@@ -194,6 +203,7 @@ print(report$summary)
 ## Exemple Complet
 
 ``` r
+
 library(yieldcleanr)
 
 # 1. Charger les données

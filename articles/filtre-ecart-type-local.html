@@ -7,8 +7,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <title>Filtre d'Écart-type Local (Local SD) • yieldcleanr</title>
 <script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
-<script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/Roboto-0.4.10/font.css" rel="stylesheet">
+<link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
+<script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/Roboto-0.4.10/font.css" rel="stylesheet">
 <link href="../deps/JetBrains_Mono-0.4.10/font.css" rel="stylesheet">
 <link href="../deps/Roboto_Condensed-0.4.10/font.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
@@ -127,7 +127,7 @@ passages adjacents - <strong>La fenêtre temporelle</strong> :
 points successifs</p>
 <p>Dans yieldcleanr, le voisinage est défini par le nombre de swaths
 (passages) adjacents :</p>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>V</mi><mi>i</mi></msub><mo>=</mo><mo stretchy="false" form="prefix">{</mo><msub><mi>p</mi><mi>j</mi></msub><mo>:</mo><mrow><mo stretchy="true" form="prefix">|</mo><mi>p</mi><mi>a</mi><mi>s</mi><msub><mi>s</mi><mi>j</mi></msub><mo>−</mo><mi>p</mi><mi>a</mi><mi>s</mi><msub><mi>s</mi><mi>i</mi></msub><mo stretchy="true" form="postfix">|</mo></mrow><mo>≤</mo><msub><mi>n</mi><mrow><mi>s</mi><mi>w</mi><mi>a</mi><mi>t</mi><mi>h</mi><mi>s</mi></mrow></msub><mo stretchy="false" form="postfix">}</mo></mrow><annotation encoding="application/x-tex">V_i = \{p_j : |pass_j - pass_i| \leq n_{swaths}\}</annotation></semantics></math></p>
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>V</mi><mi>i</mi></msub><mo>=</mo><mo stretchy="false" form="prefix">{</mo><msub><mi>p</mi><mi>j</mi></msub><mo>:</mo><mo stretchy="false" form="prefix">|</mo><mi>p</mi><mi>a</mi><mi>s</mi><msub><mi>s</mi><mi>j</mi></msub><mo>−</mo><mi>p</mi><mi>a</mi><mi>s</mi><msub><mi>s</mi><mi>i</mi></msub><mo stretchy="false" form="prefix">|</mo><mo>≤</mo><msub><mi>n</mi><mrow><mi>s</mi><mi>w</mi><mi>a</mi><mi>t</mi><mi>h</mi><mi>s</mi></mrow></msub><mo stretchy="false" form="postfix">}</mo></mrow><annotation encoding="application/x-tex">V_i = \{p_j : |pass_j - pass_i| \leq n_{swaths}\}</annotation></semantics></math></p>
 </div>
 <div class="section level3">
 <h3 id="statistiques-locales">2. Statistiques locales<a class="anchor" aria-label="anchor" href="#statistiques-locales"></a>
@@ -136,9 +136,9 @@ points successifs</p>
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>V</mi><mi>i</mi></msub><annotation encoding="application/x-tex">V_i</annotation></semantics></math>,
 on calcule :</p>
 <p><strong>Moyenne locale :</strong>
-<math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mover><mi>y</mi><mo accent="true">‾</mo></mover><mi>i</mi></msub><mo>=</mo><mfrac><mn>1</mn><mrow><mo stretchy="true" form="prefix">|</mo><msub><mi>V</mi><mi>i</mi></msub><mo stretchy="true" form="postfix">|</mo></mrow></mfrac><munder><mo>∑</mo><mrow><mi>j</mi><mo>∈</mo><msub><mi>V</mi><mi>i</mi></msub></mrow></munder><msub><mi>y</mi><mi>j</mi></msub></mrow><annotation encoding="application/x-tex">\bar{y}_i = \frac{1}{|V_i|} \sum_{j \in V_i} y_j</annotation></semantics></math></p>
+<math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mover><mi>y</mi><mo accent="true">‾</mo></mover><mi>i</mi></msub><mo>=</mo><mfrac><mn>1</mn><mrow><mo stretchy="false" form="prefix">|</mo><msub><mi>V</mi><mi>i</mi></msub><mo stretchy="false" form="prefix">|</mo></mrow></mfrac><munder><mo>∑</mo><mrow><mi>j</mi><mo>∈</mo><msub><mi>V</mi><mi>i</mi></msub></mrow></munder><msub><mi>y</mi><mi>j</mi></msub></mrow><annotation encoding="application/x-tex">\bar{y}_i = \frac{1}{|V_i|} \sum_{j \in V_i} y_j</annotation></semantics></math></p>
 <p><strong>Écart-type local :</strong>
-<math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>σ</mi><mi>i</mi></msub><mo>=</mo><msqrt><mrow><mfrac><mn>1</mn><mrow><mrow><mo stretchy="true" form="prefix">|</mo><msub><mi>V</mi><mi>i</mi></msub><mo stretchy="true" form="postfix">|</mo></mrow><mo>−</mo><mn>1</mn></mrow></mfrac><munder><mo>∑</mo><mrow><mi>j</mi><mo>∈</mo><msub><mi>V</mi><mi>i</mi></msub></mrow></munder><msup><mrow><mo stretchy="true" form="prefix">(</mo><msub><mi>y</mi><mi>j</mi></msub><mo>−</mo><msub><mover><mi>y</mi><mo accent="true">‾</mo></mover><mi>i</mi></msub><mo stretchy="true" form="postfix">)</mo></mrow><mn>2</mn></msup></mrow></msqrt></mrow><annotation encoding="application/x-tex">\sigma_i = \sqrt{\frac{1}{|V_i| - 1} \sum_{j \in V_i} (y_j - \bar{y}_i)^2}</annotation></semantics></math></p>
+<math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>σ</mi><mi>i</mi></msub><mo>=</mo><msqrt><mrow><mfrac><mn>1</mn><mrow><mo stretchy="false" form="prefix">|</mo><msub><mi>V</mi><mi>i</mi></msub><mo stretchy="false" form="prefix">|</mo><mi>−</mi><mn>1</mn></mrow></mfrac><munder><mo>∑</mo><mrow><mi>j</mi><mo>∈</mo><msub><mi>V</mi><mi>i</mi></msub></mrow></munder><mo stretchy="false" form="prefix">(</mo><msub><mi>y</mi><mi>j</mi></msub><mo>−</mo><msub><mover><mi>y</mi><mo accent="true">‾</mo></mover><mi>i</mi></msub><msup><mo stretchy="false" form="postfix">)</mo><mn>2</mn></msup></mrow></msqrt></mrow><annotation encoding="application/x-tex">\sigma_i = \sqrt{\frac{1}{|V_i| - 1} \sum_{j \in V_i} (y_j - \bar{y}_i)^2}</annotation></semantics></math></p>
 </div>
 <div class="section level3">
 <h3 id="score-z-local">3. Score Z local<a class="anchor" aria-label="anchor" href="#score-z-local"></a>
@@ -153,12 +153,12 @@ en unités d’écart-type :</p>
 <p>Un point
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>i</mi><annotation encoding="application/x-tex">i</annotation></semantics></math>
 est éliminé si :</p>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mrow><mo stretchy="true" form="prefix">|</mo><msub><mi>Z</mi><mi>i</mi></msub><mo stretchy="true" form="postfix">|</mo></mrow><mo>&gt;</mo><msub><mi>Z</mi><mrow><mi>l</mi><mi>i</mi><mi>m</mi></mrow></msub></mrow><annotation encoding="application/x-tex">|Z_i| &gt; Z_{lim}</annotation></semantics></math></p>
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false" form="prefix">|</mo><msub><mi>Z</mi><mi>i</mi></msub><mo stretchy="false" form="prefix">|</mo><mo>&gt;</mo><msub><mi>Z</mi><mrow><mi>l</mi><mi>i</mi><mi>m</mi></mrow></msub></mrow><annotation encoding="application/x-tex">|Z_i| &gt; Z_{lim}</annotation></semantics></math></p>
 <p>Où
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>Z</mi><mrow><mi>l</mi><mi>i</mi><mi>m</mi></mrow></msub><annotation encoding="application/x-tex">Z_{lim}</annotation></semantics></math>
 est le seuil d’écart-type (défaut: 3).</p>
 <p>Cela équivaut à :</p>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>y</mi><mi>i</mi></msub><mo>∉</mo><mrow><mo stretchy="true" form="prefix">[</mo><msub><mover><mi>y</mi><mo accent="true">‾</mo></mover><mi>i</mi></msub><mo>−</mo><msub><mi>Z</mi><mrow><mi>l</mi><mi>i</mi><mi>m</mi></mrow></msub><mo>⋅</mo><msub><mi>σ</mi><mi>i</mi></msub><mo>,</mo><msub><mover><mi>y</mi><mo accent="true">‾</mo></mover><mi>i</mi></msub><mo>+</mo><msub><mi>Z</mi><mrow><mi>l</mi><mi>i</mi><mi>m</mi></mrow></msub><mo>⋅</mo><msub><mi>σ</mi><mi>i</mi></msub><mo stretchy="true" form="postfix">]</mo></mrow></mrow><annotation encoding="application/x-tex">y_i \notin [\bar{y}_i - Z_{lim} \cdot \sigma_i, \bar{y}_i + Z_{lim} \cdot \sigma_i]</annotation></semantics></math></p>
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>y</mi><mi>i</mi></msub><mo>∉</mo><mo stretchy="false" form="prefix">[</mo><msub><mover><mi>y</mi><mo accent="true">‾</mo></mover><mi>i</mi></msub><mo>−</mo><msub><mi>Z</mi><mrow><mi>l</mi><mi>i</mi><mi>m</mi></mrow></msub><mo>⋅</mo><msub><mi>σ</mi><mi>i</mi></msub><mo>,</mo><msub><mover><mi>y</mi><mo accent="true">‾</mo></mover><mi>i</mi></msub><mo>+</mo><msub><mi>Z</mi><mrow><mi>l</mi><mi>i</mi><mi>m</mi></mrow></msub><mo>⋅</mo><msub><mi>σ</mi><mi>i</mi></msub><mo stretchy="false" form="postfix">]</mo></mrow><annotation encoding="application/x-tex">y_i \notin [\bar{y}_i - Z_{lim} \cdot \sigma_i, \bar{y}_i + Z_{lim} \cdot \sigma_i]</annotation></semantics></math></p>
 </div>
 </div>
 <div class="section level2">
@@ -716,7 +716,7 @@ larges, diminuer pour les petits champs.</p>
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
     </footer>
