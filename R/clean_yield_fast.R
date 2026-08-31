@@ -112,7 +112,9 @@ clean_yield_fast <- function(data, phase = "full", preprocessed_data = NULL,
   
   # Étape 5: Calcul initial du rendement (pour les seuils)
   rlang::inform("Étape 5: calcul du rendement initial...")
-  data <- convert_flow_to_yield(data)
+  if (!isFALSE(params$convert_flow)) {
+    data <- convert_flow_to_yield(data)
+  }
   
   # Étape 6: Création des polygones (indépendant des valeurs)
   if (isTRUE(params$create_polygons)) {
@@ -220,7 +222,9 @@ clean_yield_fast <- function(data, phase = "full", preprocessed_data = NULL,
   
   # Étape 10: Recalcul du rendement après délai
   rlang::inform("Étape 10: recalcul du rendement après délai...")
-  data <- convert_flow_to_yield(data, force_recalculate = TRUE)
+  if (!isFALSE(params$convert_flow)) {
+    data <- convert_flow_to_yield(data, force_recalculate = TRUE)
+  }
   
   # Étape 11: Calcul des seuils
   rlang::inform("Étape 11: calcul des seuils...")
@@ -414,7 +418,8 @@ clean_yield_fast <- function(data, phase = "full", preprocessed_data = NULL,
     }
     data <- filter_yield_range(data,
                                min_yield = thresholds$min_yield,
-                               max_yield = thresholds$max_yield)
+                               max_yield = thresholds$max_yield,
+                               yield_column = "Yield_kg_ha")
     n_deleted <- n_before - nrow(data)
     deletions$step <- c(deletions$step, "Filtre plage rendement")
     deletions$n <- c(deletions$n, n_deleted)

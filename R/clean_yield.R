@@ -121,6 +121,7 @@
     minv_abs = 0.5,    # Vitesse minimale absolue (m/s)
     miny_abs = 0,      # Rendement minimal absolu
     gbuffer = 100,     # Marge de position (metres)
+    apply_position = FALSE,  # Filtre position (DBSCAN) hors champ
 
     # Parametres de chevauchement
     cellsize_overlap = 0.3,    # Taille de cellule (metres) - standard USDA
@@ -224,7 +225,7 @@
   # ----- Etape 2b : filtre position -----
   if (isTRUE(params$apply_position)) {
     rlang::inform("Etape 2b : filtre position...")
-    data <- filter_position_outliers(data)
+    data <- filter_position_outliers(data)$data
     rlang::inform(paste("  Rows:", nrow(data)))
   } else {
     rlang::inform("Etape 2b : filtre position saute")
@@ -513,11 +514,9 @@
    flow_label <- "Flow_kg_s"
    unit_label <- "kg/ha"
 
-    # Pour une sortie tibble, supprimer les colonnes intermediaires
+    # Pour une sortie tibble, supprimer la colonne de flux brut (lbs/s)
    if (!polygon) {
-      # Nettoyer les colonnes intermediaires
       data$Flow <- NULL
-      data$Flow_kg_s <- NULL
    }
 
      if (polygon) {
@@ -694,7 +693,7 @@
     # ----- Sortie tibble -----
     # Renommer les colonnes finales
     data$Yield <- data$Yield_final
-    data$Flow <- data$Flow_final
+    data$Flow <- if ("Flow_kg_s" %in% names(data)) data$Flow_kg_s else NULL
 
     # Selectionner les colonnes de sortie
     output_cols <- c("X", "Y", "Latitude", "Longitude", "Flow", "Moisture",

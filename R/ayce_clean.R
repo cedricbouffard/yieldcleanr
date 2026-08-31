@@ -1,14 +1,14 @@
-#' AYCE : Auto Yield Cleaning Engine (sortie imperiale)
+#' AYCE : Auto Yield Cleaning Engine (sortie tibble)
 #'
 #' Systeme expert automatise pour le nettoyage des donnees de rendement
 #' sans intervention humaine, base sur les methodes USDA Yield Editor.
-#' Cette fonction retourne un tibble en unites imperiales (bu/acre).
+#' Cette fonction retourne un tibble sans geometrie, en kg/ha.
 #'
 #' @param file_path Chemin du fichier d'entree (txt)
 #' @param output_file Chemin du fichier CSV de sortie
 #' @param log_file Chemin du journal de sortie
 #' @param params Liste des parametres AYCE
- #' @return Tibble nettoye en unites imperiales
+ #' @return Tibble nettoye en kg/ha
  #' @export
  #' @examples
  #' \dontrun{

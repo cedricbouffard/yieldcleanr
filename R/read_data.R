@@ -5,7 +5,7 @@
 #' Supporte differents formats de fichiers (15-17 colonnes).
 #'
 #' @param file_path Chemin du fichier texte d'entree
-#' @param col_names Logique, si TRUE utilise les noms de colonnes standard
+#' @param data Data frame deja charge. Alternative a file_path.
 #' @return Un tibble avec les donnees brutes
 #' @export
 #' @examples
@@ -18,7 +18,7 @@
 #'
 #' data <- read_yield_data(temp_file)
 #' print(data)
-  read_yield_data <- function(file_path = NULL, data = NULL, col_names = TRUE) {
+  read_yield_data <- function(file_path = NULL, data = NULL) {
   # Check if file_path is actually a data frame (when called without named arguments)
   if (!is.null(file_path) && (is.data.frame(file_path) || inherits(file_path, "tbl_df"))) {
     if (!".row_id" %in% names(file_path)) {
@@ -166,9 +166,6 @@
       )
       data$DOP <- NA_real_
       data$GPSStatus <- NA_integer_
-      # Ajouter les colonnes manquantes
-      data$DOP <- NA_real_
-      data$GPSStatus <- NA_integer_
     } else {
       # Essayer de mapper generiquement
       std_names <- c(
@@ -191,8 +188,8 @@
 
   # Conversion des types - approche simple pour compatibilite
   num_cols <- c("Longitude", "Latitude", "Flow", "Moisture", "DOP", "Altitude")
-  int_cols <- c("GPS_Time", "Interval", "Distance", "Swath", "HeaderStatus", "Pass", "Serial", "GPSStatus")
-  char_cols <- c("FieldID", "LoadID", "GrainType")
+  int_cols <- c("GPS_Time", "Interval", "Distance", "Swath", "HeaderStatus", "Pass", "GPSStatus")
+  char_cols <- c("FieldID", "LoadID", "GrainType", "Serial")
   
   for (col in num_cols) {
     if (col %in% names(data)) data[[col]] <- as.numeric(data[[col]])
@@ -1251,61 +1248,96 @@ create_polygons_from_data <- function(data, heading_col = NULL) {
 
 #' Lire des donnees John Deere et convertir en polygones metriques
 #'
-#' Lit un fichier ZIP John Deere (rendement, semis, vitesse, etc.) et cree des polygones.
-#' Utilise les unites du JSON pour convertir en metrique.
+#' Lit un fichier ZIP John Deere (rendement, semis, vitesse, etc.) ou un
+#' fichier vectoriel (shapefile, GeoPackage, GeoJSON) et cree des polygones.
+#' Utilise les unites du JSON de metadonnees pour convertir en metrique.
 #'
-#' @param zip_path Chemin vers le fichier ZIP
-#' @param field_name Nom du champ dans le fichier ZIP
+#' @param file_path Chemin vers un fichier ZIP ou un fichier vectoriel
+#'   (.shp, .gpkg, .geojson)
+#' @param field_name Nom du champ dans le fichier ZIP. Ignore si file_path est
+#'   un fichier vectoriel. Si NULL et que le ZIP ne contient qu'un seul
+#'   shapefile, celui-ci est utilise automatiquement.
 #' @return Objet SF avec polygones et toutes les colonnes preservees
 #' @export
-read_jd_to_polygons <- function(zip_path, field_name) {
-  if (!file.exists(zip_path)) {
-    rlang::abort(paste("Le fichier ZIP n'existe pas:", zip_path))
+read_jd_to_polygons <- function(file_path, field_name = NULL) {
+  if (!file.exists(file_path)) {
+    rlang::abort(paste("Le fichier n'existe pas:", file_path))
   }
 
   if (!requireNamespace("sf", quietly = TRUE)) {
     rlang::abort("Le package 'sf' est requis")
   }
 
-  temp_dir <- tempfile(pattern = "jd_zip_")
-  dir.create(temp_dir, showWarnings = FALSE, recursive = TRUE)
+  ext <- tolower(tools::file_ext(file_path))
 
-  fields <- list_fields_from_zip(zip_path)
+  if (ext == "zip") {
+    temp_dir <- tempfile(pattern = "jd_zip_")
+    dir.create(temp_dir, showWarnings = FALSE, recursive = TRUE)
 
-  if (!field_name %in% fields$field_name) {
-    rlang::abort(paste("Champ", field_name, "non trouve dans le ZIP"))
-  }
+    fields <- list_fields_from_zip(file_path)
 
-  shp_file <- fields$Name[fields$field_name == field_name]
-  base_name <- tools::file_path_sans_ext(shp_file)
-
-  zip_contents <- utils::unzip(zip_path, list = TRUE)
-  related_files <- zip_contents$Name[grepl(paste0("^", base_name, "\\."), zip_contents$Name, ignore.case = TRUE)]
-
-  json_files <- zip_contents$Name[grepl(paste0("^", base_name, ".*-Deere-Metadata\\.json$"),
-                                        zip_contents$Name, ignore.case = TRUE)]
-  all_files <- unique(c(related_files, json_files))
-
-  utils::unzip(zip_path, files = all_files, exdir = temp_dir)
-
-  metadata <- NULL
-  if (length(json_files) > 0) {
-    json_path <- file.path(temp_dir, json_files[1])
-    if (!file.exists(json_path)) {
-      json_path <- file.path(temp_dir, basename(json_files[1]))
+    if (is.null(field_name) && nrow(fields) == 1) {
+      field_name <- fields$field_name[1]
     }
-    metadata <- parse_jd_metadata(json_path)
+    if (is.null(field_name) || !field_name %in% fields$field_name) {
+      rlang::abort(paste("Champ", field_name, "non trouve dans le ZIP - specifiez 'field_name'"))
+    }
+
+    shp_file <- fields$Name[fields$field_name == field_name]
+    base_name <- tools::file_path_sans_ext(shp_file)
+
+    zip_contents <- utils::unzip(file_path, list = TRUE)
+    related_files <- zip_contents$Name[grepl(paste0("^", base_name, "\\."), zip_contents$Name, ignore.case = TRUE)]
+
+    json_files <- zip_contents$Name[grepl(paste0("^", base_name, ".*-Deere-Metadata\\.json$"),
+                                          zip_contents$Name, ignore.case = TRUE)]
+    all_files <- unique(c(related_files, json_files))
+
+    utils::unzip(file_path, files = all_files, exdir = temp_dir)
+
+    metadata <- NULL
+    if (length(json_files) > 0) {
+      json_path <- file.path(temp_dir, json_files[1])
+      if (!file.exists(json_path)) {
+        json_path <- file.path(temp_dir, basename(json_files[1]))
+      }
+      metadata <- parse_jd_metadata(json_path)
+    }
+
+    shp_path <- file.path(temp_dir, shp_file)
+    if (!file.exists(shp_path)) {
+      shp_path <- file.path(temp_dir, basename(shp_file))
+    }
+
+    data <- sf::st_read(shp_path, quiet = TRUE)
+    unlink(temp_dir, recursive = TRUE)
+
+  } else if (ext %in% c("shp", "gpkg", "geojson", "json")) {
+    data <- sf::st_read(file_path, quiet = TRUE)
+
+    # Rechercher un JSON de metadonnees adjacent (-Deere-Metadata.json)
+    metadata <- NULL
+    base_name <- basename(tools::file_path_sans_ext(file_path))
+    json_candidates <- list.files(
+      dirname(file_path),
+      pattern = paste0("^", base_name, ".*-Deere-Metadata\\.json$"),
+      full.names = TRUE, ignore.case = TRUE
+    )
+    if (length(json_candidates) == 0) {
+      json_candidates <- list.files(dirname(file_path),
+                                    pattern = "-Deere-Metadata\\.json$",
+                                    full.names = TRUE, ignore.case = TRUE)
+    }
+    if (length(json_candidates) > 0) {
+      metadata <- parse_jd_metadata(json_candidates[1])
+    }
+
+  } else {
+    rlang::abort(paste("Format de fichier non supporte:", ext,
+                       "- fournir un ZIP ou un fichier .shp/.gpkg/.geojson"))
   }
 
-  shp_path <- file.path(temp_dir, shp_file)
-  if (!file.exists(shp_path)) {
-    shp_path <- file.path(temp_dir, basename(shp_file))
-  }
-
-  data <- sf::st_read(shp_path, quiet = TRUE)
   data <- sf::st_sf(sf::st_drop_geometry(data), geometry = sf::st_geometry(data))
-
-  unlink(temp_dir, recursive = TRUE)
 
   data <- convert_units_from_json(data, metadata)
 
@@ -1351,6 +1383,75 @@ read_jd_to_polygons <- function(zip_path, field_name) {
   sf_data <- create_polygons_from_data(data)
 
   return(sf_data)
+}
+
+
+#' Lire des donnees depuis un fichier vectoriel (shapefile, GeoPackage, GeoJSON)
+#'
+#' Equivalent de read_jd_to_polygons mais retourne un data frame de points
+#' standardise (sans geometrie), pret pour le pipeline de nettoyage.
+#' Utile pour les fichiers de semis, d'epandage, etc. qui ne sont pas du rendement.
+#'
+#' @param file_path Chemin vers un fichier .shp, .gpkg ou .geojson
+#' @return Data frame avec colonnes standardisees et coordonnees Longitude/Latitude
+#' @export
+read_yield_from_vector <- function(file_path) {
+  if (!file.exists(file_path)) {
+    rlang::abort(paste("Le fichier n'existe pas:", file_path))
+  }
+
+  if (!requireNamespace("sf", quietly = TRUE)) {
+    rlang::abort("Le package 'sf' est requis")
+  }
+
+  ext <- tolower(tools::file_ext(file_path))
+  if (!ext %in% c("shp", "gpkg", "geojson", "json")) {
+    rlang::abort(paste("Format de fichier non supporte:", ext,
+                       "- fournir un fichier .shp/.gpkg/.geojson"))
+  }
+
+  data <- sf::st_read(file_path, quiet = TRUE)
+  data <- sf::st_sf(sf::st_drop_geometry(data), geometry = sf::st_geometry(data))
+
+  # Rechercher un JSON de metadonnees adjacent (-Deere-Metadata.json)
+  metadata <- NULL
+  base_name <- basename(tools::file_path_sans_ext(file_path))
+  json_candidates <- list.files(
+    dirname(file_path),
+    pattern = paste0("^", base_name, ".*-Deere-Metadata\\.json$"),
+    full.names = TRUE, ignore.case = TRUE
+  )
+  if (length(json_candidates) == 0) {
+    json_candidates <- list.files(dirname(file_path),
+                                  pattern = "-Deere-Metadata\\.json$",
+                                  full.names = TRUE, ignore.case = TRUE)
+  }
+  if (length(json_candidates) > 0) {
+    metadata <- parse_jd_metadata(json_candidates[1])
+  }
+
+  # Convertir les unites selon le JSON
+  data <- convert_units_from_json(data, metadata)
+
+  # Extraire les coordonnees et detacher la geometrie
+  if (inherits(data, "sf")) {
+    coords <- sf::st_coordinates(data)
+    if (ncol(coords) >= 2) {
+      data$Longitude <- coords[, 1]
+      data$Latitude <- coords[, 2]
+    }
+    metadata_attrs <- attributes(data)[!names(attributes(data)) %in%
+      c("names", "class", "row.names", "sf_column", "agr")]
+    data <- sf::st_drop_geometry(data)
+    for (attr_name in names(metadata_attrs)) {
+      attr(data, attr_name) <- metadata_attrs[[attr_name]]
+    }
+  }
+
+  # Standardiser les colonnes John Deere
+  data <- standardize_jd_columns(data, metadata = metadata)
+
+  return(data)
 }
 
 

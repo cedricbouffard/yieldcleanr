@@ -594,7 +594,7 @@ ui <- fluidPage(
         
         # Import fichier(s) (détection automatique du type)
         fileInput("file_input", "Choisir un ou plusieurs fichiers",
-                 accept = c(".txt", ".csv", ".zip"),
+                 accept = c(".txt", ".csv", ".zip", ".shp", ".gpkg", ".geojson"),
                  multiple = TRUE),
         
         # Selection des champs (visible uniquement pour ZIP)
@@ -637,9 +637,12 @@ ui <- fluidPage(
                    ),
                     selected = "dry_yield"),
 
-        # Section Filtres avec checkboxes statiques
-        div(class = "section-title", "3. Filtres a appliquer"),
-         checkboxInput("apply_delay_adjustment_flow", "Delay adjustment flux", value = TRUE),
+         # Section Filtres avec checkboxes statiques
+         div(class = "section-title", "3. Filtres a appliquer"),
+          selectInput("value_col", "Colonne a nettoyer :",
+                      choices = c("Automatique (rendement)" = ""),
+                      selected = ""),
+          checkboxInput("apply_delay_adjustment_flow", "Delay adjustment flux", value = TRUE),
          checkboxInput("apply_delay_adjustment_moisture", "Delay adjustment humidite", value = TRUE),
          checkboxInput("apply_position", "Filtre position (hors champ)", value = TRUE),
          checkboxInput("apply_header", "Filtre header", value = TRUE),
@@ -1018,6 +1021,7 @@ server <- function(input, output, session) {
       file_exts <- tolower(tools::file_ext(file_names))
       has_zip <- any(file_exts == "zip")
       has_txt <- any(file_exts %in% c("txt", "csv"))
+      has_vector <- any(file_exts %in% c("shp", "gpkg", "geojson", "json"))
       
       if (has_zip) {
         # Traiter tous les fichiers ZIP et combiner les champs
@@ -1110,6 +1114,82 @@ server <- function(input, output, session) {
         process_data()
         
         # Store the field after processing
+        store_current_field(field_name_from_file)
+      } else if (has_vector) {
+        # Traiter les fichiers vectoriels (shp/gpkg/geojson) - non rendement ou rendement
+        rv$zip_fields <- NULL
+        rv$zip_data <- NULL
+        rv$selected_fields <- NULL
+        rv$preprocessed_data <- NULL
+        rv$preprocess_params <- NULL
+
+        vector_exts <- c("shp", "gpkg", "geojson", "json")
+        vec_idx <- which(file_exts %in% vector_exts)
+
+        all_data <- NULL
+        processed_shp_bases <- character()
+
+        for (i in vec_idx) {
+          ext_i <- file_exts[i]
+          if (ext_i == "shp") {
+            # Un shapefile necessite ses fichiers compagnons (.dbf/.shx/.prj)
+            base_i <- tools::file_path_sans_ext(file_names[i])
+            if (base_i %in% processed_shp_bases) next
+            processed_shp_bases <- c(processed_shp_bases, base_i)
+
+            companion_idx <- which(
+              tools::file_path_sans_ext(file_names) == base_i &
+                file_exts %in% c("shp", "dbf", "shx", "prj", "cpg", "sbn", "sbx")
+            )
+            tmp_dir <- tempfile(pattern = "shp_upload_")
+            dir.create(tmp_dir, showWarnings = FALSE, recursive = TRUE)
+            for (j in companion_idx) {
+              file.copy(file_paths[j], file.path(tmp_dir, file_names[j]))
+            }
+            data <- yieldcleanr::read_yield_from_vector(file.path(tmp_dir, file_names[i]))
+            unlink(tmp_dir, recursive = TRUE)
+          } else {
+            data <- yieldcleanr::read_yield_from_vector(file_paths[i])
+          }
+          data$source_file <- file_names[i]
+          all_data <- rbind(all_data, data)
+        }
+
+        rv$raw_data <- all_data
+
+        # Remplir la liste des colonnes pour le choix de la colonne a nettoyer
+        numeric_cols <- names(all_data)[vapply(all_data, is.numeric, logical(1))]
+        blacklist <- tolower(c("longitude", "latitude", "x", "y", "geometry",
+                               "fid", "objectid", "sectionid", "pass", "gpstime",
+                               "time", "interval", "distance", "swath", "heading",
+                               "elevation", "altitude", "serial", "fieldid", "loadid"))
+        candidate <- numeric_cols[!tolower(numeric_cols) %in% blacklist]
+        default_col <- if (length(candidate) > 0) candidate[1] else numeric_cols[1]
+        value_choices <- c("Automatique (rendement)" = "",
+                           stats::setNames(names(all_data), names(all_data)))
+        rv$value_col_programmatic <- TRUE
+        updateSelectInput(session, "value_col",
+                          choices = value_choices,
+                          selected = if (!is.na(default_col)) default_col else "")
+
+        if (is.null(rv$result) || is.null(rv$result$data_clean)) {
+          rv$view_mode <- "raw"
+        }
+
+        resetCheckboxLabels()
+
+        field_name_from_file <- if (n_files == 1) {
+          tools::file_path_sans_ext(file_names[1])
+        } else {
+          paste(n_files, "fichiers")
+        }
+        rv$current_field <- field_name_from_file
+
+        showNotification(paste(n_files, "fichier(s) vectoriel(s) importe(s):",
+                               paste(file_names, collapse = ", ")), type = "message")
+
+        process_data()
+
         store_current_field(field_name_from_file)
       }
     }, error = function(e) {
@@ -2030,6 +2110,8 @@ server <- function(input, output, session) {
     delay_max <- max(delay_min_val, delay_max_val)
 
     list(
+      value_col = if (!is.null(input$value_col) && isTruthy(input$value_col)) input$value_col else NULL,
+      convert_flow = TRUE,
       delay_range = seq(delay_min, delay_max, by = 1),
       n_iterations = if (!is.null(input$n_iterations)) input$n_iterations else 5,
       noise_level = if (!is.null(input$noise_level)) input$noise_level else 0.05,
@@ -2341,7 +2423,8 @@ server <- function(input, output, session) {
     
     # Parametres qui affectent le pre-traitement
     preprocess_keys <- c("apply_position", "apply_delay_adjustment_flow", "apply_delay_adjustment_moisture",
-                         "delay_range", "n_iterations", "noise_level", "sample_fraction")
+                         "delay_range", "n_iterations", "noise_level", "sample_fraction",
+                         "value_col", "convert_flow")
     
     for (key in preprocess_keys) {
       if (!identical(current_params[[key]], rv$preprocess_params[[key]])) {
@@ -2351,7 +2434,20 @@ server <- function(input, output, session) {
     }
     return(FALSE)
   }
-  
+
+  # Re-nettoyer quand la colonne a nettoyer change
+  observeEvent(input$value_col, {
+    if (is.null(rv$raw_data)) return()
+    if (isTRUE(rv$value_col_programmatic)) {
+      rv$value_col_programmatic <- FALSE
+      return()
+    }
+    if (!isTruthy(input$value_col)) return()
+    rv$preprocessed_data <- NULL
+    rv$preprocess_params <- NULL
+    process_data()
+  }, ignoreNULL = TRUE, ignoreInit = TRUE)
+
   process_data <- function() {
     req(rv$raw_data)
     
@@ -2371,7 +2467,22 @@ server <- function(input, output, session) {
           data_df$Latitude <- coords[, 2]
           data_df$geometry <- NULL
         }
-        
+
+        # Si une colonne a nettoyer est choisie (non-rendement), l'utiliser comme valeur
+        value_col <- params$value_col
+        if (is.null(value_col) || !value_col %in% names(data_df)) {
+          value_col <- NULL
+        }
+        if (!is.null(value_col) && !value_col %in% c("Flow", "Yield_kg_ha")) {
+          # Donnees non-rendement (semis, epandage, ...) : aliaser la colonne choisie
+          data_df[[value_col]] <- suppressWarnings(as.numeric(data_df[[value_col]]))
+          data_df$Flow <- data_df[[value_col]]
+          data_df$Yield_kg_ha <- data_df[[value_col]]
+          params$convert_flow <- FALSE
+        } else {
+          params$convert_flow <- TRUE
+        }
+
         # Validation des colonnes requises
         required_cols <- c("Longitude", "Latitude", "Flow")
         missing_cols <- setdiff(required_cols, names(data_df))

@@ -4,17 +4,21 @@
 \alias{read_jd_to_polygons}
 \title{Lire des donnees John Deere et convertir en polygones metriques}
 \usage{
-read_jd_to_polygons(zip_path, field_name)
+read_jd_to_polygons(file_path, field_name = NULL)
 }
 \arguments{
-\item{zip_path}{Chemin vers le fichier ZIP}
+\item{file_path}{Chemin vers un fichier ZIP ou un fichier vectoriel
+(.shp, .gpkg, .geojson)}
 
-\item{field_name}{Nom du champ dans le fichier ZIP}
+\item{field_name}{Nom du champ dans le fichier ZIP. Ignore si file_path est
+un fichier vectoriel. Si NULL et que le ZIP ne contient qu'un seul
+shapefile, celui-ci est utilise automatiquement.}
 }
 \value{
 Objet SF avec polygones et toutes les colonnes preservees
 }
 \description{
-Lit un fichier ZIP John Deere (rendement, semis, vitesse, etc.) et cree des polygones.
-Utilise les unites du JSON pour convertir en metrique.
+Lit un fichier ZIP John Deere (rendement, semis, vitesse, etc.) ou un
+fichier vectoriel (shapefile, GeoPackage, GeoJSON) et cree des polygones.
+Utilise les unites du JSON de metadonnees pour convertir en metrique.
 }

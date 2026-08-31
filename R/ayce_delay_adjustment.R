@@ -383,7 +383,27 @@ apply_delay_adjustment <- function(data, delay_range = -25:25, n_iterations = 5,
   # Calculer la moyenne et l'ecart-type des scores sur les iterations
   mean_scores <- rowMeans(scores_matrix, na.rm = TRUE)
   sd_scores <- apply(scores_matrix, 1, sd, na.rm = TRUE)
-  
+
+  # Si aucun score spatial n'est valide (valeurs constantes, trop peu de points, ...),
+  # impossible d'optimiser le delai : retourner 0 plutot qu'un delai manquant.
+  if (all(is.na(mean_scores)) || !any(is.finite(mean_scores))) {
+    rlang::warn(paste("Aucun score spatial valide pour", value_col,
+                      "- delai fixe a 0 seconde"))
+    return(list(
+      optimal_delay = 0,
+      delay_range_tested = delay_range,
+      score_values = data.frame(delay = all_delays, mean_score = mean_scores,
+                                sd_score = sd_scores),
+      rsc_values = data.frame(delay = all_delays, mean_score = mean_scores,
+                              sd_score = sd_scores),
+      scores_matrix = scores_matrix,
+      stability = NA,
+      n_iterations = n_iterations,
+      value_col = value_col,
+      warning = "No valid spatial scores"
+    ))
+  }
+
   # Trouver le delai optimal (maximum de la moyenne)
   opt_idx <- which.max(mean_scores)
   optimal_delay <- all_delays[opt_idx]

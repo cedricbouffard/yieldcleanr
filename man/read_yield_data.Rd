@@ -4,12 +4,12 @@
 \alias{read_yield_data}
 \title{Lire des donnees de rendement brutes depuis un fichier texte}
 \usage{
-read_yield_data(file_path = NULL, data = NULL, col_names = TRUE)
+read_yield_data(file_path = NULL, data = NULL)
 }
 \arguments{
 \item{file_path}{Chemin du fichier texte d'entree}
 
-\item{col_names}{Logique, si TRUE utilise les noms de colonnes standard}
+\item{data}{Data frame deja charge. Alternative a file_path.}
 }
 \value{
 Un tibble avec les donnees brutes
