@@ -310,7 +310,11 @@ apply_delay_adjustment <- function(data, delay_range = -25:25, n_iterations = 5,
 
   # Debug: afficher les statistiques
   rlang::inform(paste("  Delay Adjustment Debug -", value_col, "values:", length(valid_values)))
-  rlang::inform(paste("  Delay Adjustment Debug -", value_col, "range:", round(min(valid_values, na.rm = TRUE), 4), "to", round(max(valid_values, na.rm = TRUE), 4)))
+  rlang::inform(paste(
+    "  Delay Adjustment Debug -", value_col, "range:",
+    round(min(valid_values, na.rm = TRUE), 4), "to",
+    round(max(valid_values, na.rm = TRUE), 4)
+  ))
 
   if (length(valid_values) < 10) {
     rlang::warn(paste("Pas assez de valeurs valides pour delay adjustment sur", value_col))

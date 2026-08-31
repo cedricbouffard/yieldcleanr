@@ -172,7 +172,12 @@ get_lbs_per_bushel <- function(data) {
 
     # Detecter les cultures maraicheres (pas de conversion bushel applicable)
     # Ces cultures utilisent le rendement direct en kg/ha, pas de conversion lbs/bushel
-    if (any(grepl("onion|oignon|shallot|echalote|potato|patate|pomme.de.terre|carrot|carotte|betterave|beet|legume|vegetable|celeri|celery|navet|turnip|radis|radish|chou|cabbage|laitue|lettuce", grain))) {
+    veggie_pattern <- paste0(
+      "onion|oignon|shallot|echalote|potato|patate|pomme.de.terre|carrot|",
+      "carotte|betterave|beet|legume|vegetable|celeri|celery|navet|turnip|",
+      "radis|radish|chou|cabbage|laitue|lettuce"
+    )
+    if (any(grepl(veggie_pattern, grain))) {
       rlang::inform(paste("Culture maraichere detectee (", paste(grain, collapse = ", "), ") - pas de conversion bushel"))
       return(NA)  # NA indique qu'il ne faut pas utiliser cette conversion
     }

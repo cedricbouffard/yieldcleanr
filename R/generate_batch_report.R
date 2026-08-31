@@ -862,12 +862,19 @@ print(p)
 ```{r table-', chunk_id, ', results="asis"}
 if (!is.null(yield_bins) && nrow(yield_bins) > 0) {
   html_table <- "<table class=\'yield-table\' style=\'width:100%; border-collapse: collapse; font-size: 10pt;\'>"
-  html_table <- paste0(html_table, "<thead><tr style=\'background-color: #002752; color: white;\'><th style=\'padding: 4px; text-align: left;\'>Classe</th><th style=\'padding: 4px; text-align: center;\'>%</th><th style=\'padding: 4px; text-align: center;\'>Superficie (ha)</th></tr></thead><tbody>")
+  html_table <- paste0(
+    html_table,
+    "<thead><tr style=\'background-color: #002752; color: white;\'>",
+    "<th style=\'padding: 4px; text-align: left;\'>Classe</th>",
+    "<th style=\'padding: 4px; text-align: center;\'>%</th>",
+    "<th style=\'padding: 4px; text-align: center;\'>Superficie (ha)</th></tr></thead><tbody>"
+  )
   for (i in 1:nrow(yield_bins)) {
     color <- bin_colors[i]
     html_table <- paste0(html_table,
       "<tr style=\'border-bottom: 1px solid #ddd;\'>",
-      "<td style=\'padding: 3px;\'><span style=\'display: inline-block; width: 10px; height: 10px; background-color: ", color, "; margin-right: 6px; border-radius: 2px;\'></span>", yield_bins$Classe[i], "</td>",
+      "<td style=\'padding: 3px;\'><span style=\'display: inline-block; width: 10px; height: 10px; ",
+      "background-color: ", color, "; margin-right: 6px; border-radius: 2px;\'></span>", yield_bins$Classe[i], "</td>",
       "<td style=\'padding: 3px; text-align: center; font-weight: bold;\'>", yield_bins$Pourcentage[i], "%</td>",
       "<td style=\'padding: 3px; text-align: center; color: #666;\'>", yield_bins$Superficie[i], "</td>",
       "</tr>")
@@ -1432,7 +1439,7 @@ generate_batch_report_html <- function(file_paths, output_file = NULL, title = N
     <div class="field-card">
       <div class="field-header">
         <h2>', info$field_name, '</h2>
-        ', if(info$crop_name != "") paste0('<span class="crop-badge">', info$crop_name, '</span>'), '
+        ', if (info$crop_name != "") paste0('<span class="crop-badge">', info$crop_name, '</span>'), '
       </div>
       <div class="field-content">
         <div class="stats-grid">

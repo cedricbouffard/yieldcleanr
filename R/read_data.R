@@ -1108,7 +1108,12 @@ get_standard_moisture <- function(data) {
 
     # Detecter les cultures maraicheres (pas d'ajustement humidite)
     # Oignons, echalotes, pommes de terre, carottes, etc.
-    if (any(grepl("onion|oignon|shallot|echalote|potato|patate|pomme.de.terre|carrot|carotte|betterave|beet|legume|vegetable|celeri|celery|navet|turnip|radis|radish|chou|cabbage|laitue|lettuce", grain))) {
+    veggie_pattern <- paste0(
+      "onion|oignon|shallot|echalote|potato|patate|pomme.de.terre|carrot|",
+      "carotte|betterave|beet|legume|vegetable|celeri|celery|navet|turnip|",
+      "radis|radish|chou|cabbage|laitue|lettuce"
+    )
+    if (any(grepl(veggie_pattern, grain))) {
       message(paste("Culture maraichere detectee ('", paste(grain, collapse = ", "), "'), pas d'ajustement humidite standard"))
       return(0)  # Pas d'ajustement humidite pour les cultures maraicheres
     }

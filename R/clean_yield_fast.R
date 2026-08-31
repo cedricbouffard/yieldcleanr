@@ -332,7 +332,7 @@ clean_yield_fast <- function(data, phase = "full", preprocessed_data = NULL,
       deleted_points$Y <- c(deleted_points$Y, result$removed$Y)
       deleted_points$Longitude <- c(deleted_points$Longitude, result$removed$Longitude)
       deleted_points$Latitude <- c(deleted_points$Latitude, result$removed$Latitude)
-      deleted_points$valeur <- c(deleted_points$valeur, if("velocity" %in% names(result$removed)) result$removed$velocity else result$removed$Flow)
+      deleted_points$valeur <- c(deleted_points$valeur, if ("velocity" %in% names(result$removed)) result$removed$velocity else result$removed$Flow)
       deleted_points$step <- c(deleted_points$step, rep("Filtre changement de vitesse", nrow(result$removed)))
       reason_msg <- paste0("Changement de vitesse brusque [acc>", params$max_acceleration %||% 5, ", dec<", params$max_deceleration %||% -8, "]")
       deleted_points$reason <- c(deleted_points$reason, rep(reason_msg, nrow(result$removed)))

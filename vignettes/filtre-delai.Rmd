@@ -159,7 +159,8 @@ cat("=== Application du Delay Adjustment ===\n")
 delay_result <- optimize_delays(data, type = "flow", delay_range = -25:25, n_iterations = 3, noise_level = 0.03)
 
 cat("Délai optimal détecté:", delay_result$delays$flow, "secondes\n")
-optimal_rsc <- delay_result$delay_adjustment_results$flow$rsc_values$mean_score[delay_result$delay_adjustment_results$flow$rsc_values$delay == delay_result$delays$flow]
+da_flow <- delay_result$delay_adjustment_results$flow
+optimal_rsc <- da_flow$rsc_values$mean_score[da_flow$rsc_values$delay == delay_result$delays$flow]
 if (length(optimal_rsc) > 0 && !is.na(optimal_rsc[1])) {
   cat("Score Moran moyen au délai optimal:", round(optimal_rsc[1], 4), "\n")
 } else {
