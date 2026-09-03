@@ -1125,7 +1125,9 @@ server <- function(input, output, session) {
         rv$preprocess_params <- NULL
 
         vector_exts <- c("shp", "gpkg", "geojson", "json")
-        vec_idx <- which(file_exts %in% vector_exts)
+        # Ignorer les fichiers de metadonnees John Deere (ce ne sont pas des donnees)
+        is_metadata <- grepl("-Deere-Metadata\\.json$", file_names, ignore.case = TRUE)
+        vec_idx <- which(file_exts %in% vector_exts & !is_metadata)
 
         all_data <- NULL
         processed_shp_bases <- character()

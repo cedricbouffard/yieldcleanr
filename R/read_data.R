@@ -1573,6 +1573,21 @@ convert_units_from_json <- function(data, metadata = NULL) {
     }
   }
 
+  # Heuristique de repli quand aucune metadata d'unite n'est disponible :
+  # les fichiers John Deere expriment souvent le rendement en t/ha (0-100),
+  # qu'il faut convertir en kg/ha (x1000).
+  if (length(units) == 0) {
+    yield_cols <- intersect(names(data), c("VRYIELDMAS", "NetYldA", "GrossYldA", "WetMass"))
+    for (col in yield_cols) {
+      vals <- suppressWarnings(as.numeric(data[[col]]))
+      mv <- suppressWarnings(mean(vals, na.rm = TRUE))
+      if (is.finite(mv) && mv > 0 && mv < 100) {
+        message(paste("  Heuristique:", col, "detecte en t/ha -> kg/ha (x1000)"))
+        data[[col]] <- vals * 1000
+      }
+    }
+  }
+
   message("Conversion terminee")
   return(data)
 }
