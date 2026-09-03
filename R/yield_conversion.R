@@ -50,8 +50,13 @@
    # Les fichiers John Deere ont deja le rendement dans Flow (typiquement 1000-15000 kg/ha)
    # Les cultures maraicheres peuvent avoir des rendements eleves (60000-100000 kg/ha)
    # Alors que les fichiers AgLeader ont le flux brut (typiquement 2-20 lbs/s)
-   mean_flow_check <- mean(data$Flow, na.rm = TRUE)
-   
+   mean_flow_check <- suppressWarnings(mean(data$Flow, na.rm = TRUE))
+
+   if (is.na(mean_flow_check) || !is.finite(mean_flow_check)) {
+     rlang::warn("Colonne Flow vide ou entierement NA - aucune conversion de rendement possible")
+     return(data)
+   }
+
    if (mean_flow_check > 100 && mean_flow_check < 150000) {
      # Flow contient probablement deja le rendement en kg/ha
      # Limite superieure 150000 kg/ha pour inclure cultures maraicheres a tres haut rendement

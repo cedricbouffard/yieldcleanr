@@ -15,7 +15,8 @@ clean_yield(
 )
 }
 \arguments{
-\item{file_path}{Chemin du fichier d'entree (txt/csv). Ignore si \code{data} est fourni.}
+\item{file_path}{Chemin du fichier d'entree (txt/csv) ou d'un fichier
+vectoriel (.shp, .gpkg, .geojson). Ignore si \code{data} est fourni.}
 
 \item{data}{Data frame ou tibble contenant les donnees de rendement. Alternative
 a \code{file_path}.}
