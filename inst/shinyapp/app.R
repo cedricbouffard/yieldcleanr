@@ -595,7 +595,8 @@ ui <- fluidPage(
         # Import fichier(s) (détection automatique du type)
         fileInput("file_input", "Choisir un ou plusieurs fichiers",
                  accept = c(".txt", ".csv", ".zip", ".shp", ".dbf", ".shx",
-                            ".prj", ".cpg", ".sbn", ".sbx", ".gpkg", ".geojson"),
+                            ".prj", ".cpg", ".sbn", ".sbx", ".json",
+                            ".gpkg", ".geojson"),
                  multiple = TRUE),
         
         # Selection des champs (visible uniquement pour ZIP)
@@ -1140,9 +1141,12 @@ server <- function(input, output, session) {
             if (base_i %in% processed_shp_bases) next
             processed_shp_bases <- c(processed_shp_bases, base_i)
 
+            # Compagnons du shapefile + eventuel JSON de metadonnees John Deere
+            metadata_base <- paste0(base_i, "-Deere-Metadata")
             companion_idx <- which(
-              tools::file_path_sans_ext(file_names) == base_i &
-                file_exts %in% c("shp", "dbf", "shx", "prj", "cpg", "sbn", "sbx")
+              (tools::file_path_sans_ext(file_names) == base_i &
+                 file_exts %in% c("shp", "dbf", "shx", "prj", "cpg", "sbn", "sbx")) |
+                (tools::file_path_sans_ext(file_names) == metadata_base & file_exts == "json")
             )
             companion_exts <- file_exts[companion_idx]
             # Un shapefile a besoin d'au minimum .shp + .shx (et .dbf pour les attributs)
