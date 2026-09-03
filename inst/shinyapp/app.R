@@ -594,7 +594,8 @@ ui <- fluidPage(
         
         # Import fichier(s) (détection automatique du type)
         fileInput("file_input", "Choisir un ou plusieurs fichiers",
-                 accept = c(".txt", ".csv", ".zip", ".shp", ".gpkg", ".geojson"),
+                 accept = c(".txt", ".csv", ".zip", ".shp", ".dbf", ".shx",
+                            ".prj", ".cpg", ".sbn", ".sbx", ".gpkg", ".geojson"),
                  multiple = TRUE),
         
         # Selection des champs (visible uniquement pour ZIP)
@@ -1141,6 +1142,17 @@ server <- function(input, output, session) {
               tools::file_path_sans_ext(file_names) == base_i &
                 file_exts %in% c("shp", "dbf", "shx", "prj", "cpg", "sbn", "sbx")
             )
+            companion_exts <- file_exts[companion_idx]
+            # Un shapefile a besoin d'au minimum .shp + .shx (et .dbf pour les attributs)
+            if (!"shx" %in% companion_exts) {
+              showNotification(
+                paste0("Shapefile incomplet : '", base_i, "'. ",
+                       "Sélectionnez aussi les fichiers .shx, .dbf et .prj ",
+                       "(un shapefile est un ensemble de fichiers)."),
+                type = "error", duration = 20
+              )
+              next
+            }
             tmp_dir <- tempfile(pattern = "shp_upload_")
             dir.create(tmp_dir, showWarnings = FALSE, recursive = TRUE)
             for (j in companion_idx) {
@@ -1153,6 +1165,16 @@ server <- function(input, output, session) {
           }
           data$source_file <- file_names[i]
           all_data <- rbind(all_data, data)
+        }
+
+        # Si aucun fichier vectoriel valide (ex: shapefile incomplet)
+        if (is.null(all_data)) {
+          showNotification(
+            paste0("Aucun fichier vectoriel valide à importer. Pour un shapefile, ",
+                   "sélectionnez .shp + .dbf + .shx + .prj ensemble."),
+            type = "error", duration = 15
+          )
+          return()
         }
 
         rv$raw_data <- all_data
