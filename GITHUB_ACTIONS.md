@@ -55,8 +55,9 @@ Verifie le style du code avec lintr.
 
 **Declencheurs** : push et pull_request sur main, master, dev
 
-**Actions** : - Execute `lintr::lint_package()` - Echoue si des
-problemes de style sont detectes
+**Actions** : - Execute
+[`lintr::lint_package()`](https://lintr.r-lib.org/reference/lint.html) -
+Echoue si des problemes de style sont detectes
 
 **Configuration** : Voir `.lintr`
 
