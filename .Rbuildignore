@@ -5,3 +5,6 @@
 ^docs$
 ^_pkgdown\.yml$
 ^\.github$
+^\.covrignore$
+^\.lintr$
+^LICENSE\.md$
