@@ -37,3 +37,18 @@ test_that(".translate_crop_to_french handles plurals", {
   expect_equal(as.character(.translate_crop_to_french("potatoes")), "Pomme de terre")
   expect_equal(as.character(.translate_crop_to_french("carrots")), "Carotte")
 })
+
+test_that("generate_yield_report and generate_report exist and are exported", {
+  expect_true(exists("generate_yield_report"))
+  expect_true(is.function(generate_yield_report))
+  expect_true(exists("generate_report"))
+  expect_true(is.function(generate_report))
+  expect_identical(generate_report, generate_yield_report)
+})
+
+test_that("generate_yield_report validates style argument", {
+  expect_error(
+    generate_yield_report(data_clean = data.frame(), style = "invalid_style")
+  )
+})
+

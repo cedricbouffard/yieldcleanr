@@ -91,3 +91,42 @@ yield_test_data_overlap <- structure(list(
   Altitude = c(61.3, 61.5, 61.5, 61.4, 61.3),
   .row_id = 1:5
 ), class = c("tbl_df", "tbl", "data.frame"), row.names = c(NA, -5L))
+
+# Helper pour generer des donnees de rendement synthetiques modulables
+create_mock_yield_data <- function(n = 20, 
+                                   lon_center = -73.5, 
+                                   lat_center = 45.5, 
+                                   crop = "Maïs", 
+                                   with_outliers = FALSE) {
+  set.seed(42)
+  lons <- lon_center + cumsum(rnorm(n, mean = 0.0001, sd = 0.00005))
+  lats <- lat_center + cumsum(rnorm(n, mean = 0.0001, sd = 0.00005))
+  flows <- rnorm(n, mean = 10, sd = 1.5)
+  if (with_outliers && n >= 2) {
+    flows[1] <- 0.01
+    flows[n] <- 100
+  }
+  
+  tibble::tibble(
+    ID = sprintf("%05d", seq_len(n)),
+    Longitude = lons,
+    Latitude = lats,
+    Flow = pmax(0.1, flows),
+    GPS_Time = 1762958157 + (seq_len(n) - 1) * 2,
+    Interval = rep(2L, n),
+    Distance = rep(85L, n),
+    Swath = rep(240L, n),
+    Moisture = rep(15.5, n),
+    HeaderStatus = rep(33L, n),
+    Pass = rep(1L, n),
+    Serial = rep(2410019049, n),
+    FieldID = rep("F0:1", n),
+    LoadID = rep("L0:<1>", n),
+    GrainType = rep(crop, n),
+    GPSStatus = rep(7L, n),
+    DOP = rep(1L, n),
+    Altitude = rep(60, n),
+    .row_id = seq_len(n)
+  )
+}
+

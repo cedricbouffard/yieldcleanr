@@ -201,7 +201,14 @@ reference:
       - render_pdf_report
       - geom_yield_map_polygon
 
-  - title: "🛠️ Fonctions Internes"
-    desc: "Fonctions utilitaires internes utilisées par les autres fonctions du package."
+  - title: "🛠️ Helpers et Fonctions Utilitaires"
+    desc: "Fonctions utilitaires et helpers de validation pour manipuler et securiser les donnees de rendement."
     contents:
+      - validate_yield_dataframe
+      - is_valid_coordinates
+      - safe_divide
+      - safe_mean
+      - safe_median
+      - detect_column
       - .translate_crop_to_french
+

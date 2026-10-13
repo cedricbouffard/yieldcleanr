@@ -14,8 +14,7 @@ contient (un fichier .shp attendu).}
 (*-Deere-Metadata.json). Si NULL, detection automatique a cote du .shp.}
 
 \item{as_polygons}{Si TRUE, retourne un objet SF avec polygones (comme
-\code{\link[=read_jd_to_polygons]{read_jd_to_polygons()}}) au lieu d'une
-data.frame standardisee.}
+\code{\link[=read_jd_to_polygons]{read_jd_to_polygons()}}) au lieu d'une data.frame standardisee.}
 }
 \value{
 Une data.frame standardisee (colonnes Longitude, Latitude, Flow,
@@ -25,8 +24,7 @@ Swath, Distance, etc.) ou un objet SF si as_polygons = TRUE.
 Lit un shapefile John Deere exporte (fichiers .shp/.dbf/.shx/.prj/.cpg)
 ainsi que son fichier JSON de metadonnees (optionnel) et retourne les
 donnees standardisees au format yieldcleanr. Equivalent a
-\code{\link[=read_yield_from_zip]{read_yield_from_zip()}} mais pour des
-fichiers deja extraits (hors ZIP).
+\code{\link[=read_yield_from_zip]{read_yield_from_zip()}} mais pour des fichiers deja extraits (hors ZIP).
 }
 \examples{
 \dontrun{

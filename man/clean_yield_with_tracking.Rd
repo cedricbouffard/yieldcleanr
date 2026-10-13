@@ -14,7 +14,8 @@ clean_yield_with_tracking(
 )
 }
 \arguments{
-\item{file_path}{Chemin du fichier d'entree (txt/csv). Ignore si \code{data} est fourni.}
+\item{file_path}{Chemin du fichier d'entree (txt/csv) ou d'un fichier
+vectoriel (.shp, .gpkg, .geojson). Ignore si \code{data} est fourni.}
 
 \item{data}{Donnees brutes a nettoyer (tibble). Alternative a file_path.
 Si fourni, file_path est ignore.}
