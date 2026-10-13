@@ -3,7 +3,7 @@ title: "Guide des Méta-fonctions"
 subtitle: "Nouvelle API simplifiée de yieldcleanr"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Guide des Méta-fonctions - Nouvelle API}
+  %\VignetteIndexEntry{Guide des Méta-fonctions}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---

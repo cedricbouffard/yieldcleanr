@@ -1,21 +1,11 @@
-#' Generate PDF report from cleaned yield data
+#' Traduire le nom d'une culture en francais
 #'
-#' Creates a professional paged PDF report using the yield data that was
-#' cleaned using clean_yield functions.
+#' Convertit les noms de cultures courants en anglais ou variantes
+#' vers leur appellation standardisee en francais.
 #'
-#' @param data_clean Cleaned yield data (sf object or data frame with geometry)
-#' @param data_raw Raw yield data before cleaning
-#' @param deletions Data frame of deleted points with reasons
-#' @param stats List containing cleaning statistics (n_raw, n_clean, n_deleted, retention_rate, etc.)
-#' @param output_file Path where the PDF should be saved
-#' @param title Report title (default: "Rapport de nettoyage des rendements")
-#' @param author Author name (default: from DESCRIPTION or "YieldCleanr")
-#' @param template_path Path to the R Markdown template (default: auto-detected)
-#' @param verbose Print progress messages (default: TRUE)
-#' @param style Style theme for the report. Options: "irda" (default) or "ced" (Cedric Bouffard style)
-#' @return Path to the generated PDF file
+#' @param crop_name Nom de la culture (chaine de caracteres)
+#' @return Nom de la culture traduit en francais
 #' @export
-
 .translate_crop_to_french <- function(crop_name) {
   if (is.na(crop_name) || is.null(crop_name) || crop_name == "") {
     return(NA_character_)
@@ -84,6 +74,24 @@
   return(crop_name)
 }
 
+#' Generer un rapport PDF de nettoyage des donnees de rendement
+#'
+#' Cree un rapport PDF pagine professionnel a partir des donnees nettoyees
+#' par le pipeline yieldcleanr.
+#'
+#' @param data_clean Donnees de rendement nettoyees (objet sf ou tibble)
+#' @param data_raw Donnees brutes avant nettoyage (optionnel)
+#' @param deletions Donnees des points supprimes avec motifs (optionnel)
+#' @param stats Statistiques de nettoyage (n_raw, n_clean, etc.)
+#' @param output_file Chemin du fichier PDF de sortie
+#' @param title Titre du rapport (defaut: "Rapport de nettoyage des rendements")
+#' @param author Nom de l'auteur (defaut: extrait du DESCRIPTION ou "YieldCleanr")
+#' @param template_path Chemin du gabarit R Markdown (optionnel, auto-detecte)
+#' @param verbose Afficher la progression (defaut: TRUE)
+#' @param metadata Metadonnees optionnelles
+#' @param style Style du rapport: "irda" (defaut) ou "ced"
+#' @return Chemin vers le fichier genere
+#' @export
 generate_yield_report <- function(data_clean,
                                    data_raw = NULL,
                                    deletions = NULL,
@@ -550,6 +558,12 @@ generate_yield_report <- function(data_clean,
     stop("Error generating report: ", e$message)
   })
 }
+
+
+#' @rdname generate_yield_report
+#' @export
+generate_report <- generate_yield_report
+
 
 
 #' Render report to PDF using Chrome

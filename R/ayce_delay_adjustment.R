@@ -213,8 +213,13 @@ calculate_moran_legacy <- function(x, y, value, k = 5) {
     n <- length(value)
   }
 
-  # Utiliser FNN si disponible pour plus de rapidite
-  if (requireNamespace("FNN", quietly = TRUE)) {
+  # Utiliser dbscan (deja dans Imports) ou FNN pour une rapidite maximale
+  if (requireNamespace("dbscan", quietly = TRUE)) {
+    coords <- cbind(x, y)
+    knn_res <- dbscan::kNN(coords, k = k)
+    neighbor_idx <- knn_res$id
+    W <- 1 / (knn_res$dist^2 + 1e-10)
+  } else if (requireNamespace("FNN", quietly = TRUE)) {
     coords <- matrix(c(x, y), ncol = 2)
     knn_result <- FNN::knn.index(coords, k = k)
     

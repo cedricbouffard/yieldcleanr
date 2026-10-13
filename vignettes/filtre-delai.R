@@ -22,7 +22,7 @@ data <- latlon_to_utm(data_raw)
 
 # Appliquer Delay Adjustment avec plage étendue sur Flow (pas sur Yield)
 cat("=== Application du Delay Adjustment ===\n")
-delay_result <- optimize_delays(data, type = "flow", delay_range = -25:25, n_iterations = 10, noise_level = 0.03)
+delay_result <- optimize_delays(data, type = "flow", delay_range = -25:25, n_iterations = 3, noise_level = 0.03)
 
 cat("Délai optimal détecté:", delay_result$delays$flow, "secondes\n")
 da_flow <- delay_result$delay_adjustment_results$flow

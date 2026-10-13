@@ -15,6 +15,19 @@
 clean_yield_fast <- function(data, phase = "full", preprocessed_data = NULL, 
                               params = list(), metrique = TRUE, polygon = TRUE) {
   
+  if (!phase %in% c("preprocess", "filter", "full")) {
+    rlang::abort(paste0("Phase inconnue: '", phase, "'. Les phases valides sont: 'preprocess', 'filter', 'full'."))
+  }
+
+  if (phase %in% c("full", "preprocess")) {
+    if (missing(data) || is.null(data)) {
+      rlang::abort("`data` doit être fourni.")
+    }
+    if (!is.data.frame(data) || nrow(data) == 0) {
+      rlang::abort("`data` doit être un data frame non vide.")
+    }
+  }
+
   if (phase == "preprocess") {
     # Phase 1: Pré-traitement (calculé une fois)
     result <- preprocess_yield_data(data, params, metrique)

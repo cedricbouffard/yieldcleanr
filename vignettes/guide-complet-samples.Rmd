@@ -3,7 +3,7 @@ title: "Guide Complet du Nettoyage de Données de Rendement"
 subtitle: "Analyse détaillée des 4 échantillons avec yieldcleanr"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Guide Complet - Analyse des 4 Samples}
+  %\VignetteIndexEntry{Guide Complet du Nettoyage de Données de Rendement}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -135,9 +135,9 @@ sf_raw$Yield_kg_ha <- sf_raw$Flow * 0.453592 * 3600 / 4046 * 1000
 
 par(mfrow = c(1, 2))
 plot(sf_raw["Yield_kg_ha"], main = "AVANT - Sample 1 (Soja)", 
-     pch = 19, cex = 0.3, breaks = "jenks")
+     pch = 19, cex = 0.3, breaks = "quantile")
 plot(sf_clean["Yield_kg_ha"], main = "APRÈS - Sample 1 (Soja)", 
-     pch = 19, cex = 0.3, breaks = "jenks")
+     pch = 19, cex = 0.3, breaks = "quantile")
 ```
 
 ## Sample 2 - Maïs
@@ -212,9 +212,9 @@ sf_raw_s2$Yield_kg_ha <- sf_raw_s2$Flow * 0.453592 * 3600 / 4046 * 1000
 
 par(mfrow = c(1, 2))
 plot(sf_raw_s2["Yield_kg_ha"], main = "AVANT - Sample 2 (Maïs)", 
-     pch = 19, cex = 0.3, breaks = "jenks")
+     pch = 19, cex = 0.3, breaks = "quantile")
 plot(sf_clean_s2["Yield_kg_ha"], main = "APRÈS - Sample 2 (Maïs)", 
-     pch = 19, cex = 0.3, breaks = "jenks")
+     pch = 19, cex = 0.3, breaks = "quantile")
 ```
 
 ## Sample 3 - Maïs
@@ -265,9 +265,9 @@ sf_raw_s3$Yield_kg_ha <- sf_raw_s3$Flow * 0.453592 * 3600 / 4046 * 1000
 
 par(mfrow = c(1, 2))
 plot(sf_raw_s3["Yield_kg_ha"], main = "AVANT - Sample 3 (Maïs)", 
-     pch = 19, cex = 0.3, breaks = "jenks")
+     pch = 19, cex = 0.3, breaks = "quantile")
 plot(sf_clean_s3["Yield_kg_ha"], main = "APRÈS - Sample 3 (Maïs)", 
-     pch = 19, cex = 0.3, breaks = "jenks")
+     pch = 19, cex = 0.3, breaks = "quantile")
 ```
 
 ## Sample 4 - Maïs blanc
@@ -318,9 +318,9 @@ sf_raw_s4$Yield_kg_ha <- sf_raw_s4$Flow * 0.453592 * 3600 / 4046 * 1000
 
 par(mfrow = c(1, 2))
 plot(sf_raw_s4["Yield_kg_ha"], main = "AVANT - Sample 4 (Maïs blanc)", 
-     pch = 19, cex = 0.3, breaks = "jenks")
+     pch = 19, cex = 0.3, breaks = "quantile")
 plot(sf_clean_s4["Yield_kg_ha"], main = "APRÈS - Sample 4 (Maïs blanc)", 
-     pch = 19, cex = 0.3, breaks = "jenks")
+     pch = 19, cex = 0.3, breaks = "quantile")
 ```
 
 # Tableau récapitulatif complet
@@ -363,13 +363,13 @@ plot(sf_clean_s4["Yield_kg_ha"], main = "APRÈS - Sample 4 (Maïs blanc)",
 par(mfrow = c(2, 2))
 
 plot(sf_raw["Yield_kg_ha"], main = "Sample 1 - Soja (AVANT)", 
-     pch = 19, cex = 0.3, breaks = "jenks", key.pos = NULL)
+     pch = 19, cex = 0.3, breaks = "quantile", key.pos = NULL)
 plot(sf_raw_s2["Yield_kg_ha"], main = "Sample 2 - Maïs (AVANT)", 
-     pch = 19, cex = 0.3, breaks = "jenks", key.pos = NULL)
+     pch = 19, cex = 0.3, breaks = "quantile", key.pos = NULL)
 plot(sf_raw_s3["Yield_kg_ha"], main = "Sample 3 - Maïs (AVANT)", 
-     pch = 19, cex = 0.3, breaks = "jenks", key.pos = NULL)
+     pch = 19, cex = 0.3, breaks = "quantile", key.pos = NULL)
 plot(sf_raw_s4["Yield_kg_ha"], main = "Sample 4 - Maïs blanc (AVANT)", 
-     pch = 19, cex = 0.3, breaks = "jenks", key.pos = NULL)
+     pch = 19, cex = 0.3, breaks = "quantile", key.pos = NULL)
 ```
 
 ### Vue d'ensemble - Tous les échantillons (APRÈS nettoyage)
@@ -379,13 +379,13 @@ plot(sf_raw_s4["Yield_kg_ha"], main = "Sample 4 - Maïs blanc (AVANT)",
 par(mfrow = c(2, 2))
 
 plot(sf_clean["Yield_kg_ha"], main = "Sample 1 - Soja (APRÈS)", 
-     pch = 19, cex = 0.3, breaks = "jenks", key.pos = NULL)
+     pch = 19, cex = 0.3, breaks = "quantile", key.pos = NULL)
 plot(sf_clean_s2["Yield_kg_ha"], main = "Sample 2 - Maïs (APRÈS)", 
-     pch = 19, cex = 0.3, breaks = "jenks", key.pos = NULL)
+     pch = 19, cex = 0.3, breaks = "quantile", key.pos = NULL)
 plot(sf_clean_s3["Yield_kg_ha"], main = "Sample 3 - Maïs (APRÈS)", 
-     pch = 19, cex = 0.3, breaks = "jenks", key.pos = NULL)
+     pch = 19, cex = 0.3, breaks = "quantile", key.pos = NULL)
 plot(sf_clean_s4["Yield_kg_ha"], main = "Sample 4 - Maïs blanc (APRÈS)", 
-     pch = 19, cex = 0.3, breaks = "jenks", key.pos = NULL)
+     pch = 19, cex = 0.3, breaks = "quantile", key.pos = NULL)
 ```
 
 ### Cartes de densité - Comparaison AVANT/APRÈS
@@ -396,27 +396,27 @@ par(mfrow = c(4, 2))
 
 # Sample 1
 plot(sf_raw["Yield_kg_ha"], main = "Sample 1 - Soja (AVANT)", 
-     pch = 19, cex = 0.3, breaks = "jenks", key.pos = NULL)
+     pch = 19, cex = 0.3, breaks = "quantile", key.pos = NULL)
 plot(sf_clean["Yield_kg_ha"], main = "Sample 1 - Soja (APRÈS)", 
-     pch = 19, cex = 0.3, breaks = "jenks", key.pos = NULL)
+     pch = 19, cex = 0.3, breaks = "quantile", key.pos = NULL)
 
 # Sample 2
 plot(sf_raw_s2["Yield_kg_ha"], main = "Sample 2 - Maïs (AVANT)", 
-     pch = 19, cex = 0.3, breaks = "jenks", key.pos = NULL)
+     pch = 19, cex = 0.3, breaks = "quantile", key.pos = NULL)
 plot(sf_clean_s2["Yield_kg_ha"], main = "Sample 2 - Maïs (APRÈS)", 
-     pch = 19, cex = 0.3, breaks = "jenks", key.pos = NULL)
+     pch = 19, cex = 0.3, breaks = "quantile", key.pos = NULL)
 
 # Sample 3
 plot(sf_raw_s3["Yield_kg_ha"], main = "Sample 3 - Maïs (AVANT)", 
-     pch = 19, cex = 0.3, breaks = "jenks", key.pos = NULL)
+     pch = 19, cex = 0.3, breaks = "quantile", key.pos = NULL)
 plot(sf_clean_s3["Yield_kg_ha"], main = "Sample 3 - Maïs (APRÈS)", 
-     pch = 19, cex = 0.3, breaks = "jenks", key.pos = NULL)
+     pch = 19, cex = 0.3, breaks = "quantile", key.pos = NULL)
 
 # Sample 4
 plot(sf_raw_s4["Yield_kg_ha"], main = "Sample 4 - Maïs blanc (AVANT)", 
-     pch = 19, cex = 0.3, breaks = "jenks", key.pos = NULL)
+     pch = 19, cex = 0.3, breaks = "quantile", key.pos = NULL)
 plot(sf_clean_s4["Yield_kg_ha"], main = "Sample 4 - Maïs blanc (APRÈS)", 
-     pch = 19, cex = 0.3, breaks = "jenks", key.pos = NULL)
+     pch = 19, cex = 0.3, breaks = "quantile", key.pos = NULL)
 ```
 
 # Visualisations comparatives

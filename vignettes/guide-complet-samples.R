@@ -32,7 +32,7 @@ cat("  Min-Max:", round(min(data_raw_s1$Flow, na.rm = TRUE), 2), "-",
 data_s1 <- latlon_to_utm(data_raw_s1)
 
 # Étape 2: Delay Adjustment (sur Flow, pas sur Yield)
-delay_result_s1 <- optimize_delays(data_s1, type = "flow", delay_range = -25:25, n_iterations = 10, noise_level = 0.03)
+delay_result_s1 <- optimize_delays(data_s1, type = "flow", delay_range = -25:25, n_iterations = 3, noise_level = 0.03)
 cat("\n🔧 Delay Adjustment - Délai optimal:", delay_result_s1$delays$flow, "secondes\n")
 
 if (!is.null(delay_result_s1$data)) {

@@ -173,6 +173,7 @@ reference:
       - export_data
       - read_yield_from_zip
       - read_yield_from_vector
+      - read_yield_shp
       - read_jd_to_polygons
       - create_polygons_from_data
       - list_fields_from_zip
@@ -193,6 +194,8 @@ reference:
       Fonctions pour générer des rapports PDF/HTML professionnels et créer des 
       visualisations des données de rendement sous forme de cartes interactives.
     contents:
+      - generate_yield_report
+      - generate_report
       - generate_batch_report
       - generate_batch_report_html
       - render_pdf_report

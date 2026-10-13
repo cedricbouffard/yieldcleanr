@@ -105,6 +105,18 @@
     rlang::abort("Either 'file_path' or 'data' must be provided")
   }
 
+  if (!is.null(data)) {
+    if (!is.data.frame(data) || nrow(data) == 0) {
+      rlang::abort("`data` doit être un data frame non vide.")
+    }
+  }
+
+  if (!is.null(file_path)) {
+    if (!is.character(file_path) || length(file_path) != 1 || !file.exists(file_path)) {
+      rlang::abort(paste0("Le fichier specifie n'existe pas: '", file_path, "'"))
+    }
+  }
+
   # ----- Parametres AYCE par defaut -----
   default_params <- list(
     # Parametres Delay Adjustment
