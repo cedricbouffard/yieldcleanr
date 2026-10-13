@@ -148,7 +148,7 @@ sf_raw$Yield_kg_ha <- sf_raw$Flow * 0.453592 * 3600 / 4046 * 1000
 
 par(mfrow = c(1, 2))
 plot(sf_raw["Yield_kg_ha"], main = "AVANT - Sample 1 (Soja)", 
-     pch = 19, cex = 0.3, breaks = "jenks")
+     pch = 19, cex = 0.3, breaks = "quantile")
 ```
 
 ![](guide-complet-samples_files/figure-html/sample1-viz-1.png)
@@ -156,7 +156,7 @@ plot(sf_raw["Yield_kg_ha"], main = "AVANT - Sample 1 (Soja)",
 ``` r
 
 plot(sf_clean["Yield_kg_ha"], main = "APRÈS - Sample 1 (Soja)", 
-     pch = 19, cex = 0.3, breaks = "jenks")
+     pch = 19, cex = 0.3, breaks = "quantile")
 ```
 
 ![](guide-complet-samples_files/figure-html/sample1-viz-2.png)
@@ -252,7 +252,7 @@ sf_raw_s2$Yield_kg_ha <- sf_raw_s2$Flow * 0.453592 * 3600 / 4046 * 1000
 
 par(mfrow = c(1, 2))
 plot(sf_raw_s2["Yield_kg_ha"], main = "AVANT - Sample 2 (Maïs)", 
-     pch = 19, cex = 0.3, breaks = "jenks")
+     pch = 19, cex = 0.3, breaks = "quantile")
 ```
 
 ![](guide-complet-samples_files/figure-html/sample2-viz-1.png)
@@ -260,7 +260,7 @@ plot(sf_raw_s2["Yield_kg_ha"], main = "AVANT - Sample 2 (Maïs)",
 ``` r
 
 plot(sf_clean_s2["Yield_kg_ha"], main = "APRÈS - Sample 2 (Maïs)", 
-     pch = 19, cex = 0.3, breaks = "jenks")
+     pch = 19, cex = 0.3, breaks = "quantile")
 ```
 
 ![](guide-complet-samples_files/figure-html/sample2-viz-2.png)
@@ -320,7 +320,7 @@ sf_raw_s3$Yield_kg_ha <- sf_raw_s3$Flow * 0.453592 * 3600 / 4046 * 1000
 
 par(mfrow = c(1, 2))
 plot(sf_raw_s3["Yield_kg_ha"], main = "AVANT - Sample 3 (Maïs)", 
-     pch = 19, cex = 0.3, breaks = "jenks")
+     pch = 19, cex = 0.3, breaks = "quantile")
 ```
 
 ![](guide-complet-samples_files/figure-html/sample3-viz-1.png)
@@ -328,7 +328,7 @@ plot(sf_raw_s3["Yield_kg_ha"], main = "AVANT - Sample 3 (Maïs)",
 ``` r
 
 plot(sf_clean_s3["Yield_kg_ha"], main = "APRÈS - Sample 3 (Maïs)", 
-     pch = 19, cex = 0.3, breaks = "jenks")
+     pch = 19, cex = 0.3, breaks = "quantile")
 ```
 
 ![](guide-complet-samples_files/figure-html/sample3-viz-2.png)
@@ -388,7 +388,7 @@ sf_raw_s4$Yield_kg_ha <- sf_raw_s4$Flow * 0.453592 * 3600 / 4046 * 1000
 
 par(mfrow = c(1, 2))
 plot(sf_raw_s4["Yield_kg_ha"], main = "AVANT - Sample 4 (Maïs blanc)", 
-     pch = 19, cex = 0.3, breaks = "jenks")
+     pch = 19, cex = 0.3, breaks = "quantile")
 ```
 
 ![](guide-complet-samples_files/figure-html/sample4-viz-1.png)
@@ -396,7 +396,7 @@ plot(sf_raw_s4["Yield_kg_ha"], main = "AVANT - Sample 4 (Maïs blanc)",
 ``` r
 
 plot(sf_clean_s4["Yield_kg_ha"], main = "APRÈS - Sample 4 (Maïs blanc)", 
-     pch = 19, cex = 0.3, breaks = "jenks")
+     pch = 19, cex = 0.3, breaks = "quantile")
 ```
 
 ![](guide-complet-samples_files/figure-html/sample4-viz-2.png)
@@ -442,7 +442,7 @@ plot(sf_clean_s4["Yield_kg_ha"], main = "APRÈS - Sample 4 (Maïs blanc)",
 par(mfrow = c(2, 2))
 
 plot(sf_raw["Yield_kg_ha"], main = "Sample 1 - Soja (AVANT)", 
-     pch = 19, cex = 0.3, breaks = "jenks", key.pos = NULL)
+     pch = 19, cex = 0.3, breaks = "quantile", key.pos = NULL)
 ```
 
 ![](guide-complet-samples_files/figure-html/all-samples-raw-map-1.png)
@@ -450,7 +450,7 @@ plot(sf_raw["Yield_kg_ha"], main = "Sample 1 - Soja (AVANT)",
 ``` r
 
 plot(sf_raw_s2["Yield_kg_ha"], main = "Sample 2 - Maïs (AVANT)", 
-     pch = 19, cex = 0.3, breaks = "jenks", key.pos = NULL)
+     pch = 19, cex = 0.3, breaks = "quantile", key.pos = NULL)
 ```
 
 ![](guide-complet-samples_files/figure-html/all-samples-raw-map-2.png)
@@ -458,7 +458,7 @@ plot(sf_raw_s2["Yield_kg_ha"], main = "Sample 2 - Maïs (AVANT)",
 ``` r
 
 plot(sf_raw_s3["Yield_kg_ha"], main = "Sample 3 - Maïs (AVANT)", 
-     pch = 19, cex = 0.3, breaks = "jenks", key.pos = NULL)
+     pch = 19, cex = 0.3, breaks = "quantile", key.pos = NULL)
 ```
 
 ![](guide-complet-samples_files/figure-html/all-samples-raw-map-3.png)
@@ -466,7 +466,7 @@ plot(sf_raw_s3["Yield_kg_ha"], main = "Sample 3 - Maïs (AVANT)",
 ``` r
 
 plot(sf_raw_s4["Yield_kg_ha"], main = "Sample 4 - Maïs blanc (AVANT)", 
-     pch = 19, cex = 0.3, breaks = "jenks", key.pos = NULL)
+     pch = 19, cex = 0.3, breaks = "quantile", key.pos = NULL)
 ```
 
 ![](guide-complet-samples_files/figure-html/all-samples-raw-map-4.png)
@@ -479,7 +479,7 @@ plot(sf_raw_s4["Yield_kg_ha"], main = "Sample 4 - Maïs blanc (AVANT)",
 par(mfrow = c(2, 2))
 
 plot(sf_clean["Yield_kg_ha"], main = "Sample 1 - Soja (APRÈS)", 
-     pch = 19, cex = 0.3, breaks = "jenks", key.pos = NULL)
+     pch = 19, cex = 0.3, breaks = "quantile", key.pos = NULL)
 ```
 
 ![](guide-complet-samples_files/figure-html/all-samples-clean-map-1.png)
@@ -487,7 +487,7 @@ plot(sf_clean["Yield_kg_ha"], main = "Sample 1 - Soja (APRÈS)",
 ``` r
 
 plot(sf_clean_s2["Yield_kg_ha"], main = "Sample 2 - Maïs (APRÈS)", 
-     pch = 19, cex = 0.3, breaks = "jenks", key.pos = NULL)
+     pch = 19, cex = 0.3, breaks = "quantile", key.pos = NULL)
 ```
 
 ![](guide-complet-samples_files/figure-html/all-samples-clean-map-2.png)
@@ -495,7 +495,7 @@ plot(sf_clean_s2["Yield_kg_ha"], main = "Sample 2 - Maïs (APRÈS)",
 ``` r
 
 plot(sf_clean_s3["Yield_kg_ha"], main = "Sample 3 - Maïs (APRÈS)", 
-     pch = 19, cex = 0.3, breaks = "jenks", key.pos = NULL)
+     pch = 19, cex = 0.3, breaks = "quantile", key.pos = NULL)
 ```
 
 ![](guide-complet-samples_files/figure-html/all-samples-clean-map-3.png)
@@ -503,7 +503,7 @@ plot(sf_clean_s3["Yield_kg_ha"], main = "Sample 3 - Maïs (APRÈS)",
 ``` r
 
 plot(sf_clean_s4["Yield_kg_ha"], main = "Sample 4 - Maïs blanc (APRÈS)", 
-     pch = 19, cex = 0.3, breaks = "jenks", key.pos = NULL)
+     pch = 19, cex = 0.3, breaks = "quantile", key.pos = NULL)
 ```
 
 ![](guide-complet-samples_files/figure-html/all-samples-clean-map-4.png)
@@ -517,7 +517,7 @@ par(mfrow = c(4, 2))
 
 # Sample 1
 plot(sf_raw["Yield_kg_ha"], main = "Sample 1 - Soja (AVANT)", 
-     pch = 19, cex = 0.3, breaks = "jenks", key.pos = NULL)
+     pch = 19, cex = 0.3, breaks = "quantile", key.pos = NULL)
 ```
 
 ![](guide-complet-samples_files/figure-html/density-maps-1.png)
@@ -525,7 +525,7 @@ plot(sf_raw["Yield_kg_ha"], main = "Sample 1 - Soja (AVANT)",
 ``` r
 
 plot(sf_clean["Yield_kg_ha"], main = "Sample 1 - Soja (APRÈS)", 
-     pch = 19, cex = 0.3, breaks = "jenks", key.pos = NULL)
+     pch = 19, cex = 0.3, breaks = "quantile", key.pos = NULL)
 ```
 
 ![](guide-complet-samples_files/figure-html/density-maps-2.png)
@@ -535,7 +535,7 @@ plot(sf_clean["Yield_kg_ha"], main = "Sample 1 - Soja (APRÈS)",
 
 # Sample 2
 plot(sf_raw_s2["Yield_kg_ha"], main = "Sample 2 - Maïs (AVANT)", 
-     pch = 19, cex = 0.3, breaks = "jenks", key.pos = NULL)
+     pch = 19, cex = 0.3, breaks = "quantile", key.pos = NULL)
 ```
 
 ![](guide-complet-samples_files/figure-html/density-maps-3.png)
@@ -543,7 +543,7 @@ plot(sf_raw_s2["Yield_kg_ha"], main = "Sample 2 - Maïs (AVANT)",
 ``` r
 
 plot(sf_clean_s2["Yield_kg_ha"], main = "Sample 2 - Maïs (APRÈS)", 
-     pch = 19, cex = 0.3, breaks = "jenks", key.pos = NULL)
+     pch = 19, cex = 0.3, breaks = "quantile", key.pos = NULL)
 ```
 
 ![](guide-complet-samples_files/figure-html/density-maps-4.png)
@@ -553,7 +553,7 @@ plot(sf_clean_s2["Yield_kg_ha"], main = "Sample 2 - Maïs (APRÈS)",
 
 # Sample 3
 plot(sf_raw_s3["Yield_kg_ha"], main = "Sample 3 - Maïs (AVANT)", 
-     pch = 19, cex = 0.3, breaks = "jenks", key.pos = NULL)
+     pch = 19, cex = 0.3, breaks = "quantile", key.pos = NULL)
 ```
 
 ![](guide-complet-samples_files/figure-html/density-maps-5.png)
@@ -561,7 +561,7 @@ plot(sf_raw_s3["Yield_kg_ha"], main = "Sample 3 - Maïs (AVANT)",
 ``` r
 
 plot(sf_clean_s3["Yield_kg_ha"], main = "Sample 3 - Maïs (APRÈS)", 
-     pch = 19, cex = 0.3, breaks = "jenks", key.pos = NULL)
+     pch = 19, cex = 0.3, breaks = "quantile", key.pos = NULL)
 ```
 
 ![](guide-complet-samples_files/figure-html/density-maps-6.png)
@@ -571,7 +571,7 @@ plot(sf_clean_s3["Yield_kg_ha"], main = "Sample 3 - Maïs (APRÈS)",
 
 # Sample 4
 plot(sf_raw_s4["Yield_kg_ha"], main = "Sample 4 - Maïs blanc (AVANT)", 
-     pch = 19, cex = 0.3, breaks = "jenks", key.pos = NULL)
+     pch = 19, cex = 0.3, breaks = "quantile", key.pos = NULL)
 ```
 
 ![](guide-complet-samples_files/figure-html/density-maps-7.png)
@@ -579,7 +579,7 @@ plot(sf_raw_s4["Yield_kg_ha"], main = "Sample 4 - Maïs blanc (AVANT)",
 ``` r
 
 plot(sf_clean_s4["Yield_kg_ha"], main = "Sample 4 - Maïs blanc (APRÈS)", 
-     pch = 19, cex = 0.3, breaks = "jenks", key.pos = NULL)
+     pch = 19, cex = 0.3, breaks = "quantile", key.pos = NULL)
 ```
 
 ![](guide-complet-samples_files/figure-html/density-maps-8.png)

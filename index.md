@@ -1,4 +1,4 @@
-# yieldcleanr ![yieldcleanr logo](reference/figures/logo.png)
+# yieldcleanr
 
 **yieldcleanr** est un package R pour nettoyer, filtrer et valider les
 données de rendement agricole collectées par les

@@ -20,7 +20,8 @@ clean_yield_with_tracking(
 
 - file_path:
 
-  Chemin du fichier d'entree (txt/csv). Ignore si `data` est fourni.
+  Chemin du fichier d'entree (txt/csv) ou d'un fichier vectoriel (.shp,
+  .gpkg, .geojson). Ignore si `data` est fourni.
 
 - data:
 

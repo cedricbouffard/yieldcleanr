@@ -1,4 +1,4 @@
-# yieldcleanr ![yieldcleanr logo](reference/figures/logo.png)
+# yieldcleanr
 
 **yieldcleanr** est un package R pour nettoyer, filtrer et valider les
 données de rendement agricole collectées par les
@@ -490,6 +490,8 @@ formats (CSV, TXT, GeoJSON, GeoPackage, Shapefile et ZIP).
 - [`read_yield_from_vector()`](https://cedricbouffard.github.io/yieldcleanr/reference/read_yield_from_vector.md)
   : Lire des donnees depuis un fichier vectoriel (shapefile, GeoPackage,
   GeoJSON)
+- [`read_yield_shp()`](https://cedricbouffard.github.io/yieldcleanr/reference/read_yield_shp.md)
+  : Lire un shapefile de rendement John Deere depuis un repertoire
 - [`read_jd_to_polygons()`](https://cedricbouffard.github.io/yieldcleanr/reference/read_jd_to_polygons.md)
   : Lire des donnees John Deere et convertir en polygones metriques
 - [`create_polygons_from_data()`](https://cedricbouffard.github.io/yieldcleanr/reference/create_polygons_from_data.md)
@@ -520,6 +522,9 @@ Fonctions pour générer des rapports PDF/HTML professionnels et créer des
 visualisations des données de rendement sous forme de cartes
 interactives.
 
+- [`generate_yield_report()`](https://cedricbouffard.github.io/yieldcleanr/reference/generate_yield_report.md)
+  [`generate_report()`](https://cedricbouffard.github.io/yieldcleanr/reference/generate_yield_report.md)
+  : Generer un rapport PDF de nettoyage des donnees de rendement
 - [`generate_batch_report()`](https://cedricbouffard.github.io/yieldcleanr/reference/generate_batch_report.md)
   : Générer un rapport multi-champs à partir de fichiers de données
 - [`generate_batch_report_html()`](https://cedricbouffard.github.io/yieldcleanr/reference/generate_batch_report_html.md)
@@ -529,13 +534,25 @@ interactives.
 - [`geom_yield_map_polygon()`](https://cedricbouffard.github.io/yieldcleanr/reference/geom_yield_map_polygon.md)
   : Creer une carte de rendement avec des polygones ggplot
 
-## 🛠️ Fonctions Internes
+## 🛠️ Helpers et Fonctions Utilitaires
 
-Fonctions utilitaires internes utilisées par les autres fonctions du
-package.
+Fonctions utilitaires et helpers de validation pour manipuler et
+securiser les donnees de rendement.
 
+- [`validate_yield_dataframe()`](https://cedricbouffard.github.io/yieldcleanr/reference/validate_yield_dataframe.md)
+  : Valider la structure d'un jeu de donnees de rendement
+- [`is_valid_coordinates()`](https://cedricbouffard.github.io/yieldcleanr/reference/is_valid_coordinates.md)
+  : Verifier la validite des coordonnees geographiques
+- [`safe_divide()`](https://cedricbouffard.github.io/yieldcleanr/reference/safe_divide.md)
+  : Division securisee contre les divisions par zero ou NaN
+- [`safe_mean()`](https://cedricbouffard.github.io/yieldcleanr/reference/safe_mean.md)
+  : Calcul securise de la moyenne
+- [`safe_median()`](https://cedricbouffard.github.io/yieldcleanr/reference/safe_median.md)
+  : Calcul securise de la médiane
+- [`detect_column()`](https://cedricbouffard.github.io/yieldcleanr/reference/detect_column.md)
+  : Detecter une colonne parmi une liste de candidats possibles
 - [`.translate_crop_to_french()`](https://cedricbouffard.github.io/yieldcleanr/reference/dot-translate_crop_to_french.md)
-  : Generate PDF report from cleaned yield data
+  : Traduire le nom d'une culture en francais
 
 # Articles
 

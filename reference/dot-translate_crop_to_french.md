@@ -1,7 +1,7 @@
-# Generate PDF report from cleaned yield data
+# Traduire le nom d'une culture en francais
 
-Creates a professional paged PDF report using the yield data that was
-cleaned using clean_yield functions.
+Convertit les noms de cultures courants en anglais ou variantes vers
+leur appellation standardisee en francais.
 
 ## Usage
 
@@ -11,48 +11,10 @@ cleaned using clean_yield functions.
 
 ## Arguments
 
-- data_clean:
+- crop_name:
 
-  Cleaned yield data (sf object or data frame with geometry)
-
-- data_raw:
-
-  Raw yield data before cleaning
-
-- deletions:
-
-  Data frame of deleted points with reasons
-
-- stats:
-
-  List containing cleaning statistics (n_raw, n_clean, n_deleted,
-  retention_rate, etc.)
-
-- output_file:
-
-  Path where the PDF should be saved
-
-- title:
-
-  Report title (default: "Rapport de nettoyage des rendements")
-
-- author:
-
-  Author name (default: from DESCRIPTION or "YieldCleanr")
-
-- template_path:
-
-  Path to the R Markdown template (default: auto-detected)
-
-- verbose:
-
-  Print progress messages (default: TRUE)
-
-- style:
-
-  Style theme for the report. Options: "irda" (default) or "ced" (Cedric
-  Bouffard style)
+  Nom de la culture (chaine de caracteres)
 
 ## Value
 
-Path to the generated PDF file
+Nom de la culture traduit en francais
