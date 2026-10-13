@@ -5,6 +5,7 @@
 #' Enveloppe de clean_yield() avec sortie metrique + polygones.
 #'
 #' @param file_path Chemin du fichier d'entree
+#' @param data Tibble ou data frame de donnees de rendement (alternative a file_path)
 #' @param output_file Chemin optionnel pour GeoJSON
 #' @param log_file Chemin optionnel pour le journal
 #' @param geometry_type "polygon" ou "point" (compatibilite)

@@ -16,6 +16,8 @@ ayce_sf(
 \arguments{
 \item{file_path}{Chemin du fichier d'entree}
 
+\item{data}{Tibble ou data frame de donnees de rendement (alternative a file_path)}
+
 \item{output_file}{Chemin optionnel pour GeoJSON}
 
 \item{log_file}{Chemin optionnel pour le journal}

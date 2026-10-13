@@ -6,6 +6,8 @@
 #' @inheritParams clean_yield
 #' @param data Donnees brutes a nettoyer (tibble). Alternative a file_path.
 #'   Si fourni, file_path est ignore.
+#' @param progress_callback Fonction de rappel optionnelle pour suivre la progression.
+#'   Recoit une liste avec step, detail, progress.
 #' @return A list containing:
 #'   - data_clean: Donnees nettoyees (tibble ou objet SF)
 #'   - deletions: Tableau des suppressions avec raisons

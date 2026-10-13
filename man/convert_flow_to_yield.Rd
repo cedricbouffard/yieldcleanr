@@ -21,6 +21,8 @@ Defaut 56 pour le mais. Utiliser 60 pour soja et cereales.}
 \item{sqft_per_acre}{Pieds carres par acre (defaut 43560)}
 
 \item{inches_per_foot}{Pouces par pied (defaut 12)}
+
+\item{force_recalculate}{Forcer le recalcul meme si Yield_kg_ha existe deja (defaut FALSE)}
 }
 \value{
 Donnees avec colonne Yield_kg_ha

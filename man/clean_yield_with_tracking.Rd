@@ -25,6 +25,9 @@ Si fourni, file_path est ignore.}
 \item{polygon}{TRUE pour une sortie SF en polygones, FALSE pour une sortie tibble}
 
 \item{params}{Liste des parametres AYCE (voir section "Parametres AYCE")}
+
+\item{progress_callback}{Fonction de rappel optionnelle pour suivre la progression.
+Recoit une liste avec step, detail, progress.}
 }
 \value{
 A list containing:

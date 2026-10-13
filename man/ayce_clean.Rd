@@ -15,6 +15,8 @@ ayce_clean(
 \arguments{
 \item{file_path}{Chemin du fichier d'entree (txt)}
 
+\item{data}{Tibble ou data frame de donnees de rendement (alternative a file_path)}
+
 \item{output_file}{Chemin du fichier CSV de sortie}
 
 \item{log_file}{Chemin du journal de sortie}

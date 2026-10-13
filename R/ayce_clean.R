@@ -5,6 +5,7 @@
 #' Cette fonction retourne un tibble sans geometrie, en kg/ha.
 #'
 #' @param file_path Chemin du fichier d'entree (txt)
+#' @param data Tibble ou data frame de donnees de rendement (alternative a file_path)
 #' @param output_file Chemin du fichier CSV de sortie
 #' @param log_file Chemin du journal de sortie
 #' @param params Liste des parametres AYCE

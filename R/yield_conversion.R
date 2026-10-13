@@ -22,6 +22,7 @@
 #'   Defaut 56 pour le mais. Utiliser 60 pour soja et cereales.
 #' @param sqft_per_acre Pieds carres par acre (defaut 43560)
 #' @param inches_per_foot Pouces par pied (defaut 12)
+#' @param force_recalculate Forcer le recalcul meme si Yield_kg_ha existe deja (defaut FALSE)
  #' @return Donnees avec colonne Yield_kg_ha
  #' @export
  #' @examples
