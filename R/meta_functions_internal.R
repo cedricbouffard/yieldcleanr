@@ -24,7 +24,7 @@
     } else if (all(c("X", "Y") %in% names(data))) {
       data <- sf::st_as_sf(data, coords = c("X", "Y"), crs = params$crs %||% 4326)
     } else {
-      rlang::abort("Coordonnées non trouvées pour l'export GeoJSON")
+      rlang::abort("Coordonnees non trouvees pour l'export GeoJSON")
     }
   }
 
@@ -34,7 +34,7 @@
 #' @noRd
 .export_shapefile_internal <- function(data, file, params) {
   if (!inherits(data, "sf")) {
-    rlang::abort("Les données doivent être au format sf pour l'export Shapefile")
+    rlang::abort("Les donnees doivent etre au format sf pour l'export Shapefile")
   }
 
   sf::st_write(data, file, driver = "ESRI Shapefile", delete_layer = TRUE)
@@ -43,7 +43,7 @@
 #' @noRd
 .export_geopackage_internal <- function(data, file, params) {
   if (!inherits(data, "sf")) {
-    rlang::abort("Les données doivent être au format sf pour l'export GeoPackage")
+    rlang::abort("Les donnees doivent etre au format sf pour l'export GeoPackage")
   }
 
   layer_name <- params$layer %||% "yield_data"
@@ -56,18 +56,18 @@
     rlang::abort("Package 'terra' requis pour l'export raster")
   }
 
-  # Convertir en sf si nécessaire
+  # Convertir en sf si necessaire
   if (!inherits(data, "sf")) {
     if (all(c("Longitude", "Latitude") %in% names(data))) {
       data <- sf::st_as_sf(data, coords = c("Longitude", "Latitude"), crs = 4326)
     } else if (all(c("X", "Y") %in% names(data))) {
       data <- sf::st_as_sf(data, coords = c("X", "Y"), crs = params$crs %||% 4326)
     } else {
-      rlang::abort("Coordonnées non trouvées pour l'export raster")
+      rlang::abort("Coordonnees non trouvees pour l'export raster")
     }
   }
 
-  # Déterminer la colonne de rendement
+  # Determiner la colonne de rendement
   yield_col <- NULL
   for (col in c("Yield_kg_ha", "Yield", "Flow")) {
     if (col %in% names(data)) {
@@ -77,7 +77,7 @@
   }
 
   if (is.null(yield_col)) {
-    rlang::abort("Colonne de rendement non trouvée pour l'export raster")
+    rlang::abort("Colonne de rendement non trouvee pour l'export raster")
   }
 
   # Paramètres de rasterisation

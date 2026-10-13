@@ -44,7 +44,7 @@ filter_data <- function(data, type = "all", ...) {
 
   # S'assurer que type est un vecteur
   if (!is.character(type)) {
-    rlang::abort("Le paramètre 'type' doit être une chaîne de caractères ou un vecteur")
+    rlang::abort("Le parametre 'type' doit etre une chaine de caracteres ou un vecteur")
   }
 
   # Ordre logique des filtres (indépendamment de l'ordre demandé)
@@ -101,7 +101,7 @@ filter_data <- function(data, type = "all", ...) {
   n_final <- nrow(data)
   if (n_final < n_initial) {
     rlang::inform(paste(
-      "Filtres appliqués:", n_initial - n_final, "points éliminés au total"
+      "Filtres appliques:", n_initial - n_final, "points elimines au total"
     ))
     if (length(filter_log) > 0) {
       for (ftype in names(filter_log)) {
@@ -127,7 +127,7 @@ filter_data <- function(data, type = "all", ...) {
   n_removed <- n_before - nrow(data)
 
   if (n_removed > 0) {
-    rlang::inform(paste("Filtre header:", n_removed, "points éliminés"))
+    rlang::inform(paste("Filtre header:", n_removed, "points elimines"))
   }
   return(data)
 }
@@ -145,7 +145,7 @@ filter_data <- function(data, type = "all", ...) {
   n_removed <- n_before - nrow(data)
 
   if (n_removed > 0) {
-    rlang::inform(paste("Filtre GPS:", n_removed, "points éliminés"))
+    rlang::inform(paste("Filtre GPS:", n_removed, "points elimines"))
   }
   return(data)
 }
@@ -162,7 +162,7 @@ filter_data <- function(data, type = "all", ...) {
   n_removed <- n_before - nrow(data)
 
   if (n_removed > 0) {
-    rlang::inform(paste("Filtre DOP:", n_removed, "points éliminés"))
+    rlang::inform(paste("Filtre DOP:", n_removed, "points elimines"))
   }
   return(data)
 }
@@ -170,7 +170,7 @@ filter_data <- function(data, type = "all", ...) {
 #' @noRd
 .filter_velocity_internal <- function(data, min_velocity = NULL, max_velocity = NULL) {
   if (!all(c("X", "Y") %in% names(data))) {
-    rlang::warn("Coordonnées X,Y non trouvées - saut du filtre vitesse")
+    rlang::warn("Coordonnees X,Y non trouvees - saut du filtre vitesse")
     return(data)
   }
 
@@ -222,7 +222,7 @@ filter_data <- function(data, type = "all", ...) {
   n_removed <- n_before - nrow(data)
   if (n_removed > 0) {
     rlang::inform(paste(
-      "Filtre vitesse:", n_removed, "points éliminés",
+      "Filtre vitesse:", n_removed, "points elimines",
       "(plage:", round(min_velocity, 2), "-", round(max_velocity, 2), ")"
     ))
   }
@@ -241,7 +241,7 @@ filter_data <- function(data, type = "all", ...) {
   }
 
   if (is.null(yield_col)) {
-    rlang::warn("Colonne de rendement non trouvée - saut du filtre")
+    rlang::warn("Colonne de rendement non trouvee - saut du filtre")
     return(data)
   }
 
@@ -265,7 +265,7 @@ filter_data <- function(data, type = "all", ...) {
   n_removed <- n_before - nrow(data)
   if (n_removed > 0) {
     rlang::inform(paste(
-      "Filtre rendement:", n_removed, "points éliminés",
+      "Filtre rendement:", n_removed, "points elimines",
       "(plage:", round(min_yield, 1), "-", round(max_yield, 1), ")"
     ))
   }
@@ -294,7 +294,7 @@ filter_data <- function(data, type = "all", ...) {
   n_removed <- n_before - nrow(data)
   if (n_removed > 0) {
     rlang::inform(paste(
-      "Filtre humidité:", n_removed, "points éliminés",
+      "Filtre humidite:", n_removed, "points elimines",
       "(plage:", round(min_moisture, 1), "-", round(max_moisture, 1), ")"
     ))
   }
@@ -325,7 +325,7 @@ filter_data <- function(data, type = "all", ...) {
 
   n_removed <- n_before - nrow(data)
   if (n_removed > 0) {
-    rlang::inform(paste("Filtre limites:", n_removed, "points éliminés"))
+    rlang::inform(paste("Filtre limites:", n_removed, "points elimines"))
   }
   return(data)
 }
@@ -373,7 +373,7 @@ detect_anomalies <- function(data, type = "all", action = "filter", ...) {
   }
 
   if (!is.character(type)) {
-    rlang::abort("Le paramètre 'type' doit être une chaîne de caractères ou un vecteur")
+    rlang::abort("Le parametre 'type' doit etre une chaine de caracteres ou un vecteur")
   }
 
   n_initial <- nrow(data)
@@ -423,7 +423,7 @@ detect_anomalies <- function(data, type = "all", action = "filter", ...) {
   if (action == "filter" && length(anomaly_log) > 0) {
     n_final <- nrow(data)
     rlang::inform(paste(
-      "Détection d'anomalies:", n_initial - n_final, "points éliminés au total"
+      "Detection d'anomalies:", n_initial - n_final, "points elimines au total"
     ))
     for (atype in names(anomaly_log)) {
       rlang::inform(paste0("  - ", atype, ": ", anomaly_log[[atype]], " points"))
@@ -790,14 +790,14 @@ optimize_delays <- function(data, type = "both", method = "delay_adjustment",
                             noise_level = 0.03, apply_correction = TRUE) {
 
   if (!method %in% c("delay_adjustment")) {
-    rlang::abort(paste("Méthode non supportée:", method))
+    rlang::abort(paste("Methode non supportee:", method))
   }
 
   types_to_process <- switch(type,
     "flow" = "flow",
     "moisture" = "moisture",
     "both" = c("flow", "moisture"),
-    rlang::abort("Type doit être 'flow', 'moisture' ou 'both'")
+    rlang::abort("Type doit etre 'flow', 'moisture' ou 'both'")
   )
 
   delays <- list()
@@ -810,11 +810,11 @@ optimize_delays <- function(data, type = "both", method = "delay_adjustment",
     )
 
     if (!value_col %in% names(data)) {
-      rlang::warn(paste("Colonne", value_col, "non trouvée - saut de l'optimisation"))
+      rlang::warn(paste("Colonne", value_col, "non trouvee - saut de l'optimisation"))
       next
     }
 
-    rlang::inform(paste("Optimisation du délai de", t, "..."))
+    rlang::inform(paste("Optimisation du delai de", t, "..."))
 
     # Utiliser la fonction delay adjustment existante
     delay_adjustment_result <- apply_delay_adjustment(
@@ -828,7 +828,7 @@ optimize_delays <- function(data, type = "both", method = "delay_adjustment",
     delays[[t]] <- delay_adjustment_result$optimal_delay
     delay_adjustment_results[[t]] <- delay_adjustment_result
 
-    rlang::inform(paste("  Délai optimal", t, ":", delay_adjustment_result$optimal_delay, "secondes"))
+    rlang::inform(paste("  Delai optimal", t, ":", delay_adjustment_result$optimal_delay, "secondes"))
 
     # Appliquer la correction si demandé
     if (apply_correction && isTRUE(delay_adjustment_result$optimal_delay != 0)) {
@@ -960,7 +960,7 @@ calculate_thresholds <- function(data, type = "all", ...) {
   }
 
   if (is.null(yield_col)) {
-    rlang::warn("Colonne de rendement non trouvée pour le calcul des seuils")
+    rlang::warn("Colonne de rendement non trouvee pour le calcul des seuils")
     return(list(min_yield = 0, max_yield = Inf))
   }
 
@@ -994,7 +994,7 @@ calculate_thresholds <- function(data, type = "all", ...) {
 #' @noRd
 .calculate_velocity_thresholds_internal <- function(data, params) {
   if (!all(c("X", "Y") %in% names(data))) {
-    rlang::warn("Coordonnées X,Y non trouvées pour le calcul des seuils de vitesse")
+    rlang::warn("Coordonnees X,Y non trouvees pour le calcul des seuils de vitesse")
     return(list(min_velocity = 0.5, max_velocity = 10))
   }
 
@@ -1109,7 +1109,7 @@ convert_coordinates <- function(data, from = "latlon", to = "utm", zone = NULL) 
   } else if (from == "utm" && to == "latlon") {
     return(.utm_to_latlon_internal(data, zone = zone))
   } else {
-    rlang::abort(paste("Conversion non supportée:", from, "->", to))
+    rlang::abort(paste("Conversion non supportee:", from, "->", to))
   }
 }
 
@@ -1203,7 +1203,7 @@ convert_yield_units <- function(data, from = "flow_lbs_s", to = "kg_ha",
       data$Yield_t_ha <- data$Yield_kg_ha / 1000
     }
   } else {
-    rlang::warn(paste("Conversion non implémentée:", from, "->", to))
+    rlang::warn(paste("Conversion non implementee:", from, "->", to))
   }
 
   return(data)
@@ -1212,7 +1212,7 @@ convert_yield_units <- function(data, from = "flow_lbs_s", to = "kg_ha",
 #' @noRd
 .convert_flow_to_yield_internal <- function(data, moisture_std = 13) {
   if (!"Flow" %in% names(data)) {
-    rlang::warn("Colonne Flow non trouvée")
+    rlang::warn("Colonne Flow non trouvee")
     return(data)
   }
 
@@ -1255,7 +1255,7 @@ convert_yield_units <- function(data, from = "flow_lbs_s", to = "kg_ha",
 #' @noRd
 .convert_kgha_to_buacre_internal <- function(data, crop_type = "maize") {
   if (!"Yield_kg_ha" %in% names(data)) {
-    rlang::warn("Colonne Yield_kg_ha non trouvée")
+    rlang::warn("Colonne Yield_kg_ha non trouvee")
     return(data)
   }
 
@@ -1275,7 +1275,7 @@ convert_yield_units <- function(data, from = "flow_lbs_s", to = "kg_ha",
 #' @noRd
 .convert_buacre_to_kgha_internal <- function(data, crop_type = "maize") {
   if (!"Yield_bu_acre" %in% names(data)) {
-    rlang::warn("Colonne Yield_bu_acre non trouvée")
+    rlang::warn("Colonne Yield_bu_acre non trouvee")
     return(data)
   }
 
@@ -1340,7 +1340,7 @@ anonymize_data <- function(data, type = "full", method = "translation",
 .anonymize_coordinates_internal <- function(data, method = "translation",
                                             preserve_structure = TRUE, params) {
   if (!all(c("X", "Y") %in% names(data))) {
-    rlang::warn("Coordonnées X,Y non trouvées - saut de l'anonymisation spatiale")
+    rlang::warn("Coordonnees X,Y non trouvees - saut de l'anonymisation spatiale")
     return(data)
   }
 
@@ -1409,7 +1409,7 @@ anonymize_data <- function(data, type = "full", method = "translation",
   cols_to_remove <- intersect(cols_to_remove, names(data))
 
   if (length(cols_to_remove) > 0) {
-    rlang::inform(paste("Colonnes sensibles supprimées:", paste(cols_to_remove, collapse = ", ")))
+    rlang::inform(paste("Colonnes sensibles supprimees:", paste(cols_to_remove, collapse = ", ")))
     data <- data[, !(names(data) %in% cols_to_remove)]
   }
 
@@ -1457,7 +1457,7 @@ export_data <- function(data, file, format = NULL, ...) {
       "gpkg" = "gpkg",
       "tif" = "raster",
       "tiff" = "raster",
-      rlang::abort(paste("Extension non reconnue:", ext, "- spécifiez le format"))
+      rlang::abort(paste("Extension non reconnue:", ext, "- specifiez le format"))
     )
   }
 
@@ -1465,7 +1465,7 @@ export_data <- function(data, file, format = NULL, ...) {
 
   # Vérifier si le fichier existe déjà
   if (file.exists(file) && !isTRUE(params$overwrite)) {
-    rlang::abort(paste("Le fichier existe déjà:", file, "- utilisez overwrite = TRUE"))
+    rlang::abort(paste("Le fichier existe deja:", file, "- utilisez overwrite = TRUE"))
   }
 
   # Créer le répertoire parent si nécessaire
@@ -1478,9 +1478,9 @@ export_data <- function(data, file, format = NULL, ...) {
     "shp" = .export_shapefile_internal(data, file, params),
     "gpkg" = .export_geopackage_internal(data, file, params),
     "raster" = .export_raster_internal(data, file, params),
-    rlang::abort(paste("Format non supporté:", format))
+    rlang::abort(paste("Format non supporte:", format))
   )
 
-  rlang::inform(paste("Données exportées vers:", file))
+  rlang::inform(paste("Donnees exportees vers:", file))
   return(invisible(file))
 }

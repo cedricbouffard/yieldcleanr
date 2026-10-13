@@ -232,7 +232,7 @@ describe("restore_coordinates", {
     
     expect_error(
       restore_coordinates(result$data, key_file = temp_file, password = "wrong_password"),
-      "Échec du déchiffrement"
+      "chiffrement"
     )
     
     unlink(temp_file)

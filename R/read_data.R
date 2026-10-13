@@ -1288,7 +1288,7 @@ get_standard_moisture <- function(data) {
     }
     
     # Detecter ble/cereales
-    if (any(grepl("ble|wheat|blé|orge|barley|avoine|oat", grain))) {
+    if (any(grepl("ble|wheat|bl\\u00e9|orge|barley|avoine|oat", grain))) {
       return(13.5)  # Ble standard USDA
     }
 

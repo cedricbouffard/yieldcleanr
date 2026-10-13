@@ -22,7 +22,15 @@ apply_delay_adjustment(
 
 \item{delay_range}{Plage de delais a tester (defaut -25:25 secondes)}
 
+\item{n_iterations}{Nombre d'iterations pour le calcul (defaut 5)}
+
+\item{noise_level}{Niveau de bruit pour le lissage (optionnel)}
+
 \item{value_col}{Nom de la colonne de valeurs a analyser}
+
+\item{sample_fraction}{Fraction d'echantillonnage (optionnel)}
+
+\item{method}{Methode d'ajustement (optionnel)}
 
 \item{coarse_step}{Pas pour la recherche grossiere (defaut 2)}
 

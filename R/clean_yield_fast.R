@@ -21,10 +21,10 @@ clean_yield_fast <- function(data, phase = "full", preprocessed_data = NULL,
 
   if (phase %in% c("full", "preprocess")) {
     if (missing(data) || is.null(data)) {
-      rlang::abort("`data` doit être fourni.")
+      rlang::abort("`data` doit etre fourni.")
     }
     if (!is.data.frame(data) || nrow(data) == 0) {
-      rlang::abort("`data` doit être un data frame non vide.")
+      rlang::abort("`data` doit etre un data frame non vide.")
     }
   }
 
@@ -75,63 +75,63 @@ clean_yield_fast <- function(data, phase = "full", preprocessed_data = NULL,
  #' @noRd
  #' @keywords internal
  preprocess_yield_data <- function(data, params = list(), metrique = TRUE) {
-  rlang::inform("=== Phase 1: Pré-traitement ===")
+  rlang::inform("=== Phase 1: Pre-traitement ===")
   
   # Ajouter un identifiant de ligne original pour tracker les suppressions
   if (!"orig_row_id" %in% names(data)) {
     data$orig_row_id <- seq_len(nrow(data))
   }
   
-  # Étape 1: Conversion UTM
-  rlang::inform("Étape 1: conversion en coordonnées UTM...")
+  # Etape 1: Conversion UTM
+  rlang::inform("Etape 1: conversion en coordonnees UTM...")
   data <- latlon_to_utm(data)
   
-  # Étape 2: Filtre position (hors champ)
+  # Etape 2: Filtre position (hors champ)
   if (isTRUE(params$apply_position)) {
-    rlang::inform("Étape 2: filtre position...")
+    rlang::inform("Etape 2: filtre position...")
     result <- filter_position_outliers(data)
     data <- result$data
-    rlang::inform(paste("  Points conservés:", nrow(data)))
+    rlang::inform(paste("  Points conserves:", nrow(data)))
   }
   
-  # Étape 3: Delay Adjustment flux (calcul du délai optimal)
+  # Etape 3: Delay Adjustment flux (calcul du delai optimal)
   if (isTRUE(params$apply_delay_adjustment_flow)) {
-    rlang::inform("Étape 3: Delay Adjustment - optimisation du délai de flux...")
+    rlang::inform("Etape 3: Delay Adjustment - optimisation du delai de flux...")
     delay_adjustment_result <- apply_delay_adjustment(data, 
                               delay_range = params$delay_range %||% -25:25,
                               n_iterations = params$n_iterations %||% 5,
                               value_col = "Flow")
     flow_delay <- delay_adjustment_result$optimal_delay
-    rlang::inform(paste("  Délai optimal flux:", flow_delay, "secondes"))
+    rlang::inform(paste("  Delai optimal flux:", flow_delay, "secondes"))
     
-    # Stocker le résultat Delay Adjustment pour référence
+    # Stocker le resultat Delay Adjustment pour reference
     attr(data, "delay_adjustment_flow") <- delay_adjustment_result
   } else {
     flow_delay <- 0
   }
   
-  # Étape 4: Delay Adjustment humidité
+  # Etape 4: Delay Adjustment humidite
   moisture_delay <- 0
   if (isTRUE(params$apply_delay_adjustment_moisture) && "Moisture" %in% names(data) && !all(is.na(data$Moisture))) {
-    rlang::inform("Étape 4: Delay Adjustment - optimisation du délai d'humidité...")
+    rlang::inform("Etape 4: Delay Adjustment - optimisation du delai d'humidite...")
     delay_adjustment_moisture <- apply_delay_adjustment(data,
                                 delay_range = params$delay_range %||% -25:25,
                                 n_iterations = params$n_iterations %||% 5,
                                 value_col = "Moisture")
     moisture_delay <- delay_adjustment_moisture$optimal_delay
-    rlang::inform(paste("  Délai optimal humidité:", moisture_delay, "secondes"))
+    rlang::inform(paste("  Delai optimal humidite:", moisture_delay, "secondes"))
     attr(data, "delay_adjustment_moisture") <- delay_adjustment_moisture
   }
   
-  # Étape 5: Calcul initial du rendement (pour les seuils)
-  rlang::inform("Étape 5: calcul du rendement initial...")
+  # Etape 5: Calcul initial du rendement (pour les seuils)
+  rlang::inform("Etape 5: calcul du rendement initial...")
   if (!isFALSE(params$convert_flow)) {
     data <- convert_flow_to_yield(data)
   }
   
-  # Étape 6: Création des polygones (indépendant des valeurs)
+  # Etape 6: Creation des polygones (independant des valeurs)
   if (isTRUE(params$create_polygons)) {
-    rlang::inform("Étape 6: création des polygones...")
+    rlang::inform("Etape 6: creation des polygones...")
     # Calculer le cap si absent
     if (!"heading" %in% names(data)) {
       data <- data |>
@@ -151,26 +151,26 @@ clean_yield_fast <- function(data, phase = "full", preprocessed_data = NULL,
           velocity = sqrt((X - dplyr::lag(X))^2 + (Y - dplyr::lag(Y))^2) /
             dplyr::coalesce(Interval, 1),
           Distance_m = velocity * Interval,
-          Swath_m = 7.5  # Valeur par défaut
+          Swath_m = 7.5  # Valeur par defaut
         )
     }
     
     attr(data, "polygons_ready") <- TRUE
   }
   
-  # Étape 7: Analyse d'overlap (indépendante des valeurs)
+  # Etape 7: Analyse d'overlap (independante des valeurs)
   if (isTRUE(params$analyze_overlap)) {
-    rlang::inform("Étape 7: analyse d'overlap...")
-    # L'overlap est calculé sur la géométrie, pas sur les valeurs
+    rlang::inform("Etape 7: analyse d'overlap...")
+    # L'overlap est calcule sur la geometrie, pas sur les valeurs
     attr(data, "overlap_analyzed") <- TRUE
   }
   
-  # Stocker les délais pour la phase de filtrage
+  # Stocker les delais pour la phase de filtrage
   attr(data, "flow_delay") <- flow_delay
   attr(data, "moisture_delay") <- moisture_delay
   attr(data, "preprocessed") <- TRUE
   
-  rlang::inform("=== Pré-traitement terminé ===")
+  rlang::inform("=== Pre-traitement termine ===")
   return(data)
 }
 
@@ -215,32 +215,32 @@ clean_yield_fast <- function(data, phase = "full", preprocessed_data = NULL,
   flow_delay <- attr(data, "flow_delay") %||% 0
   moisture_delay <- attr(data, "moisture_delay") %||% 0
   
-  # Étape 8: Correction du délai de flux
+  # Etape 8: Correction du delai de flux
   if (flow_delay != 0) {
-    rlang::inform(paste("Étape 8: correction du délai de flux (", flow_delay, "s)..."))
+    rlang::inform(paste("Etape 8: correction du delai de flux (", flow_delay, "s)..."))
     data <- apply_flow_delay(data, delay = flow_delay, value_col = "Flow")
     if (sum(is.na(data$Flow)) > 0) {
       data <- interpolate_na(data, value_col = "Flow")
     }
   }
   
-  # Étape 9: Correction du délai d'humidité
+  # Etape 9: Correction du delai d'humidite
   if (moisture_delay != 0 && "Moisture" %in% names(data)) {
-    rlang::inform(paste("Étape 9: correction du délai d'humidité (", moisture_delay, "s)..."))
+    rlang::inform(paste("Etape 9: correction du delai d'humidite (", moisture_delay, "s)..."))
     data <- apply_flow_delay(data, delay = moisture_delay, value_col = "Moisture")
     if (sum(is.na(data$Moisture)) > 0) {
       data <- interpolate_na(data, value_col = "Moisture")
     }
   }
   
-  # Étape 10: Recalcul du rendement après délai
-  rlang::inform("Étape 10: recalcul du rendement après délai...")
+  # Etape 10: Recalcul du rendement apres delai
+  rlang::inform("Etape 10: recalcul du rendement apres delai...")
   if (!isFALSE(params$convert_flow)) {
     data <- convert_flow_to_yield(data, force_recalculate = TRUE)
   }
   
-  # Étape 11: Calcul des seuils
-  rlang::inform("Étape 11: calcul des seuils...")
+  # Etape 11: Calcul des seuils
+  rlang::inform("Etape 11: calcul des seuils...")
   thresholds <- calculate_auto_thresholds(data,
     yllim = params$yllim %||% 0.10,
     yulim = params$yulim %||% 0.90,
@@ -253,9 +253,9 @@ clean_yield_fast <- function(data, phase = "full", preprocessed_data = NULL,
     gbuffer = params$gbuffer %||% 100
   )
   
-  # Étape 12: Filtre header
+  # Etape 12: Filtre header
   if (isTRUE(params$apply_header)) {
-    rlang::inform("Étape 12: filtre header...")
+    rlang::inform("Etape 12: filtre header...")
     n_before <- nrow(data)
     # Identifier les points à supprimer avant le filtrage
     rows_to_delete <- which(!(data$HeaderStatus %in% c(0, 1, 33) | is.na(data$HeaderStatus)))
@@ -273,12 +273,12 @@ clean_yield_fast <- function(data, phase = "full", preprocessed_data = NULL,
     n_deleted <- n_before - nrow(data)
     deletions$step <- c(deletions$step, "Filtre header")
     deletions$n <- c(deletions$n, n_deleted)
-    rlang::inform(paste("  Points supprimés:", n_deleted, "- conservés:", nrow(data)))
+    rlang::inform(paste("  Points supprimes:", n_deleted, "- conserves:", nrow(data)))
   }
   
-  # Étape 13: Filtre GPS
+  # Etape 13: Filtre GPS
   if (isTRUE(params$apply_gps) && "GPSStatus" %in% names(data)) {
-    rlang::inform("Étape 13: filtre GPS...")
+    rlang::inform("Etape 13: filtre GPS...")
     n_before <- nrow(data)
     data$GPSStatus <- suppressWarnings(as.numeric(data$GPSStatus))
     # Identifier les points à supprimer avant le filtrage
@@ -297,12 +297,12 @@ clean_yield_fast <- function(data, phase = "full", preprocessed_data = NULL,
     n_deleted <- n_before - nrow(data)
     deletions$step <- c(deletions$step, "Filtre GPS")
     deletions$n <- c(deletions$n, n_deleted)
-    rlang::inform(paste("  Points supprimés:", n_deleted, "- conservés:", nrow(data)))
+    rlang::inform(paste("  Points supprimes:", n_deleted, "- conserves:", nrow(data)))
   }
   
-  # Étape 14: Calcul et filtre de vitesse
+  # Etape 14: Calcul et filtre de vitesse
   if (isTRUE(params$apply_velocity)) {
-    rlang::inform("Étape 14: calcul et filtre de vitesse...")
+    rlang::inform("Etape 14: calcul et filtre de vitesse...")
     n_before <- nrow(data)
     data <- data |>
       dplyr::mutate(
@@ -328,12 +328,12 @@ clean_yield_fast <- function(data, phase = "full", preprocessed_data = NULL,
     n_deleted <- n_before - nrow(data)
     deletions$step <- c(deletions$step, "Filtre vitesse")
     deletions$n <- c(deletions$n, n_deleted)
-    rlang::inform(paste("  Points supprimés:", n_deleted, "- conservés:", nrow(data)))
+    rlang::inform(paste("  Points supprimes:", n_deleted, "- conserves:", nrow(data)))
   }
   
-  # Étape 15: Filtre changement de vitesse
+  # Etape 15: Filtre changement de vitesse
   if (isTRUE(params$apply_velocity_jump)) {
-    rlang::inform("Étape 15: filtre changement de vitesse...")
+    rlang::inform("Etape 15: filtre changement de vitesse...")
     n_before <- nrow(data)
     result <- filter_velocity_jumps(data, 
                                     max_acceleration = params$max_acceleration %||% 5,
@@ -354,12 +354,12 @@ clean_yield_fast <- function(data, phase = "full", preprocessed_data = NULL,
     n_deleted <- n_before - nrow(data)
     deletions$step <- c(deletions$step, "Filtre changement de vitesse")
     deletions$n <- c(deletions$n, n_deleted)
-    rlang::inform(paste("  Points supprimés:", n_deleted, "- conservés:", nrow(data)))
+    rlang::inform(paste("  Points supprimes:", n_deleted, "- conserves:", nrow(data)))
   }
   
-  # Étape 16: Filtre anomalies de direction
+  # Etape 16: Filtre anomalies de direction
   if (isTRUE(params$apply_heading_anomaly)) {
-    rlang::inform("Étape 16: filtre anomalies de direction...")
+    rlang::inform("Etape 16: filtre anomalies de direction...")
     n_before <- nrow(data)
     result <- filter_heading_anomalies(data, 
                                        max_heading_change = params$max_heading_change %||% 60)
@@ -372,19 +372,19 @@ clean_yield_fast <- function(data, phase = "full", preprocessed_data = NULL,
       deleted_points$Latitude <- c(deleted_points$Latitude, result$removed$Latitude)
       deleted_points$valeur <- c(deleted_points$valeur, result$removed$Flow)
       deleted_points$step <- c(deleted_points$step, rep("Filtre direction", nrow(result$removed)))
-      reason_msg <- paste0("Changement de direction anormal [>", params$max_heading_change %||% 60, "°]")
+      reason_msg <- paste0("Changement de direction anormal [>", params$max_heading_change %||% 60, " deg]")
       deleted_points$reason <- c(deleted_points$reason, rep(reason_msg, nrow(result$removed)))
     }
     data <- result$data
     n_deleted <- n_before - nrow(data)
     deletions$step <- c(deletions$step, "Filtre direction")
     deletions$n <- c(deletions$n, n_deleted)
-    rlang::inform(paste("  Points supprimés:", n_deleted, "- conservés:", nrow(data)))
+    rlang::inform(paste("  Points supprimes:", n_deleted, "- conserves:", nrow(data)))
   }
   
-  # Étape 17: Suppression des rendements nuls
+  # Etape 17: Suppression des rendements nuls
   if (isTRUE(params$apply_null_yield) && "Yield_kg_ha" %in% names(data)) {
-    rlang::inform("Étape 17: suppression des rendements nuls...")
+    rlang::inform("Etape 17: suppression des rendements nuls...")
     n_before <- nrow(data)
     # Identifier les points à supprimer avant le filtrage
     rows_to_delete <- which(data$Yield_kg_ha <= 0 | is.na(data$Yield_kg_ha))
@@ -402,12 +402,12 @@ clean_yield_fast <- function(data, phase = "full", preprocessed_data = NULL,
     n_deleted <- n_before - nrow(data)
     deletions$step <- c(deletions$step, "Rendement nul")
     deletions$n <- c(deletions$n, n_deleted)
-    rlang::inform(paste("  Points supprimés:", n_deleted, "- conservés:", nrow(data)))
+    rlang::inform(paste("  Points supprimes:", n_deleted, "- conserves:", nrow(data)))
   }
   
-  # Étape 18: Filtre plage de rendement
+  # Etape 18: Filtre plage de rendement
   if (isTRUE(params$apply_yield_range)) {
-    rlang::inform("Étape 18: filtre plage de rendement...")
+    rlang::inform("Etape 18: filtre plage de rendement...")
     n_before <- nrow(data)
     # Identifier les points à supprimer avant le filtrage
     yield_col <- if ("Yield_buacre" %in% names(data)) "Yield_buacre" else "Yield_kg_ha"
@@ -436,12 +436,12 @@ clean_yield_fast <- function(data, phase = "full", preprocessed_data = NULL,
     n_deleted <- n_before - nrow(data)
     deletions$step <- c(deletions$step, "Filtre plage rendement")
     deletions$n <- c(deletions$n, n_deleted)
-    rlang::inform(paste("  Points supprimés:", n_deleted, "- conservés:", nrow(data)))
+    rlang::inform(paste("  Points supprimes:", n_deleted, "- conserves:", nrow(data)))
   }
   
-  # Étape 19: Filtre humidité
+  # Etape 19: Filtre humidite
   if (isTRUE(params$apply_moisture) && "Moisture" %in% names(data) && !all(is.na(data$Moisture))) {
-    rlang::inform("Étape 19: filtre humidité...")
+    rlang::inform("Etape 19: filtre humidite...")
     n_before <- nrow(data)
     # Calculer les seuils d'humidité pour identifier les points à supprimer
     n_std <- params$n_std %||% 3
@@ -462,20 +462,20 @@ clean_yield_fast <- function(data, phase = "full", preprocessed_data = NULL,
         deleted_points$Longitude <- c(deleted_points$Longitude, data$Longitude[rows_to_delete])
         deleted_points$Latitude <- c(deleted_points$Latitude, data$Latitude[rows_to_delete])
         deleted_points$valeur <- c(deleted_points$valeur, data$Moisture[rows_to_delete])
-        deleted_points$step <- c(deleted_points$step, rep("Filtre humidité", length(rows_to_delete)))
-      reason_msg <- paste0("Humidité hors plage [", round(min_moisture, 1), "-", round(max_moisture, 1), "] (mean ±", n_std, "SD)")
+        deleted_points$step <- c(deleted_points$step, rep("Filtre humidite", length(rows_to_delete)))
+      reason_msg <- paste0("Humidite hors plage [", round(min_moisture, 1), "-", round(max_moisture, 1), "] (mean +/-", n_std, "SD)")
       deleted_points$reason <- c(deleted_points$reason, rep(reason_msg, length(rows_to_delete)))
     }
     data <- filter_moisture_range(data, n_std = n_std)
     n_deleted <- n_before - nrow(data)
-    deletions$step <- c(deletions$step, "Filtre humidité")
+    deletions$step <- c(deletions$step, "Filtre humidite")
     deletions$n <- c(deletions$n, n_deleted)
-    rlang::inform(paste("  Points supprimés:", n_deleted, "- conservés:", nrow(data)))
+    rlang::inform(paste("  Points supprimes:", n_deleted, "- conserves:", nrow(data)))
   }
   
-  # Étape 20: Filtre de chevauchement
+  # Etape 20: Filtre de chevauchement
   if (isTRUE(params$apply_overlap)) {
-    rlang::inform("Étape 20: filtre de chevauchement...")
+    rlang::inform("Etape 20: filtre de chevauchement...")
     n_before <- nrow(data)
     # Calculer l'overlap ratio avant filtrage pour tracker les points supprimés
     overlap_threshold <- params$overlap_threshold %||% 0.4
@@ -508,12 +508,12 @@ clean_yield_fast <- function(data, phase = "full", preprocessed_data = NULL,
     n_deleted <- n_before - nrow(data)
     deletions$step <- c(deletions$step, "Filtre chevauchement")
     deletions$n <- c(deletions$n, n_deleted)
-    rlang::inform(paste("  Points supprimés:", n_deleted, "- conservés:", nrow(data)))
+    rlang::inform(paste("  Points supprimes:", n_deleted, "- conserves:", nrow(data)))
   }
   
-  # Étape 21: Filtre écart-type local
+  # Etape 21: Filtre ecart-type local
   if (isTRUE(params$apply_local_sd)) {
-    rlang::inform("Étape 21: filtre écart-type local...")
+    rlang::inform("Etape 21: filtre ecart-type local...")
     n_before <- nrow(data)
     lsd_limit <- params$lsd_limit %||% 2.4
     min_cells <- params$min_cells %||% 3
@@ -563,7 +563,7 @@ clean_yield_fast <- function(data, phase = "full", preprocessed_data = NULL,
          deleted_points$Latitude <- c(deleted_points$Latitude, data$Latitude[rows_to_delete])
          deleted_points$valeur <- c(deleted_points$valeur, data$Flow[rows_to_delete])
          deleted_points$step <- c(deleted_points$step, rep("Filtre ET local", length(rows_to_delete)))
-        reason_msg <- paste0("Outlier local [Flow hors ", lsd_limit, "×ET local]")
+        reason_msg <- paste0("Outlier local [Flow hors ", lsd_limit, "xET local]")
         deleted_points$reason <- c(deleted_points$reason, rep(reason_msg, length(rows_to_delete)))
       }
     }
@@ -574,16 +574,16 @@ clean_yield_fast <- function(data, phase = "full", preprocessed_data = NULL,
     n_deleted <- n_before - nrow(data)
     deletions$step <- c(deletions$step, "Filtre ET local")
     deletions$n <- c(deletions$n, n_deleted)
-    rlang::inform(paste("  Points supprimés:", n_deleted, "- conservés:", nrow(data)))
+    rlang::inform(paste("  Points supprimes:", n_deleted, "- conserves:", nrow(data)))
   }
   
-  # Étape 22: Création des polygones
+  # Etape 22: Creation des polygones
   if (polygon && nrow(data) > 0) {
-    rlang::inform("Étape 22: création des polygones...")
+    rlang::inform("Etape 22: creation des polygones...")
     data <- data_to_sf(data, crs = 4326)
   }
   
-  rlang::inform("=== Filtres appliqués ===")
+  rlang::inform("=== Filtres appliques ===")
   
   # Convertir la liste des points supprimés en data frame
   deleted_points_df <- if (length(deleted_points$X) > 0) {

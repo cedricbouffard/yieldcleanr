@@ -107,7 +107,7 @@
 
   if (!is.null(data)) {
     if (!is.data.frame(data) || nrow(data) == 0) {
-      rlang::abort("`data` doit être un data frame non vide.")
+      rlang::abort("`data` doit etre un data frame non vide.")
     }
   }
 

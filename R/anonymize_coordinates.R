@@ -95,10 +95,10 @@ anonymize_coordinates <- function(
     }
   } else if (coordinate_system == "utm") {
     if (!all(c("X", "Y") %in% names(data))) {
-      rlang::abort("Les colonnes 'X' et 'Y' sont requises pour le système UTM")
+      rlang::abort("Les colonnes 'X' et 'Y' sont requises pour le systeme UTM")
     }
   } else {
-    rlang::abort("coordinate_system doit être 'latlon' ou 'utm'")
+    rlang::abort("coordinate_system doit etre 'latlon' ou 'utm'")
   }
 
   # Vérifier que openssl est disponible si chiffrement demandé
@@ -166,7 +166,7 @@ anonymize_coordinates <- function(
       if ("Longitude" %in% names(data)) {
         utm_zone <- floor((data$Longitude[1] + 180) / 6) + 1
       } else {
-        rlang::abort("utm_zone doit être spécifié ou la colonne Longitude doit exister")
+        rlang::abort("utm_zone doit etre specifie ou la colonne Longitude doit exister")
       }
     }
 
@@ -225,7 +225,7 @@ anonymize_coordinates <- function(
       # Sauvegarder sans chiffrement (déconseillé)
       writeLines(key_json, output_key_file)
       key_file_path <- normalizePath(output_key_file, mustWork = FALSE)
-      rlang::warn("Clé sauvegardée sans chiffrement. Utilisez 'password' pour une meilleure sécurité.")
+      rlang::warn("Cle sauvegardee sans chiffrement. Utilisez 'password' pour une meilleure securite.")
     }
   }
 
@@ -255,7 +255,7 @@ anonymize_coordinates <- function(
   }
 
   rlang::inform(sprintf(
-    "Coordonnées anonymisées: %d points décalés (système: %s)",
+    "Coordonnees anonymisees: %d points decales (systeme: %s)",
     nrow(data), coordinate_system
   ))
 
@@ -303,17 +303,17 @@ restore_coordinates <- function(
 ) {
   # Vérifier qu'on a soit un fichier soit des infos de clé
   if (is.null(key_file) && is.null(key_info)) {
-    rlang::abort("Soit 'key_file' soit 'key_info' doit être fourni")
+    rlang::abort("Soit 'key_file' soit 'key_info' doit etre fourni")
   }
 
   # Lire et déchiffrer la clé si nécessaire
   if (!is.null(key_file)) {
     if (!file.exists(key_file)) {
-      rlang::abort(paste("Fichier de clé introuvable:", key_file))
+      rlang::abort(paste("Fichier de cle introuvable:", key_file))
     }
 
     if (!requireNamespace("openssl", quietly = TRUE)) {
-      rlang::abort("Le package 'openssl' est requis pour le déchiffrement")
+      rlang::abort("Le package 'openssl' est requis pour le dechiffrement")
     }
 
     # Lire le fichier chiffré
@@ -322,7 +322,7 @@ restore_coordinates <- function(
     iv <- encrypted_container$iv
 
     if (is.null(password)) {
-      rlang::abort("Un mot de passe est requis pour déchiffrer la clé")
+      rlang::abort("Un mot de passe est requis pour dechiffrer la cle")
     }
 
     # Déchiffrer
@@ -335,13 +335,13 @@ restore_coordinates <- function(
       )
       key_info <- jsonlite::unserializeJSON(rawToChar(decrypted))
     }, error = function(e) {
-      rlang::abort(paste("Échec du déchiffrement. Mot de passe incorrect ou fichier corrompu:", e$message))
+      rlang::abort(paste("Echec du dechiffrement. Mot de passe incorrect ou fichier corrompu:", e$message))
     })
   }
 
   # Vérifier la version
   if (!is.null(key_info$version) && key_info$version != "1.0") {
-    rlang::warn(paste("Version de clé non reconnue:", key_info$version))
+    rlang::warn(paste("Version de cle non reconnue:", key_info$version))
   }
 
   # Restaurer selon le système de coordonnées
@@ -362,7 +362,7 @@ restore_coordinates <- function(
     data$Y <- data$Y + key_info$y_offset
   }
 
-  rlang::inform("Coordonnées restaurées avec succès")
+  rlang::inform("Coordonnees restaurees avec succes")
 
   return(data)
 }
@@ -481,16 +481,16 @@ restore_coordinates <- function(
 
   if (include_recommendations) {
     report$recommendations <- list(
-      "Stockez le fichier de clé séparément des données anonymisées",
-      "Utilisez un mot de passe fort (12+ caractères, majuscules, minuscules, chiffres, symboles)",
-      "Ne partagez jamais le mot de passe et le fichier de clé ensemble",
-      "Faites des sauvegardes du fichier de clé dans un endroit sécurisé",
+      "Stockez le fichier de cle separement des donnees anonymisees",
+      "Utilisez un mot de passe fort (12+ caracteres, majuscules, minuscules, chiffres, symboles)",
+      "Ne partagez jamais le mot de passe et le fichier de cle ensemble",
+      "Faites des sauvegardes du fichier de cle dans un endroit securise",
       "En production, utilisez un gestionnaire de mots de passe pour stocker le mot de passe"
     )
 
     if (report$security_level == "low") {
       report$recommendations <- c(
-        "URGENT: Le fichier de clé n'est pas chiffré. Utilisez 'password' lors de l'anonymisation",
+        "URGENT: Le fichier de cle n'est pas chiffre. Utilisez 'password' lors de l'anonymisation",
         report$recommendations
       )
     }

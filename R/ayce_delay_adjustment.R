@@ -278,8 +278,12 @@ calculate_moran_legacy <- function(x, y, value, k = 5) {
 #'
 #' @param data Tibble avec donnees de rendement (X, Y, Flow, GPS_Time, Interval)
 #' @param delay_range Plage de delais a tester (defaut -25:25 secondes)
-#' @param coarse_step Pas pour la recherche grossiere (defaut 2)
+#' @param n_iterations Nombre d'iterations pour le calcul (defaut 5)
+#' @param noise_level Niveau de bruit pour le lissage (optionnel)
 #' @param value_col Nom de la colonne de valeurs a analyser
+#' @param sample_fraction Fraction d'echantillonnage (optionnel)
+#' @param method Methode d'ajustement (optionnel)
+#' @param coarse_step Pas pour la recherche grossiere (defaut 2)
 #' @param max_points Nombre maximum de points pour l'analyse
 #' @param bandwidth Distance de bande passante pour Moran (defaut 30m)
 #' @return Liste avec optimal_delay, score_values et stability_metrics
