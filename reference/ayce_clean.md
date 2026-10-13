@@ -22,6 +22,10 @@ ayce_clean(
 
   Chemin du fichier d'entree (txt)
 
+- data:
+
+  Tibble ou data frame de donnees de rendement (alternative a file_path)
+
 - output_file:
 
   Chemin du fichier CSV de sortie

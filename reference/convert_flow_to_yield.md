@@ -35,6 +35,10 @@ convert_flow_to_yield(
 
   Pouces par pied (defaut 12)
 
+- force_recalculate:
+
+  Forcer le recalcul meme si Yield_kg_ha existe deja (defaut FALSE)
+
 ## Value
 
 Donnees avec colonne Yield_kg_ha

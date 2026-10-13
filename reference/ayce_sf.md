@@ -23,6 +23,10 @@ ayce_sf(
 
   Chemin du fichier d'entree
 
+- data:
+
+  Tibble ou data frame de donnees de rendement (alternative a file_path)
+
 - output_file:
 
   Chemin optionnel pour GeoJSON

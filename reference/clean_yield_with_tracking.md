@@ -41,6 +41,11 @@ clean_yield_with_tracking(
 
   Liste des parametres AYCE (voir section "Parametres AYCE")
 
+- progress_callback:
+
+  Fonction de rappel optionnelle pour suivre la progression. Recoit une
+  liste avec step, detail, progress.
+
 ## Value
 
 A list containing:
