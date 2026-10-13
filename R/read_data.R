@@ -408,6 +408,192 @@ read_yield_from_zip <- function(zip_path, field_name) {
   return(data)
 }
 
+#' Resoudre le chemin d'un shapefile John Deere
+#'
+#' Accepte soit un chemin vers un fichier .shp, soit un repertoire
+#' contenant un (ou plusieurs) fichier .shp.
+#'
+#' @param shp_path Chemin du fichier .shp ou du repertoire
+#' @return Chemin normalise vers le fichier .shp
+#' @noRd
+resolve_jd_shp_path <- function(shp_path) {
+  if (is.null(shp_path) || !nzchar(shp_path)) {
+    rlang::abort("'shp_path' est requis")
+  }
+
+  if (dir.exists(shp_path)) {
+    shp_files <- list.files(
+      shp_path,
+      pattern = "\\.shp$",
+      ignore.case = TRUE,
+      full.names = TRUE
+    )
+    if (length(shp_files) == 0) {
+      rlang::abort(paste("Aucun fichier .shp trouve dans:", shp_path))
+    }
+    if (length(shp_files) > 1) {
+      rlang::warn(paste(
+        length(shp_files), "fichiers .shp trouves, utilisation du premier:",
+        basename(shp_files[1])
+      ))
+    }
+    shp_path <- shp_files[1]
+  }
+
+  if (!file.exists(shp_path)) {
+    rlang::abort(paste("Le fichier shapefile n'existe pas:", shp_path))
+  }
+
+  if (!grepl("\\.shp$", shp_path, ignore.case = TRUE)) {
+    rlang::abort(paste("Le fichier doit etre un .shp:", shp_path))
+  }
+
+  return(shp_path)
+}
+
+#' Trouver le fichier JSON de metadonnees associe a un shapefile John Deere
+#'
+#' @param shp_path Chemin vers le fichier .shp
+#' @return Chemin vers le JSON de metadonnees ou NULL si absent
+#' @noRd
+find_jd_metadata_json <- function(shp_path) {
+  base_name <- tools::file_path_sans_ext(shp_path)
+
+  candidates <- c(
+    paste0(base_name, "-Deere-Metadata.json"),
+    paste0(base_name, "_Deere-Metadata.json"),
+    paste0(base_name, ".json")
+  )
+  for (cand in candidates) {
+    if (file.exists(cand)) return(cand)
+  }
+
+  # Recherche plus large: n'importe quel *-Deere-Metadata.json partageant
+  # le meme nom de base, dans le repertoire du shapefile
+  shp_dir <- dirname(shp_path)
+  shp_base <- basename(base_name)
+  broad <- list.files(
+    shp_dir,
+    pattern = "Deere-Metadata\\.json$",
+    ignore.case = TRUE,
+    full.names = TRUE
+  )
+  broad <- broad[startsWith(basename(broad), shp_base)]
+  if (length(broad) > 0) return(broad[1])
+
+  return(NULL)
+}
+
+#' Lire un shapefile de rendement John Deere depuis un repertoire
+#'
+#' Lit un shapefile John Deere exporte (fichiers .shp/.dbf/.shx/.prj/.cpg)
+#' ainsi que son fichier JSON de metadonnees (optionnel) et retourne les
+#' donnees standardisees au format yieldcleanr. Equivalent a
+#' [read_yield_from_zip()] mais pour des fichiers deja extraits (hors ZIP).
+#'
+#' @param shp_path Chemin vers le fichier .shp, ou vers le repertoire qui le
+#'   contient (un fichier .shp attendu).
+#' @param metadata_path Chemin optionnel vers le fichier JSON de metadonnees
+#'   (*-Deere-Metadata.json). Si NULL, detection automatique a cote du .shp.
+#' @param as_polygons Si TRUE, retourne un objet SF avec polygones (comme
+#'   [read_jd_to_polygons()]) au lieu d'une data.frame standardisee.
+#' @return Une data.frame standardisee (colonnes Longitude, Latitude, Flow,
+#'   Swath, Distance, etc.) ou un objet SF si as_polygons = TRUE.
+#' @export
+#' @examples
+#' \dontrun{
+#' # Lire un export John Deere deja extrait dans un repertoire
+#' data <- read_yield_shp("chemin/vers/Delfland_..._00.shp")
+#'
+#' # Ou directement le repertoire contenant le .shp et le JSON
+#' data <- read_yield_shp("chemin/vers/repertoire")
+#'
+#' # Pour obtenir des polygones metriques
+#' sf_data <- read_yield_shp("chemin/vers/repertoire", as_polygons = TRUE)
+#' }
+read_yield_shp <- function(shp_path, metadata_path = NULL, as_polygons = FALSE) {
+  shp_path <- resolve_jd_shp_path(shp_path)
+
+  metadata <- if (is.null(metadata_path)) {
+    parse_jd_metadata(find_jd_metadata_json(shp_path))
+  } else {
+    parse_jd_metadata(metadata_path)
+  }
+
+  if (!requireNamespace("sf", quietly = TRUE)) {
+    rlang::abort("Le package 'sf' est requis")
+  }
+
+  data <- sf::st_read(shp_path, quiet = TRUE)
+
+  # Detacher l'objet sf de ses fichiers source en forcant une copie en memoire
+  data <- sf::st_sf(sf::st_drop_geometry(data), geometry = sf::st_geometry(data))
+
+  # Convertir les unites selon le JSON metadata (avant standardisation)
+  data <- convert_units_from_json(data, metadata)
+
+  if (isTRUE(as_polygons)) {
+    # Extraire les coordonnees puis passer en data.frame (necessaire pour
+    # create_polygons_from_data qui travaille sur Longitude/Latitude)
+    if (inherits(data, "sf")) {
+      coords <- sf::st_coordinates(data)
+      if (ncol(coords) >= 2) {
+        data$Longitude <- coords[, 1]
+        data$Latitude <- coords[, 2]
+      }
+      metadata_attrs <- attributes(data)[!names(attributes(data)) %in%
+        c("names", "class", "row.names", "sf_column", "agr")]
+      data <- sf::st_drop_geometry(data)
+      for (attr_name in names(metadata_attrs)) {
+        attr(data, attr_name) <- metadata_attrs[[attr_name]]
+      }
+    }
+  }
+
+  # Standardiser les colonnes John Deere (avec metadonnees si disponibles)
+  data <- standardize_jd_columns(data, metadata = metadata)
+
+  if (isTRUE(as_polygons)) {
+    # Renommer les colonnes _m generees par convert_units_from_json
+    col_m_mapping <- c(
+      "SWATHWIDTH_m" = "Swath_m",
+      "DISTANCE_m" = "Distance_m",
+      "SWATH_m" = "Swath_m",
+      "ELEVATION_m" = "Altitude_m",
+      "VELOCITY_m" = "Velocity_m"
+    )
+    for (old_name in names(col_m_mapping)) {
+      if (old_name %in% names(data)) {
+        data[[col_m_mapping[[old_name]]]] <- data[[old_name]]
+        data[[old_name]] <- NULL
+      }
+    }
+
+    # S'assurer que Swath_m et Distance_m existent
+    if (!"Swath_m" %in% names(data) && "Swath" %in% names(data)) {
+      data$Swath_m <- data$Swath
+    }
+    if (!"Distance_m" %in% names(data) && "Distance" %in% names(data)) {
+      data$Distance_m <- data$Distance
+    }
+
+    return(create_polygons_from_data(data))
+  }
+
+  # Le pipeline de nettoyage travaille avec des data.frames, pas des sf.
+  # Convertir en data.frame (coordonnees deja extraites dans Longitude/Latitude).
+  if (inherits(data, "sf")) {
+    metadata_attrs <- attributes(data)[!names(attributes(data)) %in%
+      c("names", "class", "row.names", "sf_column", "agr")]
+    data <- sf::st_drop_geometry(data)
+    for (attr_name in names(metadata_attrs)) {
+      attr(data, attr_name) <- metadata_attrs[[attr_name]]
+    }
+  }
+
+  return(data)
+}
+
 #' Standardiser les colonnes d'un fichier John Deere
 #'
 #' Convertit les noms de colonnes du format John Deere vers le format

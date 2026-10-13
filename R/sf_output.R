@@ -125,67 +125,75 @@ data_to_sf <- function(data, crs = 4326) {
     return(coords)
   }
 
-  # Calculer le cap si absent
-  if (!"heading" %in% names(data)) {
+  # Utiliser le heading du capteur si disponible, sinon calculer
+  if ("Heading" %in% names(data) && !all(is.na(data$Heading))) {
+    # Utiliser le heading du capteur (deja en degres, 0=Nord, sens horaire)
+    data$heading <- data$Heading
+    rlang::inform("Utilisation du Heading du capteur")
+  } else if (!"heading" %in% names(data)) {
+    # Calculer le heading a partir des coordonnees
+    # Direction vers le point suivant (ou on va)
     data <- data |>
       dplyr::mutate(
         heading = atan2(
-          dplyr::lag(Longitude, default = Longitude[1]) - Longitude,
-          dplyr::lag(Latitude, default = Latitude[1]) - Latitude
+          dplyr::lead(Longitude, default = Longitude[dplyr::n()]) - Longitude,
+          dplyr::lead(Latitude, default = Latitude[dplyr::n()]) - Latitude
         ) * 180 / pi
       )
+    # Normaliser a 0-360
+    data$heading <- (data$heading + 360) %% 360
     data$heading[is.na(data$heading)] <- 0
+    rlang::inform("Heading calcule a partir des coordonnees")
   }
 
    # S'assurer que les colonnes metriques existent
-   # Detection automatique des unites pour Swath et Distance
+   # Si Swath_m ou Distance_m existent deja, les utiliser directement
+   # Sinon, detecter les unites de Swath et Distance
+   
    if (!"Swath_m" %in% names(data)) {
      mean_swath <- mean(data$Swath, na.rm = TRUE)
-     # Detection plus robuste avec verifications de realisme
-     # Headers typiques: 6-15m (20-50 pieds)
-      # Detection des unites Swath:
-      # En pouces: 240-600 pouces (6-15m) - mais un swath < 3m est impossible
-      # En pieds: 20-50 pieds (6-15m)
-      # En metres: 6-12m typiquement
-      # Valeurs aberrantes: < 3m (trop petit) ou > 50m (trop grand)
-      
-      if (mean_swath > 100) {
-        # > 100: probablement pieds (100 pieds = 30m, trop grand) ou pouces mal detectes
-        if (mean_swath > 200) {
-          rlang::warn(paste("Swath moyen tres eleve (", round(mean_swath, 1), ") - verifiez les unites. Traitement avec 8m par defaut."))
-          data$Swath_m <- 8
-        } else {
-          # 100-200: probablement pieds
-          rlang::inform(paste("Swath detecte en pieds (moyenne:", round(mean_swath, 1), "ft) - conversion en metres"))
-          data$Swath_m <- data$Swath * 0.3048
-        }
-      } else if (mean_swath >= 3 && mean_swath <= 50) {
-        # 3-50m: plage normale pour un swath en metres
-        rlang::inform(paste("Swath detecte en metres (moyenne:", round(mean_swath, 2), "m)"))
-        data$Swath_m <- data$Swath
-      } else if (mean_swath < 3) {
-        # < 3m: probablement pouces (car un swath reel ne peut pas etre < 3m)
-        rlang::inform(paste("Swath detecte en pouces (moyenne:", round(mean_swath, 1), "in) - conversion en metres"))
-        data$Swath_m <- data$Swath * 0.0254
-      } else {
-        # Cas non prevu, utiliser la valeur telle quelle
-        rlang::warn(paste("Swath de", round(mean_swath, 1), "m - unite incertaine, utilisee telle quelle"))
-        data$Swath_m <- data$Swath
-      }
+     # Detection des unites Swath:
+     # - En metres: 0.5-15m (recolteuses maraicheres: 1-3m, moissonneuses: 6-15m)
+     # - En pieds: 20-50 pieds = 6-15m
+     # - En pouces: > 100 pouces (rarement utilise)
+     
+     if (mean_swath > 50) {
+       # > 50: probablement pieds ou pouces
+       if (mean_swath > 200) {
+         # > 200: probablement pouces
+         rlang::inform(paste("Swath detecte en pouces (moyenne:", round(mean_swath, 1), "in) - conversion en metres"))
+         data$Swath_m <- data$Swath * 0.0254
+       } else {
+         # 50-200: probablement pieds
+         rlang::inform(paste("Swath detecte en pieds (moyenne:", round(mean_swath, 1), "ft) - conversion en metres"))
+         data$Swath_m <- data$Swath * 0.3048
+       }
+     } else {
+       # <= 50: probablement metres (inclut petites recolteuses maraicheres 1-3m)
+       rlang::inform(paste("Swath detecte en metres (moyenne:", round(mean_swath, 2), "m)"))
+       data$Swath_m <- data$Swath
+     }
    }
 
    if (!"Distance_m" %in% names(data)) {
      mean_dist <- mean(data$Distance, na.rm = TRUE)
-     # Distance typique entre points: 1-5m
-     if (mean_dist > 30) {
-       rlang::inform(paste("Distance detectee en pieds (moyenne:", round(mean_dist, 1), "ft) - conversion en metres"))
-       data$Distance_m <- data$Distance * 0.3048
-     } else if (mean_dist > 0.5) {
-       rlang::inform(paste("Distance detectee en metres (moyenne:", round(mean_dist, 2), "m)"))
-       data$Distance_m <- data$Distance
-     } else {
+     # Distance typique entre points: 0.3-5m
+     # - En metres: 0.3-5m
+     # - En pieds: > 10 pieds
+     # - En pouces: > 50 pouces (rarement utilise)
+     
+     if (mean_dist > 50) {
+       # > 50: probablement pouces
        rlang::inform(paste("Distance detectee en pouces (moyenne:", round(mean_dist, 1), "in) - conversion en metres"))
        data$Distance_m <- data$Distance * 0.0254
+     } else if (mean_dist > 15) {
+       # 15-50: probablement pieds
+       rlang::inform(paste("Distance detectee en pieds (moyenne:", round(mean_dist, 1), "ft) - conversion en metres"))
+       data$Distance_m <- data$Distance * 0.3048
+     } else {
+       # <= 15: probablement metres
+       rlang::inform(paste("Distance detectee en metres (moyenne:", round(mean_dist, 2), "m)"))
+       data$Distance_m <- data$Distance
      }
    }
 
