@@ -31,9 +31,25 @@ apply_delay_adjustment(
 
   Plage de delais a tester (defaut -25:25 secondes)
 
+- n_iterations:
+
+  Nombre d'iterations pour le calcul (defaut 5)
+
+- noise_level:
+
+  Niveau de bruit pour le lissage (optionnel)
+
 - value_col:
 
   Nom de la colonne de valeurs a analyser
+
+- sample_fraction:
+
+  Fraction d'echantillonnage (optionnel)
+
+- method:
+
+  Methode d'ajustement (optionnel)
 
 - coarse_step:
 
