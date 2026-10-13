@@ -112,7 +112,7 @@ clean_yield_with_tracking <- function(file_path = NULL, data = NULL, metrique = 
      report_progress("Filtres", "filtre position...", 0.06)
      rlang::inform("Etape 2b : filtre position...")
      n_before <- nrow(data)
-     data <- filter_position_outliers(data)
+     data <- filter_position_outliers(data)$data
      n_removed <- n_before - nrow(data)
      if (n_removed > 0) {
        removed_ids <- setdiff(data_raw$orig_row_id[1:n_before], data$orig_row_id)

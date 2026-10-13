@@ -2,7 +2,7 @@
 % Please edit documentation in R/ayce_clean.R
 \name{ayce_clean}
 \alias{ayce_clean}
-\title{AYCE : Auto Yield Cleaning Engine (sortie imperiale)}
+\title{AYCE : Auto Yield Cleaning Engine (sortie tibble)}
 \usage{
 ayce_clean(
   file_path = NULL,
@@ -22,12 +22,12 @@ ayce_clean(
 \item{params}{Liste des parametres AYCE}
 }
 \value{
-Tibble nettoye en unites imperiales
+Tibble nettoye en kg/ha
 }
 \description{
 Systeme expert automatise pour le nettoyage des donnees de rendement
 sans intervention humaine, base sur les methodes USDA Yield Editor.
-Cette fonction retourne un tibble en unites imperiales (bu/acre).
+Cette fonction retourne un tibble sans geometrie, en kg/ha.
 }
 \examples{
 \dontrun{

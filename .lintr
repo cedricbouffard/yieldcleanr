@@ -10,6 +10,9 @@ linters: linters_with_defaults(
     seq_linter = NULL,
     return_linter = NULL,
     quotes_linter = NULL,
-    object_usage_linter = NULL
+    object_usage_linter = NULL,
+    object_length_linter = NULL,
+    brace_linter = NULL,
+    parser_warning_linter = NULL
   )
 encoding: "UTF-8"

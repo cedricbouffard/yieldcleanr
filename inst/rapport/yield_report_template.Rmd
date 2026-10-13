@@ -101,7 +101,7 @@ if (!exists("farm_name")) farm_name <- NA_character_
 if (!exists("harvest_date")) harvest_date <- NA_character_
 
 # Preparer les libelles pour l'affichage
-field_label <- if (!is.na(field_name) && field_name != "") paste0( field_name) else "Champ"
+field_label <- if (!is.na(field_name) && field_name != "") paste0(field_name) else "Champ"
 
 # Utiliser year_label tel que défini dans l'app (déjà formaté avec la date de récolte)
 # ou le créer à partir de harvest_date/season_year si nécessaire
@@ -472,11 +472,11 @@ map_orientation <- list(angle = 0, width = 7, height = 5, coord_ratio = 7/5)
         tryCatch({
           coords <- sf::st_coordinates(sf::st_centroid(gdf))
           if (!is.null(coords) && nrow(coords) > 1) {
-            lat <- mean(coords[,2], na.rm = TRUE)
+            lat <- mean(coords[, 2], na.rm = TRUE)
             meters_per_degree_lon <- 111320 * cos(lat * pi / 180)
             meters_per_degree_lat <- 111320
-            dx_m <- diff(coords[,1]) * meters_per_degree_lon
-            dy_m <- diff(coords[,2]) * meters_per_degree_lat
+            dx_m <- diff(coords[, 1]) * meters_per_degree_lon
+            dy_m <- diff(coords[, 2]) * meters_per_degree_lat
             angles <- atan2(dy_m, dx_m) * 180 / pi
             angles_valid <- angles[!is.na(angles) & (abs(dx_m) > 0.1 | abs(dy_m) > 0.1)]
             if (length(angles_valid) > 10) {
@@ -686,7 +686,13 @@ if (!exists("bin_colors")) bin_colors <- NULL
 
 if (!is.null(yield_bins) && nrow(yield_bins) > 0 && !is.null(bin_colors)) {
   html_table <- "<table class='yield-table' style='width:100%; border-collapse: collapse; font-size: 10pt;'>"
-  html_table <- paste0(html_table, "<thead><tr style='background-color: #002752; color: white;'><th style='padding: 4px; text-align: left;'>Classe</th><th style='padding: 4px; text-align: center;'>%</th><th style='padding: 4px; text-align: center;'>Superficie (ha)</th></tr></thead><tbody>")
+  html_table <- paste0(
+    html_table,
+    "<thead><tr style='background-color: #002752; color: white;'>",
+    "<th style='padding: 4px; text-align: left;'>Classe</th>",
+    "<th style='padding: 4px; text-align: center;'>%</th>",
+    "<th style='padding: 4px; text-align: center;'>Superficie (ha)</th></tr></thead><tbody>"
+  )
   
   for (i in 1:nrow(yield_bins)) {
     color <- bin_colors[i]
@@ -694,7 +700,8 @@ if (!is.null(yield_bins) && nrow(yield_bins) > 0 && !is.null(bin_colors)) {
     
     html_table <- paste0(html_table, 
       "<tr style='border-bottom: 1px solid #ddd;'>",
-      "<td style='padding: 3px;'><span style='display: inline-block; width: 10px; height: 10px; background-color: ", color, "; margin-right: 6px; border-radius: 2px;'></span>", classe_label, "</td>",
+      "<td style='padding: 3px;'><span style='display: inline-block; width: 10px; height: 10px; ",
+      "background-color: ", color, "; margin-right: 6px; border-radius: 2px;'></span>", classe_label, "</td>",
       "<td style='padding: 3px; text-align: center; font-weight: bold;'>", yield_bins$Pourcentage[i], "%</td>",
       "<td style='padding: 3px; text-align: center; color: #666;'>", yield_bins$Superficie[i], "</td>",
       "</tr>")

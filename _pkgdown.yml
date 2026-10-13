@@ -168,10 +168,13 @@ reference:
   - title: "💾 Import et Export de Données"
     desc: |
       Fonctions pour importer et exporter les données depuis/vers différents formats 
-      (CSV, TXT, GeoJSON, Shapefiles ZIP).
+      (CSV, TXT, GeoJSON, GeoPackage, Shapefile et ZIP).
     contents:
       - export_data
       - read_yield_from_zip
+      - read_yield_from_vector
+      - read_jd_to_polygons
+      - create_polygons_from_data
       - list_fields_from_zip
 
   - title: "🔒 Anonymisation et Sécurité"

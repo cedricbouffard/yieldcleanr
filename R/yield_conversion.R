@@ -50,8 +50,13 @@
    # Les fichiers John Deere ont deja le rendement dans Flow (typiquement 1000-15000 kg/ha)
    # Les cultures maraicheres peuvent avoir des rendements eleves (60000-100000 kg/ha)
    # Alors que les fichiers AgLeader ont le flux brut (typiquement 2-20 lbs/s)
-   mean_flow_check <- mean(data$Flow, na.rm = TRUE)
-   
+   mean_flow_check <- suppressWarnings(mean(data$Flow, na.rm = TRUE))
+
+   if (is.na(mean_flow_check) || !is.finite(mean_flow_check)) {
+     rlang::warn("Colonne Flow vide ou entierement NA - aucune conversion de rendement possible")
+     return(data)
+   }
+
    if (mean_flow_check > 100 && mean_flow_check < 150000) {
      # Flow contient probablement deja le rendement en kg/ha
      # Limite superieure 150000 kg/ha pour inclure cultures maraicheres a tres haut rendement
@@ -172,7 +177,12 @@ get_lbs_per_bushel <- function(data) {
 
     # Detecter les cultures maraicheres (pas de conversion bushel applicable)
     # Ces cultures utilisent le rendement direct en kg/ha, pas de conversion lbs/bushel
-    if (any(grepl("onion|oignon|shallot|echalote|potato|patate|pomme.de.terre|carrot|carotte|betterave|beet|legume|vegetable|celeri|celery|navet|turnip|radis|radish|chou|cabbage|laitue|lettuce", grain))) {
+    veggie_pattern <- paste0(
+      "onion|oignon|shallot|echalote|potato|patate|pomme.de.terre|carrot|",
+      "carotte|betterave|beet|legume|vegetable|celeri|celery|navet|turnip|",
+      "radis|radish|chou|cabbage|laitue|lettuce"
+    )
+    if (any(grepl(veggie_pattern, grain))) {
       rlang::inform(paste("Culture maraichere detectee (", paste(grain, collapse = ", "), ") - pas de conversion bushel"))
       return(NA)  # NA indique qu'il ne faut pas utiliser cette conversion
     }

@@ -37,7 +37,8 @@
 #'   \item{lsd_limit}{Multiplicateur pour l'ecart-type local (defaut: 2.4)}
 #' }
 #'
-#' @param file_path Chemin du fichier d'entree (txt/csv). Ignore si `data` est fourni.
+#' @param file_path Chemin du fichier d'entree (txt/csv) ou d'un fichier
+#'   vectoriel (.shp, .gpkg, .geojson). Ignore si `data` est fourni.
 #' @param data Data frame ou tibble contenant les donnees de rendement. Alternative
 #'   a `file_path`.
 #' @param metrique TRUE pour les unites metriques (kg/ha), FALSE pour l'imperial (bu/acre)
@@ -121,6 +122,7 @@
     minv_abs = 0.5,    # Vitesse minimale absolue (m/s)
     miny_abs = 0,      # Rendement minimal absolu
     gbuffer = 100,     # Marge de position (metres)
+    apply_position = FALSE,  # Filtre position (DBSCAN) hors champ
 
     # Parametres de chevauchement
     cellsize_overlap = 0.3,    # Taille de cellule (metres) - standard USDA
@@ -154,20 +156,30 @@
   rlang::inform("================================================")
   rlang::inform("")
 
-  rlang::inform("Etape 1 : chargement des donnees...")
-   if (!is.null(data)) {
-     data <- data
-   } else {
-     data <- read_yield_data(file_path)
-   }
-   data_raw <- data
+   rlang::inform("Etape 1 : chargement des donnees...")
+    if (!is.null(data)) {
+      data <- data
+    } else {
+      ext <- tolower(tools::file_ext(file_path))
+      if (ext %in% c("shp", "gpkg", "geojson", "json")) {
+        data <- read_yield_from_vector(file_path)
+      } else {
+        data <- read_yield_data(file_path)
+      }
+    }
+    data_raw <- data
    rlang::inform(paste("  -", nrow(data), "raw observations loaded"))
    
     # Detection: Flow contient-il des valeurs de rendement (kg/ha) ou de flux (lbs/s) ?
     # - Valeurs > 100 : probablement rendement en kg/ha (John Deere)
     # - Valeurs < 50 : probablement flux en lbs/s (fichiers texte standards)
-    mean_flow_val <- mean(data$Flow, na.rm = TRUE)
-    
+    mean_flow_val <- if ("Flow" %in% names(data)) {
+      suppressWarnings(mean(data$Flow, na.rm = TRUE))
+    } else {
+      NA_real_
+    }
+    if (is.na(mean_flow_val) || !is.finite(mean_flow_val)) mean_flow_val <- 0
+
     if (mean_flow_val > 100) {
       # Flow contient le rendement HUMIDE en kg/ha (John Deere)
       rlang::inform(paste("Flow detecte comme rendement humide (", round(mean_flow_val, 1), " kg/ha)..."))
@@ -224,7 +236,7 @@
   # ----- Etape 2b : filtre position -----
   if (isTRUE(params$apply_position)) {
     rlang::inform("Etape 2b : filtre position...")
-    data <- filter_position_outliers(data)
+    data <- filter_position_outliers(data)$data
     rlang::inform(paste("  Rows:", nrow(data)))
   } else {
     rlang::inform("Etape 2b : filtre position saute")
@@ -513,11 +525,9 @@
    flow_label <- "Flow_kg_s"
    unit_label <- "kg/ha"
 
-    # Pour une sortie tibble, supprimer les colonnes intermediaires
+    # Pour une sortie tibble, supprimer la colonne de flux brut (lbs/s)
    if (!polygon) {
-      # Nettoyer les colonnes intermediaires
       data$Flow <- NULL
-      data$Flow_kg_s <- NULL
    }
 
      if (polygon) {
@@ -694,7 +704,7 @@
     # ----- Sortie tibble -----
     # Renommer les colonnes finales
     data$Yield <- data$Yield_final
-    data$Flow <- data$Flow_final
+    data$Flow <- if ("Flow_kg_s" %in% names(data)) data$Flow_kg_s else NULL
 
     # Selectionner les colonnes de sortie
     output_cols <- c("X", "Y", "Latitude", "Longitude", "Flow", "Moisture",
